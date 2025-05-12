@@ -1,4 +1,4 @@
-# A Aeometric Drawing Program - Gruppo 05 AH
+# A Geometric Drawing Program - Gruppo 05 AH
 ## Descrizione generale
 
 Questo progetto è stato sviluppato nell’ambito del corso di **Software Architecture Design** con il **Prof. Pierluigi Ritrovato**. Il lavoro consiste nella realizzazione di un'applicazione di disegno geometrico, secondo un processo iterativo e incrementale basato sulla metodologia **SCRUM**.
