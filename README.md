@@ -74,7 +74,7 @@ L'applicazione è un programma di disegno geometrico che consente all’utente d
 
 ## Autori: Gruppo 05 AH
 
-* \[Apicella Antonio]
-* \[Celano Benedetta Pia]
-* \[Cuomo Carmine]
-* \[Guerra Simone]
+* [Apicella Antonio](https://github.com/apiantonio)
+* [Celano Benedetta Pia](https://github.com/BeneCelano)
+* [Cuomo Carmine](https://github.com/sickcarmine)
+* [Guerra Simone](https://github.com/simoneGuerra0)
