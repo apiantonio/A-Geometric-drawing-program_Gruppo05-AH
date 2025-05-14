@@ -1,4 +1,4 @@
-package com.geometricdrawing.ageometricdrawingprogram_gruppo05ah;
+package com.geometricdrawing;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;

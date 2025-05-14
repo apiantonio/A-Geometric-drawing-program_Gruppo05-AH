@@ -1,4 +1,4 @@
-package com.geometricdrawing.ageometricdrawingprogram_gruppo05ah;
+package com.geometricdrawing;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
