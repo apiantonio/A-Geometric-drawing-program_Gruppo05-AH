@@ -37,15 +37,22 @@ La repository è organizzata per riflettere le varie fasi di sviluppo:
 ```
 /project-root
 │
-├── PreGame/              # Fase di Pre-game
+├───PreGame
+│       Definition_of_Done.pdf
+│       Environment_configuration.pdf
+│       presentazione_1week.pptx
+│       README.md
+│       Scelte_di_Design.pdf
+│       Week1_PreGame.pdf
 │
-├── Sprint1/              # Prima iterazione
+├───Sprint1
+│       README.md
 │
-├── Sprint2/              # Seconda iterazione
+├───Sprint2
+│       README.md
 │
-├── Sprint3/              # Sprint finale
-│
-└─── README.md             
+└───Sprint3
+        README.md       
 ```
 
 In ogni directory relativa a uno **sprint** è presente un `README.md` che include:
