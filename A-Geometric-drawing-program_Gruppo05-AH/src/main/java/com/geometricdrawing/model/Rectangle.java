@@ -20,5 +20,5 @@ public class Rectangle extends AbstractShape {
         gc.strokeRect(this.x, this.y, this.width, this.height);
     }
 
-    // contains(), getBounds() verranno aggiunti in US successive.
+
 }

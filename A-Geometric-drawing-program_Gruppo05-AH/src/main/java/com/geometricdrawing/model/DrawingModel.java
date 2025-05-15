@@ -16,8 +16,7 @@ public class DrawingModel {
         }
     }
 
-    // removeShape e clear non sono strettamente necessarie per US-2 e US-3,
-    // ma sono fondamentali per un modello di disegno. Le lasciamo per completezza base.
+    // removeShape e clear non ancora necessari. Le lasciamo per completezza base.
     public void removeShape(Shape s) {
         this.shapes.remove(s);
     }

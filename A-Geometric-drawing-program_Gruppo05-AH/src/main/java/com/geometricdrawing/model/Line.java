@@ -24,5 +24,4 @@ public class Line extends AbstractShape {
         // this.x e this.y sono startX e startY da AbstractShape
         gc.strokeLine(this.x, this.y, this.actualEndX, this.actualEndY);
     }
-    // contains(), getBounds(), move(), setPosition() (oltre costruttore) verranno aggiunti in US successive.
 }

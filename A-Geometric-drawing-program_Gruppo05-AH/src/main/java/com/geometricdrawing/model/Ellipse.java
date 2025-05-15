@@ -19,5 +19,4 @@ public class Ellipse extends AbstractShape {
         gc.setStroke(getBorderColorInternal());
         gc.strokeOval(this.x, this.y, this.width, this.height);
     }
-    // contains(), getBounds() verranno aggiunti in US successive.
 }
