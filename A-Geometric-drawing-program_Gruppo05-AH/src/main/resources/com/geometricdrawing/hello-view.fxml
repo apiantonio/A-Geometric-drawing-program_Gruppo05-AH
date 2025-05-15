@@ -25,7 +25,7 @@
 <?import javafx.scene.layout.VBox?>
 
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="599.0" prefWidth="915.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="599.0" prefWidth="915.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
     <top>
         <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
             <children>
@@ -99,7 +99,7 @@
                                                                         </ImageView>
                                                                     </graphic>
                                                                     <items>
-                                                                        <MenuItem mnemonicParsing="false" text="Linea" onAction="#handleSelectLinea">
+                                                                        <MenuItem mnemonicParsing="false" text="Linea">
                                                                             <graphic>
                                                                                 <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                                                                     <image>
@@ -108,7 +108,7 @@
                                                                                 </ImageView>
                                                                             </graphic>
                                                                         </MenuItem>
-                                                                        <MenuItem mnemonicParsing="false" text="Rettangolo" onAction="#handleSelectRettangolo">
+                                                                        <MenuItem mnemonicParsing="false" text="Rettangolo">
                                                                             <graphic>
                                                                                 <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                                                                     <image>
@@ -117,7 +117,7 @@
                                                                                 </ImageView>
                                                                             </graphic>
                                                                         </MenuItem>
-                                                                        <MenuItem mnemonicParsing="false" text="Ellisse" onAction="#handleSelectEllisse">
+                                                                        <MenuItem mnemonicParsing="false" text="Ellisse">
                                                                             <graphic>
                                                                                 <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                                                                     <image>
@@ -209,12 +209,12 @@
                                                                 </Label>
                                                                 <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" />
                                                                 <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                                <Label text="cm" GridPane.columnIndex="2">
+                                                                <Label text="px" GridPane.columnIndex="2">
                                                                     <GridPane.margin>
                                                                         <Insets left="5.0" />
                                                                     </GridPane.margin>
                                                                 </Label>
-                                                                <Label text="cm" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                                <Label text="px" GridPane.columnIndex="2" GridPane.rowIndex="1">
                                                                     <GridPane.margin>
                                                                         <Insets left="5.0" />
                                                                     </GridPane.margin>
@@ -242,6 +242,6 @@
         </VBox>
     </top>
     <center>
-        <Canvas fx:id="drawingCanvas" height="404.0" width="920.0" BorderPane.alignment="CENTER" />
+        <Canvas height="404.0" width="920.0" BorderPane.alignment="CENTER" />
     </center>
 </BorderPane>
