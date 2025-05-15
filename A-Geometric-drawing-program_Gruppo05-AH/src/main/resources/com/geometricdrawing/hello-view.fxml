@@ -209,12 +209,12 @@
                                                 </Label>
                                                 <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" />
                                                 <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label text="cm" GridPane.columnIndex="2">
+                                                <Label text="px" GridPane.columnIndex="2">
                                                    <GridPane.margin>
                                                       <Insets left="5.0" />
                                                    </GridPane.margin>
                                                 </Label>
-                                                <Label text="cm" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                <Label text="px" GridPane.columnIndex="2" GridPane.rowIndex="1">
                                                    <GridPane.margin>
                                                       <Insets left="5.0" />
                                                    </GridPane.margin>
