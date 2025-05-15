@@ -1,0 +1,25 @@
+/*
+**  BOTTONI, COLOR-PICKER, MENU-BUTTON STYLE
+*/
+.button, #new_shape, .color-picker {
+    -fx-background-color: None;
+}
+
+.button:hover , #new_shape:hover, .color-picker:hover {
+    -fx-background-color: #e0e0e0; /* grigio chiaro */
+}
+
+/* Click (quando premuto) */
+.button:armed, #new_shape:armed, .color-picker:armed {
+    -fx-background-color: #c0c0c0; /* grigio più scuro */
+}
+
+/*
+**  SPINNER ALTEZZA E LARGHEZZA
+*/
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
