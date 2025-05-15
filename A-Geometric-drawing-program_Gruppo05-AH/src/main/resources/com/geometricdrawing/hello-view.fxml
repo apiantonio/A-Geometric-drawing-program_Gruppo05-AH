@@ -25,7 +25,7 @@
 <?import javafx.scene.layout.VBox?>
 
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="599.0" prefWidth="915.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="599.0" prefWidth="915.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
     <top>
         <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
             <children>
@@ -99,7 +99,7 @@
                                                                         </ImageView>
                                                                     </graphic>
                                                                     <items>
-                                                                        <MenuItem mnemonicParsing="false" text="Linea">
+                                                                        <MenuItem mnemonicParsing="false" text="Linea" onAction="#handleSelectLinea">
                                                                             <graphic>
                                                                                 <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                                                                     <image>
@@ -108,7 +108,7 @@
                                                                                 </ImageView>
                                                                             </graphic>
                                                                         </MenuItem>
-                                                                        <MenuItem mnemonicParsing="false" text="Rettangolo">
+                                                                        <MenuItem mnemonicParsing="false" text="Rettangolo" onAction="#handleSelectRettangolo">
                                                                             <graphic>
                                                                                 <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                                                                     <image>
@@ -117,7 +117,7 @@
                                                                                 </ImageView>
                                                                             </graphic>
                                                                         </MenuItem>
-                                                                        <MenuItem mnemonicParsing="false" text="Ellisse">
+                                                                        <MenuItem mnemonicParsing="false" text="Ellisse" onAction="#handleSelectEllisse">
                                                                             <graphic>
                                                                                 <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
                                                                                     <image>
@@ -242,6 +242,6 @@
         </VBox>
     </top>
     <center>
-        <Canvas height="404.0" width="920.0" BorderPane.alignment="CENTER" />
+        <Canvas height="404.0" width="920.0" BorderPane.alignment="CENTER" fx:id="drawingCanvas"/>
     </center>
 </BorderPane>
