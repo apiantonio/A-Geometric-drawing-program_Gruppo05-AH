@@ -21,9 +21,6 @@ public class DrawingController {
 
     // @FXML private AnchorPane drawingAreaPane; // Non strettamente necessario per US-2/3 se canvas è fisso
     @FXML private Canvas drawingCanvas;
-    // I ColorPicker non sono usati per US-2 e US-3
-    // @FXML private ColorPicker fillColorPicker;
-    // @FXML private ColorPicker borderColorPicker;
 
     private DrawingModel model;
     private ShapeFactory currentShapeFactory; // Per US-2 e US-3
@@ -43,13 +40,6 @@ public class DrawingController {
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
-            // Il binding delle dimensioni del canvas all'AnchorPane è una feature aggiuntiva.
-            // Per US-2/3, potremmo assumere dimensioni fisse o che l'FXML le gestisca.
-            // Se l'FXML imposta width/height per il Canvas, questo è sufficiente.
-            // drawingCanvas.widthProperty().bind(drawingAreaPane.widthProperty());
-            // drawingCanvas.heightProperty().bind(drawingAreaPane.heightProperty());
-            // drawingCanvas.widthProperty().addListener(observable -> redrawCanvas());
-            // drawingCanvas.heightProperty().addListener(observable -> redrawCanvas());
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
         } else {
