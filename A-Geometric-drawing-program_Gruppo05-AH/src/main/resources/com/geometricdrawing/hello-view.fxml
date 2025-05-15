@@ -222,6 +222,6 @@
           </Tab>
         </tabs>
       </TabPane>
-      <AnchorPane prefHeight="564.0" prefWidth="1028.0" stylesheets="file:/C:/Users/39366/Desktop/Magistrale%201%20ANNO/Esami%20secondo%20semestre/Software%20Architecture%20Design/Progetto/A-Geometric-drawing-program_Gruppo05-AH/src/main/resources/style.css" />
+      <AnchorPane prefHeight="564.0" prefWidth="1028.0"/>
    </children>
 </VBox>
