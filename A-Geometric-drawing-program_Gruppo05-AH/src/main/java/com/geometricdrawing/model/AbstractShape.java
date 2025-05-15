@@ -1,7 +1,7 @@
 package com.geometricdrawing.model;
 
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color; // È utile per definire i colori di default
+import javafx.scene.paint.Color;
 
 public abstract class AbstractShape implements Shape {
     protected double x; // Posizione x (es. angolo sup-sx, o startX per linea)
@@ -11,7 +11,7 @@ public abstract class AbstractShape implements Shape {
     protected double width;
     protected double height;
 
-    // Colori di default hardcoded per US-3
+    // Colori di default
     protected Color borderColor = Color.BLACK;
     protected Color fillColor = Color.TRANSPARENT; // Default per linea o forme senza riempimento specificato
 
@@ -22,15 +22,12 @@ public abstract class AbstractShape implements Shape {
         this.height = height;
     }
 
-    // Il metodo draw è l'unico richiesto dall'interfaccia Shape per US-3
+    //Metodo per disegnare la figura
     @Override
     public abstract void draw(GraphicsContext gc);
 
-    // Metodi getter per i colori potrebbero essere utili per il disegno,
-    // anche se non esposti nell'interfaccia Shape per US-2/3.
+    // Metodi getter per i colori
     protected Color getBorderColorInternal() { return this.borderColor; }
     protected Color getFillColorInternal() { return this.fillColor; }
 
-    // Metodi come setPosition, move, setDimensions, contains, getBounds
-    // saranno aggiunti quando le User Story lo richiederanno.
 }
