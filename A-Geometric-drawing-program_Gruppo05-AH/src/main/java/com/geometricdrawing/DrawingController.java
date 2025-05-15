@@ -75,7 +75,7 @@ public class DrawingController {
 
     private void handleCanvasClick(MouseEvent event) {
         if (currentShapeFactory == null) {
-            // System.out.println("Seleziona una forma prima di disegnare.");
+            System.out.println("Seleziona una forma prima di disegnare.");
             return;
         }
         if (model == null) {
