@@ -3,7 +3,7 @@ package com.geometricdrawing;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 
-public class HelloController {
+public class DrawingController {
     @FXML
     private Label welcomeText;
 
