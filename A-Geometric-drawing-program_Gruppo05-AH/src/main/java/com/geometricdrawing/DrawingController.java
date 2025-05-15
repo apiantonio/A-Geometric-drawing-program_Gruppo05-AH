@@ -9,21 +9,17 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-// Non servono ColorPicker qui per US-2/3
-// import javafx.scene.control.ColorPicker;
 import javafx.scene.input.MouseEvent;
-
-// import javafx.scene.layout.AnchorPane;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Shape;
 
 public class DrawingController {
 
-    // @FXML private AnchorPane drawingAreaPane; // Non strettamente necessario per US-2/3 se canvas è fisso
+
     @FXML private Canvas drawingCanvas;
 
     private DrawingModel model;
-    private ShapeFactory currentShapeFactory; // Per US-2 e US-3
+    private ShapeFactory currentShapeFactory;
     private GraphicsContext gc;
 
     public void setModel(DrawingModel model) {
@@ -78,10 +74,8 @@ public class DrawingController {
 
         Shape newShape = currentShapeFactory.createShape(x, y);
         // I colori sono definiti come default nelle classi Shape/AbstractShape.
-        // Non usiamo i ColorPicker per US-3.
 
         model.addShape(newShape);
-        // Il listener sull'ObservableList del model chiamerà redrawCanvas.
     }
 
 
