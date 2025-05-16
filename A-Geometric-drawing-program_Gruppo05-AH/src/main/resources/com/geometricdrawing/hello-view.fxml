@@ -24,7 +24,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="572.0" prefWidth="821.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="572.0" prefWidth="821.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <Pane fx:id="canvasContainer" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
@@ -35,7 +35,6 @@
                <menus>
                   <Menu mnemonicParsing="false" text="File">
                      <items>
-                        <MenuItem mnemonicParsing="false" text="Nuovo" />
                         <MenuItem mnemonicParsing="false" onAction="#handleSaveSerialized" text="Salva" />
                         <Menu mnemonicParsing="false" text="Salva come">
                            <items>
@@ -43,10 +42,9 @@
                               <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPdf" text="PDF" />
                            </items>
                         </Menu>
-                        <MenuItem mnemonicParsing="false" text="Esci" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica" />
                      </items>
                   </Menu>
-                  <Menu mnemonicParsing="false" text="Visualizza" />
                   <Menu mnemonicParsing="false" text="Help">
                      <items>
                         <MenuItem mnemonicParsing="false" text="About" />
@@ -62,7 +60,7 @@
                            <children>
                               <ToolBar layoutX="-1.0" layoutY="1.0" prefHeight="168.0" prefWidth="821.0" AnchorPane.bottomAnchor="-9.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                  <items>
-                                    <VBox alignment="CENTER" prefHeight="87.0" prefWidth="100.0">
+                                    <VBox alignment="CENTER">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <children>
@@ -80,7 +78,7 @@
                                                 <Insets bottom="2.0" />
                                              </VBox.margin>
                                           </HBox>
-                                          <Label alignment="TOP_LEFT" contentDisplay="CENTER" text="Strumenti">
+                                          <Label alignment="CENTER" contentDisplay="CENTER" text="Strumenti">
                                              <VBox.margin>
                                                 <Insets />
                                              </VBox.margin>
@@ -88,9 +86,12 @@
                                        </children>
                                     </VBox>
                                     <Separator orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
-                                    <VBox alignment="CENTER" prefHeight="11.0" prefWidth="100.0">
+                                    <VBox alignment="CENTER">
                                        <children>
-                                          <HBox alignment="CENTER" prefHeight="136.0" prefWidth="100.0">
+                                          <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
+                                             <VBox.margin>
+                                                <Insets bottom="2.0" />
+                                             </VBox.margin>
                                              <children>
                                                 <MenuButton id="new_shape" contentDisplay="TOP" mnemonicParsing="false" stylesheets="@../../style.css" text="Forme">
                                                    <graphic>
@@ -132,19 +133,22 @@
                                                 </MenuButton>
                                              </children>
                                           </HBox>
-                                          <Label text="Inserisci">
+                                          <Label alignment="CENTER" contentDisplay="CENTER" text="Inserisci">
                                              <VBox.margin>
-                                                <Insets bottom="10.0" />
+                                                <Insets />
                                              </VBox.margin>
                                           </Label>
                                        </children>
                                     </VBox>
                                     <Separator layoutX="114.0" layoutY="10.0" orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
-                                    <VBox alignment="CENTER" layoutX="124.0" layoutY="10.0" prefHeight="133.0" prefWidth="156.0">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="150.0">
                                        <children>
-                                          <HBox alignment="CENTER" prefHeight="143.0" prefWidth="133.0">
+                                          <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
+                                             <VBox.margin>
+                                                <Insets bottom="2.0" />
+                                             </VBox.margin>
                                              <children>
-                                                <VBox alignment="CENTER" prefHeight="106.0" prefWidth="132.0">
+                                                <VBox alignment="CENTER" prefHeight="98.0" prefWidth="140.0">
                                                    <children>
                                                       <Label prefHeight="17.0" prefWidth="108.0" text="Riempimento forma" wrapText="true">
                                                          <VBox.margin>
@@ -170,62 +174,73 @@
                                                 </VBox>
                                              </children>
                                           </HBox>
-                                          <Label prefHeight="17.0" prefWidth="56.0" text="Stili forme">
+                                          <Label alignment="CENTER" contentDisplay="CENTER" text="Stili forme">
                                              <VBox.margin>
-                                                <Insets bottom="10.0" />
+                                                <Insets />
                                              </VBox.margin>
                                           </Label>
                                        </children>
                                     </VBox>
                                     <Separator layoutX="228.0" layoutY="10.0" orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
-                                    <VBox alignment="CENTER" prefHeight="133.0" prefWidth="225.0">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="231.0">
                                        <children>
-                                          <GridPane alignment="CENTER" prefHeight="90.0" prefWidth="218.0">
-                                             <columnConstraints>
-                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="80.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="70.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="10.0" />
-                                             </columnConstraints>
-                                             <rowConstraints>
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                             </rowConstraints>
-                                             <children>
-                                                <Label text="Altezza:" wrapText="true">
-                                                   <graphic>
-                                                      <ImageView fitHeight="63.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
-                                                         <image>
-                                                            <Image url="@../../icons/altezza.png" />
-                                                         </image>
-                                                      </ImageView>
-                                                   </graphic>
-                                                </Label>
-                                                <Label text="Larghezza:" wrapText="true" GridPane.rowIndex="1">
-                                                   <graphic>
-                                                      <ImageView fitHeight="75.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
-                                                         <image>
-                                                            <Image url="@../../icons/larghezza.png" />
-                                                         </image>
-                                                      </ImageView>
-                                                   </graphic>
-                                                </Label>
-                                                <Spinner fx:id="heightSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" />
-                                                <Spinner fx:id="widthSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                <Label text="px" GridPane.columnIndex="2">
-                                                   <GridPane.margin>
-                                                      <Insets left="5.0" />
-                                                   </GridPane.margin>
-                                                </Label>
-                                                <Label text="px" GridPane.columnIndex="2" GridPane.rowIndex="1">
-                                                   <GridPane.margin>
-                                                      <Insets left="5.0" />
-                                                   </GridPane.margin>
-                                                </Label>
-                                             </children>
-                                          </GridPane>
-                                          <Label text="Dimensioni">
+                                          <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <VBox.margin>
-                                                <Insets top="10.0" />
+                                                <Insets bottom="2.0" />
+                                             </VBox.margin>
+                                             <children>
+                                                <VBox alignment="CENTER" prefHeight="133.0" prefWidth="225.0">
+                                                   <children>
+                                                      <GridPane alignment="CENTER" prefHeight="90.0" prefWidth="218.0">
+                                                         <columnConstraints>
+                                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="80.0" />
+                                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="70.0" />
+                                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="10.0" />
+                                                         </columnConstraints>
+                                                         <rowConstraints>
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                         </rowConstraints>
+                                                         <children>
+                                                            <Label text="Altezza:" wrapText="true">
+                                                               <graphic>
+                                                                  <ImageView fitHeight="63.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                                                                     <image>
+                                                                        <Image url="@../../icons/altezza.png" />
+                                                                     </image>
+                                                                  </ImageView>
+                                                               </graphic>
+                                                            </Label>
+                                                            <Label text="Larghezza:" wrapText="true" GridPane.rowIndex="1">
+                                                               <graphic>
+                                                                  <ImageView fitHeight="75.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                                                                     <image>
+                                                                        <Image url="@../../icons/larghezza.png" />
+                                                                     </image>
+                                                                  </ImageView>
+                                                               </graphic>
+                                                            </Label>
+                                                            <Spinner fx:id="heightSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" />
+                                                            <Spinner fx:id="widthSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                            <Label text="px" GridPane.columnIndex="2">
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </Label>
+                                                            <Label text="px" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </Label>
+                                                         </children>
+                                                      </GridPane>
+                                                   </children>
+                                                </VBox>
+                                             </children>
+                                          </HBox>
+                                          <Label alignment="CENTER" contentDisplay="CENTER" text="Dimensioni">
+                                             <VBox.margin>
+                                                <Insets />
                                              </VBox.margin>
                                           </Label>
                                        </children>
