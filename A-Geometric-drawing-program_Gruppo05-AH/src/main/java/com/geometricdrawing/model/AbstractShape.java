@@ -50,6 +50,12 @@ public abstract class AbstractShape implements Shape, Serializable {
     protected Color getBorderColorInternal() { return this.borderColor; }
     protected Color getFillColorInternal() { return this.fillColor; }
 
+    @Override
+    public boolean containsPoint(double x, double y, double threshold) {
+        return x >= this.x - threshold && x <= this.x + this.width + threshold &&
+               y >= this.y - threshold && y <= this.y + this.height + threshold;
+    }
+
     public double getX() {
         return x;
     }
@@ -122,4 +128,5 @@ public abstract class AbstractShape implements Shape, Serializable {
             this.fillColor = Color.TRANSPARENT; // Default
         }
     }
+
 }
