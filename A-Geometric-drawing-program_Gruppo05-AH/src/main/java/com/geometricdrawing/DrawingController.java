@@ -154,11 +154,10 @@ public class DrawingController {
         if (currentShapeFactory != null) {
             Shape newShape = currentShapeFactory.createShape(x, y);
             AddShapeCommand addCmd = new AddShapeCommand(model, newShape);
-            commandManager.executeCommand(addCmd);
 
-            model.addShape(newShape);
-            currentShape = newShape; // La forma corrente è quella appena inserita
-            currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
+            commandManager.executeCommand(addCmd);  // eseguo il comando per aggiungere la forma
+            currentShape = newShape;                // La forma corrente è quella appena inserita
+            currentShapeFactory = null;             // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
             updateSpinners(currentShape);
@@ -168,7 +167,8 @@ public class DrawingController {
         }
 
         // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
-        for (Shape shape : model.getShapes()) {
+        for (Shape shape : model.getShapesOrderedByZ()) {
+            System.out.println("shape: " + shape.toString() + " z: " +((AbstractShape) shape).getZ());
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) { // Usa il nuovo metodo containsPoint
                 currentShape = shape; // seleziona la figura cliccata
                 updateSpinners(shape); // aggiorna gli spinner con le dimensioni della figura selezionata

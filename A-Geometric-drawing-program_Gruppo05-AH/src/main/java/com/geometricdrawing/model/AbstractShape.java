@@ -8,6 +8,7 @@ import java.io.*;
 public abstract class AbstractShape implements Shape, Serializable {
     protected double x; // Posizione x (es. angolo sup-sx, o startX per linea)
     protected double y; // Posizione y (es. angolo sup-sx, o startY per linea)
+    protected int z;    // Livello di profondità della figura
 
     // Dimensioni definite dalle factory per US-3
     protected double width;
@@ -70,6 +71,14 @@ public abstract class AbstractShape implements Shape, Serializable {
 
     public void setY(double y) {
         this.y = y;
+    }
+
+    public int getZ() {
+        return z;
+    }
+
+    public void setZ(int z) {
+        this.z = z;
     }
 
     @Override
