@@ -16,6 +16,12 @@ import javafx.scene.input.MouseEvent;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Shape;
 
+import javafx.scene.control.Button;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.Spinner;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
 
 public class DrawingController {
@@ -23,6 +29,13 @@ public class DrawingController {
 
     @FXML private Canvas drawingCanvas;
     @FXML private Pane canvasContainer;
+    @FXML private Button deleteButton;
+    @FXML private ColorPicker fillPicker;
+    @FXML private ColorPicker borderPicker;
+    @FXML private Spinner heightSpinner;
+    @FXML private Spinner widthSpinner;
+
+    private BooleanProperty canDelete = new SimpleBooleanProperty(false);
 
     private DrawingModel model;
     private ShapeFactory currentShapeFactory;
@@ -50,6 +63,13 @@ public class DrawingController {
             gc = drawingCanvas.getGraphicsContext2D();
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
+
+            //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
+            deleteButton.disableProperty().bind(canDelete.not());
+            fillPicker.disableProperty().bind(canDelete.not());
+            borderPicker.disableProperty().bind(canDelete.not());
+            widthSpinner.disableProperty().bind(canDelete.not());
+            heightSpinner.disableProperty().bind(canDelete.not());
 
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
