@@ -9,4 +9,6 @@ public interface Shape {
 
     void draw(GraphicsContext gc);
 
+    double getWidth();
+    double getHeight();
 }

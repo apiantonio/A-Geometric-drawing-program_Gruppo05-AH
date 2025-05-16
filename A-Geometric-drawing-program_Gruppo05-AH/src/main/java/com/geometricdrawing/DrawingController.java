@@ -10,11 +10,14 @@ import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Shape;
+import com.geometricdrawing.model.Line;
+import com.geometricdrawing.model.AbstractShape;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
@@ -32,8 +35,9 @@ public class DrawingController {
     @FXML private Button deleteButton;
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
-    @FXML private Spinner heightSpinner;
-    @FXML private Spinner widthSpinner;
+    @FXML private Spinner<Double> heightSpinner;
+    @FXML private Spinner<Double> widthSpinner;
+
 
     private BooleanProperty canDelete = new SimpleBooleanProperty(false);
 
@@ -80,6 +84,17 @@ public class DrawingController {
         } else {
             System.err.println("Errore: drawingCanvas non è stato iniettato!");
         }
+
+        if (heightSpinner != null) {
+            SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0); // min, max, initial, step
+            heightSpinner.setValueFactory(heightFactory);
+            heightSpinner.setEditable(false);
+        }
+        if (widthSpinner != null) {
+            SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0); // min, max, initial, step
+            widthSpinner.setValueFactory(widthFactory);
+            widthSpinner.setEditable(false);
+        }
         currentShapeFactory = null; // Nessuna forma selezionata all'inizio
     }
 
@@ -103,12 +118,8 @@ public class DrawingController {
             System.out.println("Seleziona una forma prima di disegnare.");
             return;
         }
-        if (model == null) {
-            System.err.println("Errore: DrawingModel non inizializzato.");
-            return;
-        }
-        if (commandManager == null) {
-            System.err.println("Errore: CommandManager non inizializzato nel controller.");
+        if (model == null || commandManager == null || heightSpinner == null || widthSpinner == null) {
+            System.err.println("Errore: Componenti non inizializzati (model, commandManager o spinners).");
             return;
         }
 
@@ -119,7 +130,21 @@ public class DrawingController {
 
         AddShapeCommand addCmd = new AddShapeCommand(model, newShape);
         commandManager.executeCommand(addCmd);
-        
+
+        // Dopo aver aggiunto la forma, aggiorna gli spinner
+        if (newShape != null) {
+            if (newShape instanceof Line line) {
+                // Per la linea, mostriamo la sua lunghezza effettiva nello spinner della larghezza
+                widthSpinner.getValueFactory().setValue(line.getLength());
+                heightSpinner.getValueFactory().setValue(line.getHeight()); //sarà 0
+
+            } else if (newShape instanceof AbstractShape shapeWithDims) { // Per Rectangle, Ellipse
+
+                widthSpinner.getValueFactory().setValue(shapeWithDims.getWidth());
+                heightSpinner.getValueFactory().setValue(shapeWithDims.getHeight());
+
+            }
+        }
     }
 
 
