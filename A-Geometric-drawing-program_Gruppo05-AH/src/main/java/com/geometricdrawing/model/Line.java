@@ -20,7 +20,7 @@ public class Line extends AbstractShape {
 
     @Override
     public void draw(GraphicsContext gc) {
-        gc.setStroke(getBorderColorInternal());
+        gc.setStroke(getBorderColor());
         // this.x e this.y sono startX e startY da AbstractShape
         gc.strokeLine(this.x, this.y, this.actualEndX, this.actualEndY);
     }

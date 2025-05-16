@@ -2,12 +2,13 @@ package com.geometricdrawing;
 
 import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.CommandManager;
+import com.geometricdrawing.decorator.BorderColorDecorator;
+import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
-import com.geometricdrawing.model.AbstractShape;
-import com.geometricdrawing.model.Line;
+import com.geometricdrawing.model.*;
 import javafx.collections.ListChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
@@ -21,8 +22,6 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
-import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Shape;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
@@ -30,9 +29,6 @@ import com.geometricdrawing.model.AbstractShape;
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Spinner;
-
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -59,9 +55,6 @@ public class DrawingController {
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
-
-
-    private BooleanProperty canDelete = new SimpleBooleanProperty(false);
 
     private DrawingModel model;
     private GraphicsContext gc;
@@ -91,15 +84,18 @@ public class DrawingController {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
 
-           drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
 
+            // colore di partenza dei colorPicker
+            fillPicker.setValue(Color.LIGHTGREEN);
+            borderPicker.setValue(Color.ORANGE);
+
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
-            deleteButton.disableProperty().bind(canDelete.not());
-            fillPicker.disableProperty().bind(canDelete.not());
-            borderPicker.disableProperty().bind(canDelete.not());
-            widthSpinner.disableProperty().bind(canDelete.not());
-            heightSpinner.disableProperty().bind(canDelete.not());
+            deleteButton.setDisable(true);
+            fillPicker.setDisable(true);
+            borderPicker.setDisable(true);
+            widthSpinner.setDisable(true);
+            heightSpinner.setDisable(true);
 
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
@@ -126,16 +122,24 @@ public class DrawingController {
 
     @FXML
     private void handleSelectLinea(ActionEvent event) {
+        // al momento della creazione potresti selezionare il colore di bordo della linea
+        borderPicker.setDisable(false);
         currentShapeFactory = new LineFactory();
     }
 
     @FXML
     private void handleSelectRettangolo(ActionEvent event) {
+        // al momento della creazione potresti selezionare il colore di bordo e riempimento del rettangolo
+        fillPicker.setDisable(false);
+        borderPicker.setDisable(false);
         currentShapeFactory = new RectangleFactory();
     }
 
     @FXML
     private void handleSelectEllisse(ActionEvent event) {
+        // al momento della creazione potresti selezionare il colore di bordo e riempimento dell'ellisse
+        fillPicker.setDisable(false);
+        borderPicker.setDisable(false);
         currentShapeFactory = new EllipseFactory();
     }
 
@@ -151,34 +155,50 @@ public class DrawingController {
         double x = event.getX();
         double y = event.getY();
 
+        // prelevo il colore di bordo e riempimento
+        Color border = borderPicker.getValue();
+        Color fill = fillPicker.getValue();
+
         // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
         if (currentShapeFactory != null) {
             Shape newShape = currentShapeFactory.createShape(x, y);
-            AddShapeCommand addCmd = new AddShapeCommand(model, newShape);
+            Shape styledShape = newShape;
+
+            // Applica i decorator solo se non già applicati (evita stacking)
+            if (newShape instanceof com.geometricdrawing.model.Line && border != null) {
+                styledShape = new BorderColorDecorator(newShape, border);
+            }
+            if ((newShape instanceof com.geometricdrawing.model.Ellipse || newShape instanceof com.geometricdrawing.model.Rectangle) && border != null && fill != null) {
+                styledShape = new FillColorDecorator(newShape, fill);
+                styledShape = new BorderColorDecorator(styledShape, border);
+            }
+
+            AddShapeCommand addCmd = new AddShapeCommand(model, styledShape);
             commandManager.executeCommand(addCmd);
 
-            model.addShape(newShape);
-            currentShape = newShape; // La forma corrente è quella appena inserita
+            model.addShape(styledShape);
+            currentShape = styledShape; // La forma corrente è quella appena inserita
             currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
             if (currentShape != null) {
-                if (currentShape instanceof Line line) {
-                    // Per la linea, mostriamo la sua lunghezza effettiva nello spinner della larghezza
+                Shape shape = unwrap(currentShape);
+                if (shape instanceof com.geometricdrawing.model.Line line) {
                     widthSpinner.getValueFactory().setValue(line.getLength());
-                    heightSpinner.getValueFactory().setValue(line.getHeight()); //sarà 1
-
-                } else if (currentShape instanceof AbstractShape shapeWithDims) { // Per Rectangle, Ellipse
+                    heightSpinner.getValueFactory().setValue(line.getHeight());
+                } else if (shape instanceof com.geometricdrawing.model.AbstractShape shapeWithDims) {
                     widthSpinner.getValueFactory().setValue(shapeWithDims.getWidth());
                     heightSpinner.getValueFactory().setValue(shapeWithDims.getHeight());
                 }
             }
 
             redrawCanvas();
+            fillPicker.setDisable(true);
+            borderPicker.setDisable(true);
             return;
         }
 
-        // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
+        // Se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
         for (Shape shape : model.getShapes()) {
             if (isPointInsideShape(x, y, shape)) {
                 currentShape = shape; // Seleziona la figura cliccata
@@ -189,19 +209,32 @@ public class DrawingController {
 
         // se il click è su uno spazio vuoto deseleziona la figura corrente
         currentShape = null;
-
         redrawCanvas();
     }
 
+    /*
+     metodo di supporto che serve nel caso in cui la figura sia stata decorataù
+     al momento dell'inserimento
+     */
+    private Shape unwrap(Shape s) {
+        if (s instanceof FillColorDecorator fillDec)
+            s = unwrap(fillDec.getShape());
+        if (s instanceof BorderColorDecorator borderDec)
+            s = unwrap(borderDec.getShape());
+        return s;
+    }
+
+
     private boolean isPointInsideShape(double clickX, double clickY, Shape shape) {
-        if (shape instanceof AbstractShape abstractShape) {
-            // Controlla se il punto (x, y) è all'interno della figura considerando il treshold
-            return  clickX >= abstractShape.getX() - SELECTION_THRESHOLD &&
-                    clickX <= abstractShape.getX() + abstractShape.getWidth() + SELECTION_THRESHOLD &&
-                    clickY >= abstractShape.getY() - SELECTION_THRESHOLD &&
-                    clickY <= abstractShape.getY() + abstractShape.getHeight() + SELECTION_THRESHOLD;
+        if (shape == null) {
+            return false;
+        }else {
+            shape = unwrap(shape);
+            return  clickX >= shape.getX() - SELECTION_THRESHOLD &&
+                    clickX <= shape.getX() + shape.getWidth() + SELECTION_THRESHOLD &&
+                    clickY >= shape.getY() - SELECTION_THRESHOLD &&
+                    clickY <= shape.getY() + shape.getHeight() + SELECTION_THRESHOLD;
         }
-        return false;
     }
 
     // Metodo per disegnare un cerchietto
@@ -222,6 +255,7 @@ public class DrawingController {
                 shape.draw(gc);
                 // Se la figura è quella selezionata
                 if (shape == currentShape) {
+                    shape = unwrap(shape);
                     if (shape instanceof Line line) {
                         // Disegna i cerchietti alle estremità della linea
                         drawHandle(line.getX(), line.getY()); // Inizio linea
