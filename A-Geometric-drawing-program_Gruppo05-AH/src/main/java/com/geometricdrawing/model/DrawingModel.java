@@ -17,6 +17,9 @@ public class DrawingModel {
 
     public void addShape(Shape s) {
         if (s != null) {
+            if (s instanceof AbstractShape abstractShape) {
+                abstractShape.setZ(shapes.size()); // la nuova figura ha lo Z più alto
+            }
             this.shapes.add(s);
         }
     }
@@ -31,6 +34,15 @@ public class DrawingModel {
 
     public void clear() {
         this.shapes.clear();
+    }
+
+    // restituisce le figure in ordine decrescente di z
+    public ObservableList<Shape> getShapesOrderedByZ() {
+        return FXCollections.observableArrayList(
+                shapes.stream()
+                        .sorted((s1, s2) -> Integer.compare(((AbstractShape) s2).getZ(), ((AbstractShape) s1).getZ()))
+                        .toList()
+        );
     }
 
     // Method to save shapes to a file

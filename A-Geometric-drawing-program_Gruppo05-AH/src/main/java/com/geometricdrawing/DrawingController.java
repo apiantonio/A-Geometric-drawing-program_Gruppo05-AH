@@ -56,12 +56,13 @@ public class DrawingController {
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
 
+    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che ocmpare alla selezione di una figura
+    private static final double SELECTION_THRESHOLD = 5.0;  // treshold per la selezione
+
     private DrawingModel model;
     private GraphicsContext gc;
     private ShapeFactory currentShapeFactory;               // factory per la creazione della figura
     private Shape currentShape;                             // figura selezionata
-    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che ocmpare alla selezione di una figura
-    private static final double SELECTION_THRESHOLD = 5.0;  // treshold per la selezione
     private CommandManager commandManager;
 
     public void setModel(DrawingModel model) {
@@ -181,16 +182,7 @@ public class DrawingController {
             currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
-            if (currentShape != null) {
-                Shape shape = unwrap(currentShape);
-                if (shape instanceof com.geometricdrawing.model.Line line) {
-                    widthSpinner.getValueFactory().setValue(line.getLength());
-                    heightSpinner.getValueFactory().setValue(line.getHeight());
-                } else if (shape instanceof com.geometricdrawing.model.AbstractShape shapeWithDims) {
-                    widthSpinner.getValueFactory().setValue(shapeWithDims.getWidth());
-                    heightSpinner.getValueFactory().setValue(shapeWithDims.getHeight());
-                }
-            }
+            updateSpinners(unwrap(currentShape));
 
             redrawCanvas();
             fillPicker.setDisable(true);
@@ -198,10 +190,12 @@ public class DrawingController {
             return;
         }
 
-        // Se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
-        for (Shape shape : model.getShapes()) {
-            if (isPointInsideShape(x, y, shape)) {
-                currentShape = shape; // Seleziona la figura cliccata
+        // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
+        for (Shape shape : model.getShapesOrderedByZ()) {
+            System.out.println("shape: " + shape.toString() + " z: " +((AbstractShape) shape).getZ());
+            if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) { // Usa il nuovo metodo containsPoint
+                currentShape = shape; // seleziona la figura cliccata
+                updateSpinners(shape); // aggiorna gli spinner con le dimensioni della figura selezionata
                 redrawCanvas();
                 return;
             }
@@ -209,6 +203,7 @@ public class DrawingController {
 
         // se il click è su uno spazio vuoto deseleziona la figura corrente
         currentShape = null;
+
         redrawCanvas();
     }
 
@@ -234,6 +229,21 @@ public class DrawingController {
                     clickX <= shape.getX() + shape.getWidth() + SELECTION_THRESHOLD &&
                     clickY >= shape.getY() - SELECTION_THRESHOLD &&
                     clickY <= shape.getY() + shape.getHeight() + SELECTION_THRESHOLD;
+        }
+    }
+
+    private void updateSpinners(Shape shape){
+        // Dopo aver aggiunto la forma, aggiorna gli spinner
+        if (shape == null) {
+            widthSpinner.getValueFactory().setValue(0.0);
+            heightSpinner.getValueFactory().setValue(0.0);
+        } else if (currentShape instanceof Line line) {
+            // Per la linea, mostriamo la sua lunghezza effettiva nello spinner della larghezza
+            widthSpinner.getValueFactory().setValue(line.getLength());
+            heightSpinner.getValueFactory().setValue(line.getHeight()); //sarà 1
+        } else if (currentShape instanceof AbstractShape shapeWithDims) { // Per Rectangle, Ellipse
+            widthSpinner.getValueFactory().setValue(shapeWithDims.getWidth());
+            heightSpinner.getValueFactory().setValue(shapeWithDims.getHeight());
         }
     }
 
@@ -278,6 +288,7 @@ public class DrawingController {
             }
         }
     }
+
     @FXML
     private void handleSaveSerialized(ActionEvent event) {
         if (model == null) {
@@ -427,3 +438,4 @@ public class DrawingController {
         return drawingCanvas != null ? drawingCanvas.getScene().getWindow() : null;
     }
 }
+
