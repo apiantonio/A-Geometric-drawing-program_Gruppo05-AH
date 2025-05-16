@@ -17,17 +17,16 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="572.0" prefWidth="821.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="572.0" prefWidth="821.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
-      <Pane fx:id="canvasContainer" AnchorPane.topAnchor="200.0" AnchorPane.bottomAnchor="0.0"
-            AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+      <Pane fx:id="canvasContainer" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
       </Pane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -37,11 +36,11 @@
                   <Menu mnemonicParsing="false" text="File">
                      <items>
                         <MenuItem mnemonicParsing="false" text="Nuovo" />
-                        <MenuItem mnemonicParsing="false" text="Salva" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleSaveSerialized" text="Salva" />
                         <Menu mnemonicParsing="false" text="Salva come">
                            <items>
-                              <MenuItem mnemonicParsing="false" text="PNG" />
-                              <MenuItem mnemonicParsing="false" text="PDF" />
+                              <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPng" text="PNG" />
+                              <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPdf" text="PDF" />
                            </items>
                         </Menu>
                         <MenuItem mnemonicParsing="false" text="Esci" />
@@ -67,7 +66,7 @@
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <children>
-                                                <Button alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
+                                                <Button fx:id="deleteButton" alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
                                                    <graphic>
                                                       <ImageView fitHeight="54.0" fitWidth="37.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
@@ -152,7 +151,7 @@
                                                             <Insets />
                                                          </VBox.margin>
                                                       </Label>
-                                                      <ColorPicker stylesheets="@../../style.css">
+                                                      <ColorPicker fx:id="fillPicker" stylesheets="@../../style.css">
                                                          <VBox.margin>
                                                             <Insets bottom="3.0" top="2.0" />
                                                          </VBox.margin>
@@ -162,7 +161,7 @@
                                                             <Insets />
                                                          </VBox.margin>
                                                       </Label>
-                                                      <ColorPicker layoutX="10.0" layoutY="27.0" prefHeight="25.0" prefWidth="129.0" stylesheets="@../../style.css">
+                                                      <ColorPicker fx:id="borderPicker" layoutX="10.0" layoutY="27.0" prefHeight="25.0" prefWidth="129.0" stylesheets="@../../style.css">
                                                          <VBox.margin>
                                                             <Insets bottom="3.0" top="2.0" />
                                                          </VBox.margin>
@@ -210,8 +209,8 @@
                                                       </ImageView>
                                                    </graphic>
                                                 </Label>
-                                                <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" />
-                                                <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <Spinner fx:id="heightSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" />
+                                                <Spinner fx:id="widthSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                 <Label text="px" GridPane.columnIndex="2">
                                                    <GridPane.margin>
                                                       <Insets left="5.0" />

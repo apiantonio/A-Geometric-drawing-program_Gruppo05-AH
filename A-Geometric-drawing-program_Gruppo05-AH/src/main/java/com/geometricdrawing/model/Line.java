@@ -24,4 +24,11 @@ public class Line extends AbstractShape {
         // this.x e this.y sono startX e startY da AbstractShape
         gc.strokeLine(this.x, this.y, this.actualEndX, this.actualEndY);
     }
+
+    public double getLength() {
+        double deltaX = this.actualEndX - this.x; // this.x è startX
+        double deltaY = this.actualEndY - this.y; // this.y è startY
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+
 }
