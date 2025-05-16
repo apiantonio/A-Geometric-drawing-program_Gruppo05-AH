@@ -3,10 +3,7 @@ package com.geometricdrawing.model;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 
 public abstract class AbstractShape implements Shape, Serializable {
     protected double x; // Posizione x (es. angolo sup-sx, o startX per linea)
@@ -53,6 +50,22 @@ public abstract class AbstractShape implements Shape, Serializable {
     protected Color getBorderColorInternal() { return this.borderColor; }
     protected Color getFillColorInternal() { return this.fillColor; }
 
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
     @Override
     public double getWidth() {
         return this.width;
@@ -80,6 +93,7 @@ public abstract class AbstractShape implements Shape, Serializable {
         }
     }
 
+    @Serial
     private void writeObject(ObjectOutputStream out) throws IOException {
         // Assicurati che gli array serializzabili siano aggiornati prima di serializzare
         updateSerializableColors();
@@ -88,6 +102,7 @@ public abstract class AbstractShape implements Shape, Serializable {
         out.defaultWriteObject();
     }
 
+    @Serial
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         // Deserializza i campi non-transient (inclusi gli array dei colori)
         in.defaultReadObject();
