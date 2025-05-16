@@ -11,4 +11,6 @@ public interface Shape extends Serializable {
 
     void draw(GraphicsContext gc);
 
+    double getWidth();
+    double getHeight();
 }

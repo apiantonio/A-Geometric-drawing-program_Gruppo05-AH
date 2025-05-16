@@ -66,7 +66,7 @@
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <children>
-                                                <Button alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
+                                                <Button fx:id="deleteButton" alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
                                                    <graphic>
                                                       <ImageView fitHeight="54.0" fitWidth="37.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
@@ -151,7 +151,7 @@
                                                             <Insets />
                                                          </VBox.margin>
                                                       </Label>
-                                                      <ColorPicker stylesheets="@../../style.css">
+                                                      <ColorPicker fx:id="fillPicker" stylesheets="@../../style.css">
                                                          <VBox.margin>
                                                             <Insets bottom="3.0" top="2.0" />
                                                          </VBox.margin>
@@ -161,7 +161,7 @@
                                                             <Insets />
                                                          </VBox.margin>
                                                       </Label>
-                                                      <ColorPicker layoutX="10.0" layoutY="27.0" prefHeight="25.0" prefWidth="129.0" stylesheets="@../../style.css">
+                                                      <ColorPicker fx:id="borderPicker" layoutX="10.0" layoutY="27.0" prefHeight="25.0" prefWidth="129.0" stylesheets="@../../style.css">
                                                          <VBox.margin>
                                                             <Insets bottom="3.0" top="2.0" />
                                                          </VBox.margin>
@@ -209,8 +209,8 @@
                                                       </ImageView>
                                                    </graphic>
                                                 </Label>
-                                                <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" />
-                                                <Spinner stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <Spinner fx:id="heightSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" />
+                                                <Spinner fx:id="widthSpinner" stylesheets="@../../style.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                 <Label text="px" GridPane.columnIndex="2">
                                                    <GridPane.margin>
                                                       <Insets left="5.0" />

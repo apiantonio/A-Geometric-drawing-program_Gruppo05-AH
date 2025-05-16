@@ -53,6 +53,16 @@ public abstract class AbstractShape implements Shape, Serializable {
     protected Color getBorderColorInternal() { return this.borderColor; }
     protected Color getFillColorInternal() { return this.fillColor; }
 
+    @Override
+    public double getWidth() {
+        return this.width;
+    }
+
+    @Override
+    public double getHeight() {
+        return this.height;
+    }
+
     // Aggiungi setter per i colori che aggiornano anche gli array serializzabili
     public void setBorderColor(Color borderColor) {
         this.borderColor = borderColor;
