@@ -14,10 +14,18 @@ public interface Shape extends Serializable {
     double getWidth();
     double getHeight();
     double getX();
-    void setX(double deltaX);
     double getY();
-    void setY(double deltaY);
+    double getZ();
+    void setX(double x);
+    void setY(double y);
+    void setZ(double z);
+
+
+    //aggiunti getter e setter per il colore di riempimento e bordo
+    void setFillColor(Color c);
+    void setBorderColor(Color c);
+    Color getFillColor();
+    Color getBorderColor();
 
     boolean containsPoint(double x, double y, double threshold);
-
 }

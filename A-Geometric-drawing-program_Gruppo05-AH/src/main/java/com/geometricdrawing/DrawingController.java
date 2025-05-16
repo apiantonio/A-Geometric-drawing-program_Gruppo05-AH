@@ -2,12 +2,13 @@ package com.geometricdrawing;
 
 import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.CommandManager;
+import com.geometricdrawing.decorator.BorderColorDecorator;
+import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
-import com.geometricdrawing.model.AbstractShape;
-import com.geometricdrawing.model.Line;
+import com.geometricdrawing.model.*;
 import javafx.collections.ListChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
@@ -99,6 +100,10 @@ public class DrawingController {
             drawingCanvas.setOnMouseDragged(this::handleMouseDragged);
             drawingCanvas.setOnMouseReleased(this::handleMouseReleased);
 
+            // colore di partenza dei colorPicker
+            fillPicker.setValue(Color.LIGHTGREEN);
+            borderPicker.setValue(Color.ORANGE);
+
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
             deleteButton.disableProperty().bind(canDelete.not());
             fillPicker.disableProperty().bind(canDelete.not());
@@ -131,16 +136,24 @@ public class DrawingController {
 
     @FXML
     private void handleSelectLinea(ActionEvent event) {
+        // al momento della creazione potresti selezionare il colore di bordo della linea
+        borderPicker.setDisable(false);
         currentShapeFactory = new LineFactory();
     }
 
     @FXML
     private void handleSelectRettangolo(ActionEvent event) {
+        // al momento della creazione potresti selezionare il colore di bordo e riempimento del rettangolo
+        fillPicker.setDisable(false);
+        borderPicker.setDisable(false);
         currentShapeFactory = new RectangleFactory();
     }
 
     @FXML
     private void handleSelectEllisse(ActionEvent event) {
+        // al momento della creazione potresti selezionare il colore di bordo e riempimento dell'ellisse
+        fillPicker.setDisable(false);
+        borderPicker.setDisable(false);
         currentShapeFactory = new EllipseFactory();
     }
 
@@ -156,19 +169,37 @@ public class DrawingController {
         double x = event.getX();
         double y = event.getY();
 
+        // prelevo il colore di bordo e riempimento
+        Color border = borderPicker.getValue();
+        Color fill = fillPicker.getValue();
+
         // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
         if (currentShapeFactory != null) {
             Shape newShape = currentShapeFactory.createShape(x, y);
-            AddShapeCommand addCmd = new AddShapeCommand(model, newShape);
+            Shape styledShape = newShape;
 
-            commandManager.executeCommand(addCmd);  // eseguo il comando per aggiungere la forma
-            currentShape = newShape;                // La forma corrente è quella appena inserita
-            currentShapeFactory = null;             // Resetta la factory per richiedere una nuova selezione
+            // Applica i decorator solo se non già applicati (evita stacking)
+            if (newShape instanceof com.geometricdrawing.model.Line && border != null) {
+                styledShape = new BorderColorDecorator(newShape, border);
+            }
+            if ((newShape instanceof com.geometricdrawing.model.Ellipse || newShape instanceof com.geometricdrawing.model.Rectangle) && border != null && fill != null) {
+                styledShape = new FillColorDecorator(newShape, fill);
+                styledShape = new BorderColorDecorator(styledShape, border);
+            }
+
+            AddShapeCommand addCmd = new AddShapeCommand(model, styledShape);
+            commandManager.executeCommand(addCmd);
+
+            model.addShape(styledShape);
+            currentShape = styledShape; // La forma corrente è quella appena inserita
+            currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
-            updateSpinners(currentShape);
+            updateSpinners(unwrap(currentShape));
 
             redrawCanvas();
+            fillPicker.setDisable(true);
+            borderPicker.setDisable(true);
             return;
         }
 
@@ -186,6 +217,18 @@ public class DrawingController {
             }
         }
         return null;
+    }
+
+    /*
+     metodo di supporto che serve nel caso in cui la figura sia stata decorataù
+     al momento dell'inserimento
+     */
+    private Shape unwrap(Shape s) {
+        if (s instanceof FillColorDecorator fillDec)
+            s = unwrap(fillDec.getShape());
+        if (s instanceof BorderColorDecorator borderDec)
+            s = unwrap(borderDec.getShape());
+        return s;
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
@@ -264,6 +307,7 @@ public class DrawingController {
                 shape.draw(gc);
                 // Se la figura è quella selezionata
                 if (shape == currentShape) {
+                    shape = unwrap(shape);
                     if (shape instanceof Line line) {
                         // Disegna i cerchietti alle estremità della linea
                         drawHandle(line.getX(), line.getY()); // Inizio linea
