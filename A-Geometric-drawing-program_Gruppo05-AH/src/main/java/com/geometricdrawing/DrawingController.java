@@ -8,6 +8,7 @@ import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import com.geometricdrawing.model.DrawingModel;
@@ -17,6 +18,7 @@ public class DrawingController {
 
 
     @FXML private Canvas drawingCanvas;
+    @FXML private Pane canvasContainer;
 
     private DrawingModel model;
     private ShapeFactory currentShapeFactory;
@@ -38,6 +40,13 @@ public class DrawingController {
             gc = drawingCanvas.getGraphicsContext2D();
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
+
+            /*
+            nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
+            deve estendersi a sua volta
+             */
+            drawingCanvas.widthProperty().bind(canvasContainer.widthProperty());
+            drawingCanvas.heightProperty().bind(canvasContainer.heightProperty());
         } else {
             System.err.println("Errore: drawingCanvas non è stato iniettato!");
         }
