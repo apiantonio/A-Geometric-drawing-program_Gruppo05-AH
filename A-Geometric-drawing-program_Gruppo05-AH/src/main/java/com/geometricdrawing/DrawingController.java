@@ -44,8 +44,7 @@ public class DrawingController {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
 
-            drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
-
+           drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
             deve estendersi a sua volta
@@ -100,6 +99,9 @@ public class DrawingController {
                 return;
             }
         }
+
+        // se il click è su uno spazio vuoto deseleziona la figura corrente
+        currentShape = null;
 
         redrawCanvas();
     }
