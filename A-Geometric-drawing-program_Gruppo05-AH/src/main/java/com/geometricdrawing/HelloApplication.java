@@ -29,6 +29,11 @@ public class HelloApplication extends Application {
         Scene scene = new Scene(root);
         stage.setTitle("Hello!");
 
+        // setting di un minimo rimpicciolimento dello stage in altezza e larghezza
+        stage.setMinWidth(500);
+        stage.setMinHeight(600);
+
+
         stage.setScene(scene);
         stage.show();
     }

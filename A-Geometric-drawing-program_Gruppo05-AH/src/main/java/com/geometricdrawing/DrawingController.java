@@ -60,6 +60,8 @@ public class DrawingController {
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
 
+    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che ocmpare alla selezione di una figura
+    private static final double SELECTION_THRESHOLD = 5.0;  // treshold per la selezione
 
     private BooleanProperty canDelete = new SimpleBooleanProperty(false);
 
@@ -67,8 +69,6 @@ public class DrawingController {
     private GraphicsContext gc;
     private ShapeFactory currentShapeFactory;               // factory per la creazione della figura
     private Shape currentShape;                             // figura selezionata
-    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che ocmpare alla selezione di una figura
-    private static final double SELECTION_THRESHOLD = 5.0;  // treshold per la selezione
     private CommandManager commandManager;
 
     public void setModel(DrawingModel model) {
@@ -91,7 +91,6 @@ public class DrawingController {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
 
-           drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
 
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
@@ -162,17 +161,7 @@ public class DrawingController {
             currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
-            if (currentShape != null) {
-                if (currentShape instanceof Line line) {
-                    // Per la linea, mostriamo la sua lunghezza effettiva nello spinner della larghezza
-                    widthSpinner.getValueFactory().setValue(line.getLength());
-                    heightSpinner.getValueFactory().setValue(line.getHeight()); //sarà 1
-
-                } else if (currentShape instanceof AbstractShape shapeWithDims) { // Per Rectangle, Ellipse
-                    widthSpinner.getValueFactory().setValue(shapeWithDims.getWidth());
-                    heightSpinner.getValueFactory().setValue(shapeWithDims.getHeight());
-                }
-            }
+            updateSpinners(currentShape);
 
             redrawCanvas();
             return;
@@ -181,7 +170,8 @@ public class DrawingController {
         // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
         for (Shape shape : model.getShapes()) {
             if (isPointInsideShape(x, y, shape)) {
-                currentShape = shape; // Seleziona la figura cliccata
+                currentShape = shape; // seleziona la figura cliccata
+                updateSpinners(shape); // aggiorna gli spinner con le dimensioni della figura selezionata
                 redrawCanvas();
                 return;
             }
@@ -202,6 +192,20 @@ public class DrawingController {
                     clickY <= abstractShape.getY() + abstractShape.getHeight() + SELECTION_THRESHOLD;
         }
         return false;
+    }
+
+    // Metodo aggiornare gli spinner quando la figura corrente cambia
+    private void updateSpinners(Shape shape) {
+        if (shape == null) {
+            widthSpinner.getValueFactory().setValue(0.0);
+            heightSpinner.getValueFactory().setValue(0.0);
+        } else if (shape instanceof Line line) {
+            widthSpinner.getValueFactory().setValue(line.getLength());
+            heightSpinner.getValueFactory().setValue(1.0); // Altezza fissa per le linee
+        } else if (shape instanceof AbstractShape abstractShape) {
+            widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
+            heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
+        }
     }
 
     // Metodo per disegnare un cerchietto
