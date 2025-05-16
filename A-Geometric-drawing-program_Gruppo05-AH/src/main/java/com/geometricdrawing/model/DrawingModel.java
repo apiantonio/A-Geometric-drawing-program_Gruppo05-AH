@@ -2,9 +2,14 @@ package com.geometricdrawing.model;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DrawingModel {
-    private final ObservableList<Shape> shapes;
+    // Mark shapes as transient because ObservableList is not reliably serializable by default.
+    // We will handle its serialization manually.
+    private transient ObservableList<Shape> shapes;
 
     public DrawingModel() {
         this.shapes = FXCollections.observableArrayList();
@@ -16,7 +21,6 @@ public class DrawingModel {
         }
     }
 
-    // removeShape e clear non ancora necessari. Le lasciamo per completezza base.
     public void removeShape(Shape s) {
         this.shapes.remove(s);
     }
@@ -27,5 +31,47 @@ public class DrawingModel {
 
     public void clear() {
         this.shapes.clear();
+    }
+
+    // Method to save shapes to a file
+    public void saveToFile(File file) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+            // Convert ObservableList to ArrayList for serialization
+            oos.writeObject(new ArrayList<>(shapes));
+        }
+    }
+
+    // Method to load shapes from a file
+    @SuppressWarnings("unchecked")
+    public void loadFromFile(File file) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            List<Shape> loadedShapes = (List<Shape>) ois.readObject();
+            shapes.clear();
+            if (loadedShapes != null) {
+                shapes.addAll(loadedShapes);
+            }
+        }
+        // Note: If shapes were not transient and you tried to serialize ObservableList directly,
+        // you might need custom readObject/writeObject for DrawingModel as well.
+        // For simplicity, we re-initialize if it was null (e.g. after deserialization of DrawingModel itself)
+        if (this.shapes == null) {
+            this.shapes = FXCollections.observableArrayList();
+        }
+    }
+
+    // Optional: If DrawingModel itself needs to be serializable (e.g. part of a larger state)
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject(); // For any other fields in DrawingModel
+        out.writeObject(new ArrayList<>(shapes)); // Serialize shapes as ArrayList
+    }
+
+    @SuppressWarnings("unchecked")
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject(); // For any other fields
+        List<Shape> loadedShapes = (List<Shape>) in.readObject();
+        this.shapes = FXCollections.observableArrayList(); // Re-initialize
+        if (loadedShapes != null) {
+            this.shapes.addAll(loadedShapes);
+        }
     }
 }
