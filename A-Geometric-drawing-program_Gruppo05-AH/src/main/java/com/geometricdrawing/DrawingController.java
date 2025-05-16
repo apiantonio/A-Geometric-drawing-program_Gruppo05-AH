@@ -154,11 +154,10 @@ public class DrawingController {
         if (currentShapeFactory != null) {
             Shape newShape = currentShapeFactory.createShape(x, y);
             AddShapeCommand addCmd = new AddShapeCommand(model, newShape);
-            commandManager.executeCommand(addCmd);
 
-            model.addShape(newShape);
-            currentShape = newShape; // La forma corrente è quella appena inserita
-            currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
+            commandManager.executeCommand(addCmd);  // eseguo il comando per aggiungere la forma
+            currentShape = newShape;                // La forma corrente è quella appena inserita
+            currentShapeFactory = null;             // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
             updateSpinners(currentShape);
@@ -168,8 +167,9 @@ public class DrawingController {
         }
 
         // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
-        for (Shape shape : model.getShapes()) {
-            if (isPointInsideShape(x, y, shape)) {
+        for (Shape shape : model.getShapesOrderedByZ()) {
+            System.out.println("shape: " + shape.toString() + " z: " +((AbstractShape) shape).getZ());
+            if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) { // Usa il nuovo metodo containsPoint
                 currentShape = shape; // seleziona la figura cliccata
                 updateSpinners(shape); // aggiorna gli spinner con le dimensioni della figura selezionata
                 redrawCanvas();
@@ -183,17 +183,6 @@ public class DrawingController {
         redrawCanvas();
     }
 
-    private boolean isPointInsideShape(double clickX, double clickY, Shape shape) {
-        if (shape instanceof AbstractShape abstractShape) {
-            // Controlla se il punto (x, y) è all'interno della figura considerando il treshold
-            return  clickX >= abstractShape.getX() - SELECTION_THRESHOLD &&
-                    clickX <= abstractShape.getX() + abstractShape.getWidth() + SELECTION_THRESHOLD &&
-                    clickY >= abstractShape.getY() - SELECTION_THRESHOLD &&
-                    clickY <= abstractShape.getY() + abstractShape.getHeight() + SELECTION_THRESHOLD;
-        }
-        return false;
-    }
-
     // Metodo aggiornare gli spinner quando la figura corrente cambia
     private void updateSpinners(Shape shape) {
         if (shape == null) {
@@ -201,7 +190,7 @@ public class DrawingController {
             heightSpinner.getValueFactory().setValue(0.0);
         } else if (shape instanceof Line line) {
             widthSpinner.getValueFactory().setValue(line.getLength());
-            heightSpinner.getValueFactory().setValue(1.0); // Altezza fissa per le linee
+            heightSpinner.getValueFactory().setValue(line.getHeight()); // Altezza fissa per le linee
         } else if (shape instanceof AbstractShape abstractShape) {
             widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
             heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
@@ -248,6 +237,7 @@ public class DrawingController {
             }
         }
     }
+
     @FXML
     private void handleSaveSerialized(ActionEvent event) {
         if (model == null) {
@@ -397,3 +387,4 @@ public class DrawingController {
         return drawingCanvas != null ? drawingCanvas.getScene().getWindow() : null;
     }
 }
+
