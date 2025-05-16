@@ -1,5 +1,7 @@
 package com.geometricdrawing;
 
+import com.geometricdrawing.command.AddShapeCommand;
+import com.geometricdrawing.command.CommandManager;
 import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
@@ -23,6 +25,7 @@ public class DrawingController {
     private DrawingModel model;
     private ShapeFactory currentShapeFactory;
     private GraphicsContext gc;
+    private CommandManager commandManager;
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -32,6 +35,11 @@ public class DrawingController {
             });
         }
         redrawCanvas();
+    }
+
+    //Metodo per iniezione del CommandManager
+    public void setCommandManager(CommandManager commandManager) {
+        this.commandManager = commandManager;
     }
 
     @FXML
@@ -77,14 +85,19 @@ public class DrawingController {
             System.err.println("Errore: DrawingModel non inizializzato.");
             return;
         }
+        if (commandManager == null) {
+            System.err.println("Errore: CommandManager non inizializzato nel controller.");
+            return;
+        }
 
         double x = event.getX();
         double y = event.getY();
 
         Shape newShape = currentShapeFactory.createShape(x, y);
-        // I colori sono definiti come default nelle classi Shape/AbstractShape.
 
-        model.addShape(newShape);
+        AddShapeCommand addCmd = new AddShapeCommand(model, newShape);
+        commandManager.executeCommand(addCmd);
+        
     }
 
 

@@ -1,6 +1,7 @@
 package com.geometricdrawing;
 
 import com.geometricdrawing.model.DrawingModel;
+import com.geometricdrawing.command.CommandManager;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -20,7 +21,10 @@ public class HelloApplication extends Application {
 
         DrawingController controller = fxmlLoader.getController();
         DrawingModel model = new DrawingModel();
+        CommandManager commandManager = new CommandManager();
+
         controller.setModel(model);
+        controller.setCommandManager(commandManager);
 
         Scene scene = new Scene(root);
         stage.setTitle("Hello!");
