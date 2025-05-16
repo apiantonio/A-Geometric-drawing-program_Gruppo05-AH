@@ -4,16 +4,16 @@ import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.CommandManager;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
+import com.geometricdrawing.decorator.ShapeDecorator;
 import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
-import com.geometricdrawing.model.*;
 import javafx.collections.ListChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.print.PrinterJob;
+import javafx.scene.Cursor;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.SpinnerValueFactory;
@@ -31,9 +31,6 @@ import com.geometricdrawing.model.AbstractShape;
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Spinner;
-
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -61,10 +58,8 @@ public class DrawingController {
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
 
-    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che ocmpare alla selezione di una figura
-    private static final double SELECTION_THRESHOLD = 5.0;  // treshold per la selezione
-
-    private BooleanProperty canDelete = new SimpleBooleanProperty(false);
+    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che compare alla selezione di una figura
+    private static final double SELECTION_THRESHOLD = 5.0;  // threshold per la selezione
 
     private DrawingModel model;
     private GraphicsContext gc;
@@ -95,21 +90,22 @@ public class DrawingController {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
 
-            drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
+            drawingCanvas.setOnMouseClicked(this::handleCanvasClick); //
             drawingCanvas.setOnMousePressed(this::handleMousePressed);
             drawingCanvas.setOnMouseDragged(this::handleMouseDragged);
             drawingCanvas.setOnMouseReleased(this::handleMouseReleased);
+            drawingCanvas.setOnMouseMoved(this::handleMouseMoved); // per il cambio cursore
 
             // colore di partenza dei colorPicker
             fillPicker.setValue(Color.LIGHTGREEN);
             borderPicker.setValue(Color.ORANGE);
 
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
-            deleteButton.disableProperty().bind(canDelete.not());
-            fillPicker.disableProperty().bind(canDelete.not());
-            borderPicker.disableProperty().bind(canDelete.not());
-            widthSpinner.disableProperty().bind(canDelete.not());
-            heightSpinner.disableProperty().bind(canDelete.not());
+            deleteButton.setDisable(true);
+            borderPicker.setDisable(true);
+            fillPicker.setDisable(true);
+            widthSpinner.setDisable(true);
+            heightSpinner.setDisable(true);
 
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
@@ -162,27 +158,26 @@ public class DrawingController {
             System.err.println("Errore: Componenti non inizializzati (model, commandManager o spinners).");
             return;
         }
-        if (currentShapeFactory == null) {
-            System.out.println("Seleziona una forma prima di disegnare.");
-        }
 
         double x = event.getX();
         double y = event.getY();
 
-        // prelevo il colore di bordo e riempimento
-        Color border = borderPicker.getValue();
-        Color fill = fillPicker.getValue();
-
-        // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
+        // l'utente ha scelto una figura da voler inserire
+        // (il caso in cui l'utente ha cliccato su una figura esistente/spazio vuoto è gestito nel mousePressed)
         if (currentShapeFactory != null) {
+
+            // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
             Shape newShape = currentShapeFactory.createShape(x, y);
             Shape styledShape = newShape;
 
+            // prelevo il colore di bordo e riempimento
+            Color border = borderPicker.getValue();
+            Color fill = fillPicker.getValue();
+
             // Applica i decorator solo se non già applicati (evita stacking)
-            if (newShape instanceof com.geometricdrawing.model.Line && border != null) {
+            if (newShape instanceof Line && border != null) {
                 styledShape = new BorderColorDecorator(newShape, border);
-            }
-            if ((newShape instanceof com.geometricdrawing.model.Ellipse || newShape instanceof com.geometricdrawing.model.Rectangle) && border != null && fill != null) {
+            } else if (border != null && fill != null) { // se newShape non è una linea
                 styledShape = new FillColorDecorator(newShape, fill);
                 styledShape = new BorderColorDecorator(styledShape, border);
             }
@@ -190,32 +185,26 @@ public class DrawingController {
             AddShapeCommand addCmd = new AddShapeCommand(model, styledShape);
             commandManager.executeCommand(addCmd);
 
-            model.addShape(styledShape);
             currentShape = styledShape; // La forma corrente è quella appena inserita
             currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
-            updateSpinners(unwrap(currentShape));
+            updateSpinners(unwrapDecorator(currentShape));
 
             redrawCanvas();
-            fillPicker.setDisable(true);
-            borderPicker.setDisable(true);
-            return;
         }
-
-        // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
-        currentShape = selectShapeAt(x, y); // seleziona una figura o deseleziona se clicchi su uno spazio vuoto
-        updateSpinners(currentShape);       // aggiorna gli spinner con le dimensioni della figura selezionata
-
-        redrawCanvas();
     }
 
     private Shape selectShapeAt(double x, double y) {
-        for (Shape shape : model.getShapesOrderedByZ()) {
-            if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {  // Seleziona la figura se il click è all'interno della figura
-                return shape;
+        for (Shape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
+            if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
+                currentShape = shape; // Imposta la figura selezionata
+                System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
+                return shape; // Restituisci la figura selezionata
             }
         }
+        currentShape = null; // Deseleziona se nessuna figura è cliccata
+        System.out.println("DEBUG: Nessuna figura selezionata.");
         return null;
     }
 
@@ -223,25 +212,28 @@ public class DrawingController {
      metodo di supporto che serve nel caso in cui la figura sia stata decorataù
      al momento dell'inserimento
      */
-    private Shape unwrap(Shape s) {
-        if (s instanceof FillColorDecorator fillDec)
-            s = unwrap(fillDec.getShape());
-        if (s instanceof BorderColorDecorator borderDec)
-            s = unwrap(borderDec.getShape());
+    private Shape unwrapDecorator(Shape s) {
+        if (s instanceof ShapeDecorator) {
+            return ((ShapeDecorator) s).unwrap();
+        }
         return s;
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
     private void updateSpinners(Shape shape) {
-        if (shape == null) {
-            widthSpinner.getValueFactory().setValue(0.0);
-            heightSpinner.getValueFactory().setValue(0.0);
-        } else if (shape instanceof Line line) {
-            widthSpinner.getValueFactory().setValue(line.getLength());
-            heightSpinner.getValueFactory().setValue(line.getHeight()); // Altezza fissa per le linee
-        } else if (shape instanceof AbstractShape abstractShape) {
-            widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
-            heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
+        switch (shape) {
+            case Line line -> {
+                widthSpinner.getValueFactory().setValue(line.getLength());
+                heightSpinner.getValueFactory().setValue(line.getHeight()); // Altezza fissa per le linee
+            }
+            case AbstractShape abstractShape -> {
+                widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
+                heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
+            }
+            case null, default -> {
+                widthSpinner.getValueFactory().setValue(0.0);
+                heightSpinner.getValueFactory().setValue(0.0);
+            }
         }
     }
 
@@ -255,11 +247,18 @@ public class DrawingController {
         double x = event.getX();
         double y = event.getY();
 
-        currentShape = selectShapeAt(x, y);
-        if (currentShape != null) {
+        // Se non c'è una figura selezionata o il mouse non è sopra la figura corrente
+        if (currentShape == null || !currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
+            currentShape = selectShapeAt(x, y); // Seleziona la figura sotto il mouse
+        }
+
+        if (currentShape != null && currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
             // Calcola l'offset tra il mouse e la posizione della figura
             dragOffsetX = x - currentShape.getX();
             dragOffsetY = y - currentShape.getY();
+            drawingCanvas.setCursor(Cursor.CLOSED_HAND);
+        } else {
+            currentShape = null; // Deseleziona se il mouse è troppo lontano
         }
 
         updateSpinners(currentShape);
@@ -290,10 +289,24 @@ public class DrawingController {
     }
 
     private void handleMouseReleased(MouseEvent event) {
-        // Non deselezionare la figura, lascia la selezione attiva
+        drawingCanvas.setCursor(Cursor.DEFAULT);
         redrawCanvas();
     }
 
+    private void handleMouseMoved(MouseEvent event) {
+        double x = event.getX();
+        double y = event.getY();
+
+        // Controlla se il mouse è sopra una figura
+        boolean isOverShape = model.getShapesOrderedByZ().stream()
+                .anyMatch(shape -> shape.containsPoint(x, y, SELECTION_THRESHOLD));
+
+        if (isOverShape) {
+            drawingCanvas.setCursor(Cursor.HAND); // Cambia il cursore in una mano
+        } else {
+            drawingCanvas.setCursor(Cursor.DEFAULT); // Ripristina il cursore predefinito
+        }
+    }
 
     private void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {
@@ -305,26 +318,24 @@ public class DrawingController {
         for (Shape shape : model.getShapes()) {
             if (shape != null) {
                 shape.draw(gc);
-                // Se la figura è quella selezionata
-                if (shape == currentShape) {
-                    shape = unwrap(shape);
-                    if (shape instanceof Line line) {
-                        // Disegna i cerchietti alle estremità della linea
-                        drawHandle(line.getX(), line.getY()); // Inizio linea
-                        drawHandle(line.getX() + line.getWidth(), line.getY() + line.getHeight()); // Fine linea
-                    } else if (shape instanceof AbstractShape abstractShape) {
-                        // Disegna il bordo tratteggiato rettangolare
+
+                // disegna un bordo con manici per la figura selezionata
+                Shape unwrappedShape = unwrapDecorator(shape);
+                if (unwrappedShape == unwrapDecorator(currentShape)) {
+                    if (unwrappedShape instanceof Line line) {
+                        drawHandle(line.getX(), line.getY());
+                        drawHandle(line.getEndX(), line.getEndY());
+                    } else if (unwrappedShape instanceof AbstractShape abstractShape) {
                         gc.setStroke(Color.SKYBLUE);
                         gc.setLineWidth(1);
-                        gc.setLineDashes(5); // linea tratteggiata
+                        gc.setLineDashes(5);
                         gc.strokeRect(abstractShape.getX(), abstractShape.getY(), abstractShape.getWidth(), abstractShape.getHeight());
-                        gc.setLineDashes(0); // ripristina linea continua
+                        gc.setLineDashes(0);
 
-                        // Disegna i cerchietti agli angoli
-                        drawHandle(abstractShape.getX(), abstractShape.getY()); // Angolo superiore sinistro
-                        drawHandle(abstractShape.getX() + abstractShape.getWidth(), abstractShape.getY()); // Angolo superiore destro
-                        drawHandle(abstractShape.getX(), abstractShape.getY() + abstractShape.getHeight()); // Angolo inferiore sinistro
-                        drawHandle(abstractShape.getX() + abstractShape.getWidth(), abstractShape.getY() + abstractShape.getHeight()); // Angolo inferiore destro
+                        drawHandle(abstractShape.getX(), abstractShape.getY());
+                        drawHandle(abstractShape.getX() + abstractShape.getWidth(), abstractShape.getY());
+                        drawHandle(abstractShape.getX(), abstractShape.getY() + abstractShape.getHeight());
+                        drawHandle(abstractShape.getX() + abstractShape.getWidth(), abstractShape.getY() + abstractShape.getHeight());
                     }
                 }
             }
