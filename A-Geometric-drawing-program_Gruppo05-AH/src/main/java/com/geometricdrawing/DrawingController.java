@@ -136,7 +136,7 @@ public class DrawingController {
             if (newShape instanceof Line line) {
                 // Per la linea, mostriamo la sua lunghezza effettiva nello spinner della larghezza
                 widthSpinner.getValueFactory().setValue(line.getLength());
-                heightSpinner.getValueFactory().setValue(line.getHeight()); //sarà 0
+                heightSpinner.getValueFactory().setValue(line.getHeight()); //sarà 1
 
             } else if (newShape instanceof AbstractShape shapeWithDims) { // Per Rectangle, Ellipse
 
