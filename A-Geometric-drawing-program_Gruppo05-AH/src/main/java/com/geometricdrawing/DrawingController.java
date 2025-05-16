@@ -70,6 +70,9 @@ public class DrawingController {
     private ShapeFactory currentShapeFactory;               // factory per la creazione della figura
     private Shape currentShape;                             // figura selezionata
     private CommandManager commandManager;
+    private double dragOffsetX;
+    private double dragOffsetY;
+
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -92,6 +95,9 @@ public class DrawingController {
             gc = drawingCanvas.getGraphicsContext2D();
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
+            drawingCanvas.setOnMousePressed(this::handleMousePressed);
+            drawingCanvas.setOnMouseDragged(this::handleMouseDragged);
+            drawingCanvas.setOnMouseReleased(this::handleMouseReleased);
 
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
             deleteButton.disableProperty().bind(canDelete.not());
@@ -167,20 +173,19 @@ public class DrawingController {
         }
 
         // se non è stato selezionato l'inserimento di una figura allora controllo se il click è su una figura esistente
-        for (Shape shape : model.getShapesOrderedByZ()) {
-            System.out.println("shape: " + shape.toString() + " z: " +((AbstractShape) shape).getZ());
-            if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) { // Usa il nuovo metodo containsPoint
-                currentShape = shape; // seleziona la figura cliccata
-                updateSpinners(shape); // aggiorna gli spinner con le dimensioni della figura selezionata
-                redrawCanvas();
-                return;
-            }
-        }
-
-        // se il click è su uno spazio vuoto deseleziona la figura corrente
-        currentShape = null;
+        currentShape = selectShapeAt(x, y); // seleziona una figura o deseleziona se clicchi su uno spazio vuoto
+        updateSpinners(currentShape);       // aggiorna gli spinner con le dimensioni della figura selezionata
 
         redrawCanvas();
+    }
+
+    private Shape selectShapeAt(double x, double y) {
+        for (Shape shape : model.getShapesOrderedByZ()) {
+            if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {  // Seleziona la figura se il click è all'interno della figura
+                return shape;
+            }
+        }
+        return null;
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
@@ -202,6 +207,50 @@ public class DrawingController {
         gc.setFill(Color.SKYBLUE);
         gc.fillOval(x - HANDLE_RADIUS, y - HANDLE_RADIUS, HANDLE_RADIUS * 2, HANDLE_RADIUS * 2);
     }
+
+    private void handleMousePressed(MouseEvent event) {
+        double x = event.getX();
+        double y = event.getY();
+
+        currentShape = selectShapeAt(x, y);
+        if (currentShape != null) {
+            // Calcola l'offset tra il mouse e la posizione della figura
+            dragOffsetX = x - currentShape.getX();
+            dragOffsetY = y - currentShape.getY();
+        }
+
+        updateSpinners(currentShape);
+        redrawCanvas();
+    }
+
+    private void handleMouseDragged(MouseEvent event) {
+        // Aggiorna la posizione della figura tenendo conto dell'offset
+        double newX = event.getX() - dragOffsetX;
+        double newY = event.getY() - dragOffsetY;
+
+        if (currentShape instanceof Line line) {
+            // Calcola lo spostamento della linea
+            double deltaX = newX - line.getX();
+            double deltaY = newY - line.getY();
+
+            // Aggiorna le coordinate di inizio e fine
+            line.setX(newX);
+            line.setY(newY);
+            line.setEndX(line.getEndX() + deltaX);
+            line.setEndY(line.getEndY() + deltaY);
+        } else if (currentShape != null) {
+            currentShape.setX(newX);
+            currentShape.setY(newY);
+        }
+
+        redrawCanvas();
+    }
+
+    private void handleMouseReleased(MouseEvent event) {
+        // Non deselezionare la figura, lascia la selezione attiva
+        redrawCanvas();
+    }
+
 
     private void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {

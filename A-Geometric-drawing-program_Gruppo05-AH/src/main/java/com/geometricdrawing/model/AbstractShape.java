@@ -91,6 +91,14 @@ public abstract class AbstractShape implements Shape, Serializable {
         return this.height;
     }
 
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
     // Aggiungi setter per i colori che aggiornano anche gli array serializzabili
     public void setBorderColor(Color borderColor) {
         this.borderColor = borderColor;

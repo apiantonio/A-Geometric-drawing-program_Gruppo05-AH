@@ -13,6 +13,11 @@ public interface Shape extends Serializable {
 
     double getWidth();
     double getHeight();
+    double getX();
+    void setX(double deltaX);
+    double getY();
+    void setY(double deltaY);
 
     boolean containsPoint(double x, double y, double threshold);
+
 }
