@@ -1,5 +1,6 @@
 package com.geometricdrawing.model;
 
+import com.geometricdrawing.decorator.ShapeDecorator;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import java.io.*;
@@ -17,8 +18,9 @@ public class DrawingModel {
 
     public void addShape(Shape s) {
         if (s != null) {
-            if (s instanceof AbstractShape abstractShape) {
-                abstractShape.setZ(shapes.size()); // la nuova figura ha lo Z più alto
+            Shape unwrappedShape = s instanceof ShapeDecorator decorator ? decorator.unwrap() : s;
+            if (unwrappedShape instanceof AbstractShape abstractShape) {
+                abstractShape.setZ(shapes.size()); // La nuova figura ha lo Z più alto
             }
             this.shapes.add(s);
         }
@@ -40,6 +42,7 @@ public class DrawingModel {
     public ObservableList<Shape> getShapesOrderedByZ() {
         return FXCollections.observableArrayList(
                 shapes.stream()
+                        .map(shape -> shape instanceof ShapeDecorator decorator ? decorator.unwrap() : shape) // rimuove i decoratori
                         .sorted((s1, s2) -> Integer.compare(((AbstractShape) s2).getZ(), ((AbstractShape) s1).getZ()))
                         .toList()
         );

@@ -48,8 +48,11 @@ public abstract class AbstractShape implements Shape, Serializable {
     public abstract void draw(GraphicsContext gc);
 
     // Metodi getter per i colori
-    protected Color getBorderColorInternal() { return this.borderColor; }
-    protected Color getFillColorInternal() { return this.fillColor; }
+    @Override
+    public Color getBorderColor() { return this.borderColor; }
+
+    @Override
+    public Color getFillColor() { return this.fillColor; }
 
     @Override
     public boolean containsPoint(double x, double y, double threshold) {
@@ -61,14 +64,17 @@ public abstract class AbstractShape implements Shape, Serializable {
         return x;
     }
 
+    @Override
     public void setX(double x) {
         this.x = x;
     }
 
+    @Override
     public double getY() {
         return y;
     }
 
+    @Override
     public void setY(double y) {
         this.y = y;
     }
@@ -91,7 +97,16 @@ public abstract class AbstractShape implements Shape, Serializable {
         return this.height;
     }
 
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
     // Aggiungi setter per i colori che aggiornano anche gli array serializzabili
+    @Override
     public void setBorderColor(Color borderColor) {
         this.borderColor = borderColor;
         if (borderColor != null) {
@@ -100,6 +115,7 @@ public abstract class AbstractShape implements Shape, Serializable {
         }
     }
 
+    @Override
     public void setFillColor(Color fillColor) {
         this.fillColor = fillColor;
         if (fillColor != null) {
