@@ -15,14 +15,6 @@ public abstract class ShapeDecorator extends AbstractShape {
         return decoratedShape;
     }
 
-//    public Shape unwrap() {
-//        Shape current = this;
-//        while (current instanceof ShapeDecorator) {
-//            current = ((ShapeDecorator) current).getInnerShape();
-//        }
-//        return current;
-//    }
-
     @Override
     public final void draw(GraphicsContext gc) {
         gc.save();
@@ -33,7 +25,6 @@ public abstract class ShapeDecorator extends AbstractShape {
     }
 
     protected abstract void decorateShape(GraphicsContext gc);
-
 
     @Override public double getX()          { return decoratedShape.getX(); }
     @Override public double getY()          { return decoratedShape.getY(); }

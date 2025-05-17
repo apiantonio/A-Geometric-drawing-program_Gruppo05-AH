@@ -18,7 +18,6 @@ public class DrawingModel {
 
     public void addShape(AbstractShape s) {
         if (s != null) {
-//            AbstractShape unwrappedShape = s instanceof ShapeDecorator decorator ? decorator.unwrap() : s;
             s.setZ(shapes.size()); // La nuova figura ha lo Z più alto
             this.shapes.add(s);
         }
@@ -40,7 +39,6 @@ public class DrawingModel {
     public ObservableList<AbstractShape> getShapesOrderedByZ() {
         return FXCollections.observableArrayList(
                 shapes.stream()
-//                        .map(shape -> shape instanceof ShapeDecorator decorator ? decorator.unwrap() : shape) // rimuove i decoratori
                         .sorted((s1, s2) -> Integer.compare(((AbstractShape) s2).getZ(), ((AbstractShape) s1).getZ()))
                         .toList()
         );

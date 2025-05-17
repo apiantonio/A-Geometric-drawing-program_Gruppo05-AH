@@ -361,17 +361,6 @@ public class DrawingController {
         return null;
     }
 
-    /*
-     metodo di supporto che serve nel caso in cui la figura sia stata decorataù
-     al momento dell'inserimento
-     */
-//    private Shape unwrapDecorator(Shape s) {
-//        if (s instanceof ShapeDecorator) {
-//            return ((ShapeDecorator) s).unwrap();
-//        }
-//        return s;
-//    }
-
     // Metodo aggiornare gli spinner quando la figura corrente cambia
     private void updateSpinners(AbstractShape shape) {
         if (shape instanceof Line line) {
