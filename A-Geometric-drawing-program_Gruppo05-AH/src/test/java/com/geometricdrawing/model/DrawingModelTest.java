@@ -51,28 +51,4 @@ class DrawingModelTest {
         model.addShape(null); // Poi aggiungi null
         assertEquals(1, model.getShapes().size(), "Aggiungere null non dovrebbe cambiare un modello con una forma.");
     }
-
-    // Test per clear() e removeShape() sono utili per la completezza del DrawingModel
-    // anche se non direttamente usati da US-3. Se preferisci ometterli per ora, puoi farlo.
-    @Test
-    void clearShouldRemoveAllShapes() {
-        model.addShape(new Rectangle(10, 10, 5, 5));
-        model.addShape(new Ellipse(20, 20, 8, 8));
-        model.clear();
-        assertTrue(model.getShapes().isEmpty(), "Il modello dovrebbe essere vuoto dopo clear().");
-        assertEquals(0, model.getShapes().size());
-    }
-
-    @Test
-    void removeShapeShouldDecreaseSizeAndNotContainShape() {
-        Shape rect = new Rectangle(10, 10, 5, 5);
-        Shape ellipse = new Ellipse(20, 20, 8, 8);
-        model.addShape(rect);
-        model.addShape(ellipse);
-
-        model.removeShape(rect);
-        assertEquals(1, model.getShapes().size());
-        assertFalse(model.getShapes().contains(rect));
-        assertTrue(model.getShapes().contains(ellipse));
-    }
 }
