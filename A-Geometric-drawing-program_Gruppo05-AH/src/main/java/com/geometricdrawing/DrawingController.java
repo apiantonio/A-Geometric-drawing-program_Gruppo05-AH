@@ -18,9 +18,14 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.MouseButton;
 import com.geometricdrawing.model.DrawingModel;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
@@ -45,13 +50,16 @@ import java.util.function.UnaryOperator;
 
 public class DrawingController {
 
+    @FXML private AnchorPane rootPane;
     @FXML private Canvas drawingCanvas;
     @FXML private Pane canvasContainer;
+
     @FXML private Button deleteButton;
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
+    private ContextMenu shapeMenu;
 
     private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che compare alla selezione di una figura
     private static final double SELECTION_THRESHOLD = 5.0;  // threshold per la selezione
@@ -80,10 +88,20 @@ public class DrawingController {
         this.commandManager = commandManager;
     }
 
+    // la creazione del ContextMenu al tasto destro dà problemi con sceneBuilder e quindi si procede a inserirla qui
+
     @FXML
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
+
+            // Al click col tasto destro richiama la creazione del ContextMenu
+            shapeMenu = new ContextMenu();
+            MenuItem deleteItem = new MenuItem("Elimina");
+            deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
+            shapeMenu.getItems().add(deleteItem);
+            // contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
+            // TO ADD ALTRI PER LE ALTRE FUNZIONALITA'
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick); //
             drawingCanvas.setOnMousePressed(this::handleMousePressed);
@@ -97,6 +115,9 @@ public class DrawingController {
 
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
             updateControlState(null);
+
+            // affinchè rootPane possa ricevere focus
+            rootPane.setFocusTraversable(true);
 
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
@@ -209,6 +230,16 @@ public class DrawingController {
                     }
                 }
             });
+        }
+    }
+
+    @FXML
+    private void onRootKeyPressed(KeyEvent event) {
+        // la cancellazione da tastiera può avvenire con backspace o delete
+        if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
+            // richiama il metodo per la cancellazione tramite bottone
+            handleDeleteShape(new ActionEvent());
+            event.consume();
         }
     }
 
@@ -408,6 +439,8 @@ public class DrawingController {
         double x = event.getX();
         double y = event.getY();
 
+        shapeMenu.hide();
+
         // Se non c'è una figura selezionata o il mouse non è sopra la figura corrente
         if (currentShape == null || !currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
             currentShape = selectShapeAt(x, y); // Seleziona la figura sotto il mouse
@@ -418,6 +451,12 @@ public class DrawingController {
             dragOffsetX = x - currentShape.getX();
             dragOffsetY = y - currentShape.getY();
             drawingCanvas.setCursor(Cursor.CLOSED_HAND);
+            // appena l’utente clicca, fai prendere il focus al rootPane
+            rootPane.requestFocus();
+            // se fai click col tasto destro sulla figura, devi mostrare il contextMenu
+            if (event.getButton() == MouseButton.SECONDARY) {
+                shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
+            }
         } else {
             currentShape = null; // Deseleziona se il mouse è troppo lontano
             updateControlState(currentShape);
@@ -425,6 +464,7 @@ public class DrawingController {
 
         updateSpinners(currentShape);
         redrawCanvas();
+
     }
 
     private void handleMouseDragged(MouseEvent event) {
