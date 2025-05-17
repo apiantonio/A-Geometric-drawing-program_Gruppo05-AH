@@ -64,7 +64,7 @@
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <children>
-                                                <Button fx:id="deleteButton" alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
+                                                <Button fx:id="deleteButton" alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" onAction="#handleDeleteShape" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
                                                    <graphic>
                                                       <ImageView fitHeight="54.0" fitWidth="37.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>

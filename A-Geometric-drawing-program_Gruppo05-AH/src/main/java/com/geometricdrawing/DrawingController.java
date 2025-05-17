@@ -2,6 +2,7 @@ package com.geometricdrawing;
 
 import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.CommandManager;
+import com.geometricdrawing.command.DeleteShapeCommand;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.factory.EllipseFactory;
@@ -328,22 +329,43 @@ public class DrawingController {
         boolean enableHeight = false;
         boolean enableFill = false;
         boolean enableBorder = false;
+        boolean enableDelete = false;
 
         if (shape != null) {
             if (shape instanceof Line) {
                 enableWidth = true;
                 enableBorder = true;
-            } else {
+                enableDelete = true;
+            } else if (shape instanceof AbstractShape) {
                 enableWidth = true;
                 enableHeight = true;
                 enableFill = true;
                 enableBorder = true;
+                enableDelete = true;
             }
         }
         widthSpinner.setDisable(!enableWidth);
         heightSpinner.setDisable(!enableHeight);
         fillPicker.setDisable(!enableFill);
         borderPicker.setDisable(!enableBorder);
+        deleteButton.setDisable(!enableDelete);
+    }
+
+    /*
+     * Metodo per la gestione dell'eliminazione di una figura selezionata
+     */
+    @FXML
+    private void handleDeleteShape(ActionEvent event) {
+        if (currentShape != null && model != null) {
+            // si crea l'oggetto command responsabile della cancellazione e si chiede al commandManager di eseguirlo
+            DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
+            commandManager.executeCommand(deleteCmd);
+
+            // successivamente deseleziono la forma, ripristino i binding e aggiorno il canvas
+            currentShape = null;
+            updateControlState(null);
+            redrawCanvas();
+        }
     }
 
     private AbstractShape selectShapeAt(double x, double y) {
