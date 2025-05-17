@@ -133,32 +133,29 @@ public class DrawingController {
         if (heightSpinner != null) {
             SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0);
             heightSpinner.setValueFactory(heightFactory);
-            heightSpinner.setEditable(true); // Allow direct editing
+            heightSpinner.setEditable(true);
 
-            // Add listener for height changes from arrow buttons
+            // listener per ridimensionamento con freccette
             heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
                 handleDimensionChange(false, newValue);
             });
 
-            // Add listener for keyboard input
+            // listener per input da tastiera
             heightSpinner.getEditor().textProperty().addListener((obs, oldText, newText) -> {
                 try {
                     double value = Double.parseDouble(newText);
                     heightSpinner.getValueFactory().setValue(value);
-                    // The valueProperty listener will handle the update
                 } catch (NumberFormatException e) {
-                    // Ignore invalid input
+                    e.printStackTrace();
                 }
             });
 
-            // Add focus lost handler to ensure update happens when user clicks away
             heightSpinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                if (!isFocused) { // Focus lost
+                if (!isFocused) {
                     try {
                         double value = Double.parseDouble(heightSpinner.getEditor().getText());
                         heightSpinner.getValueFactory().setValue(value);
                     } catch (NumberFormatException e) {
-                        // Reset to current value if invalid input
                         heightSpinner.getEditor().setText(heightSpinner.getValue().toString());
                     }
                 }
@@ -168,32 +165,26 @@ public class DrawingController {
         if (widthSpinner != null) {
             SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0);
             widthSpinner.setValueFactory(widthFactory);
-            widthSpinner.setEditable(true); // Allow direct editing
+            widthSpinner.setEditable(true);
 
-            // Add listener for width changes from arrow buttons
             widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
                 handleDimensionChange(true, newValue);
             });
 
-            // Add listener for keyboard input
             widthSpinner.getEditor().textProperty().addListener((obs, oldText, newText) -> {
                 try {
                     double value = Double.parseDouble(newText);
                     widthSpinner.getValueFactory().setValue(value);
-                    // The valueProperty listener will handle the update
                 } catch (NumberFormatException e) {
-                    // Ignore invalid input
                 }
             });
 
-            // Add focus lost handler to ensure update happens when user clicks away
             widthSpinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                if (!isFocused) { // Focus lost
+                if (!isFocused) {
                     try {
                         double value = Double.parseDouble(widthSpinner.getEditor().getText());
                         widthSpinner.getValueFactory().setValue(value);
                     } catch (NumberFormatException e) {
-                        // Reset to current value if invalid input
                         widthSpinner.getEditor().setText(widthSpinner.getValue().toString());
                     }
                 }
@@ -274,14 +265,11 @@ public class DrawingController {
         Shape unwrappedShape = unwrapDecorator(currentShape);
 
         if (unwrappedShape instanceof Line line) {
-            // For lines, adjust endpoints to maintain the line's angle
             if (isWidth) {
-                // Calculate current angle
                 double deltaX = line.getEndX() - line.getX();
                 double deltaY = line.getEndY() - line.getY();
                 double currentAngle = Math.atan2(deltaY, deltaX);
 
-                // Set new endpoint based on new length (width) and current angle
                 double newEndX = line.getX() + newValue * Math.cos(currentAngle);
                 double newEndY = line.getY() + newValue * Math.sin(currentAngle);
 
@@ -289,8 +277,6 @@ public class DrawingController {
                 line.setEndY(newEndY);
                 line.setWidth(newValue);
             }
-            // For lines, height doesn't make sense to change (we could implement it
-            // as perpendicular adjustment if needed in the future)
         } else if (unwrappedShape instanceof AbstractShape abstractShape) {
             if (isWidth) {
                 abstractShape.setWidth(newValue);
@@ -303,22 +289,15 @@ public class DrawingController {
     }
 
     private void updateControlState(Shape shape) {
-        // Enable relevant controls based on shape type
         if (shape != null) {
             Shape unwrappedShape = unwrapDecorator(shape);
             heightSpinner.setDisable(unwrappedShape instanceof Line);
-            // All shapes can have their dimensions modified
             widthSpinner.setDisable(false);
             heightSpinner.setDisable(false);
-
-            // Only non-Line shapes can have fill color
             fillPicker.setDisable(unwrappedShape instanceof Line);
-
-            // All shapes can have border color
             borderPicker.setDisable(false);
 
         } else {
-            // No shape selected, disable dimension controls
             widthSpinner.setDisable(true);
             heightSpinner.setDisable(true);
             fillPicker.setDisable(true);
