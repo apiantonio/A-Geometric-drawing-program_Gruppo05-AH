@@ -146,7 +146,10 @@ public class DrawingController {
                     double value = Double.parseDouble(newText);
                     heightSpinner.getValueFactory().setValue(value);
                 } catch (NumberFormatException e) {
-                    e.printStackTrace();
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Errore");
+                    alert.setContentText("Inserire un valore numerico!");
+                    alert.showAndWait();
                 }
             });
 
@@ -176,6 +179,10 @@ public class DrawingController {
                     double value = Double.parseDouble(newText);
                     widthSpinner.getValueFactory().setValue(value);
                 } catch (NumberFormatException e) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Errore");
+                    alert.setContentText("Inserire un valore numerico!");
+                    alert.showAndWait();
                 }
             });
 
