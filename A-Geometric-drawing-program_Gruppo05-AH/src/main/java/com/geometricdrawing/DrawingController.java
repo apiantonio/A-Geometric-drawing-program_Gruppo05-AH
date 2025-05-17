@@ -128,6 +128,77 @@ public class DrawingController {
             widthSpinner.setEditable(false);
         }
         currentShapeFactory = null; // Nessuna forma selezionata all'inizio
+
+
+        if (heightSpinner != null) {
+            SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0);
+            heightSpinner.setValueFactory(heightFactory);
+            heightSpinner.setEditable(true); // Allow direct editing
+
+            // Add listener for height changes from arrow buttons
+            heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                handleDimensionChange(false, newValue);
+            });
+
+            // Add listener for keyboard input
+            heightSpinner.getEditor().textProperty().addListener((obs, oldText, newText) -> {
+                try {
+                    double value = Double.parseDouble(newText);
+                    heightSpinner.getValueFactory().setValue(value);
+                    // The valueProperty listener will handle the update
+                } catch (NumberFormatException e) {
+                    // Ignore invalid input
+                }
+            });
+
+            // Add focus lost handler to ensure update happens when user clicks away
+            heightSpinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                if (!isFocused) { // Focus lost
+                    try {
+                        double value = Double.parseDouble(heightSpinner.getEditor().getText());
+                        heightSpinner.getValueFactory().setValue(value);
+                    } catch (NumberFormatException e) {
+                        // Reset to current value if invalid input
+                        heightSpinner.getEditor().setText(heightSpinner.getValue().toString());
+                    }
+                }
+            });
+        }
+
+        if (widthSpinner != null) {
+            SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0);
+            widthSpinner.setValueFactory(widthFactory);
+            widthSpinner.setEditable(true); // Allow direct editing
+
+            // Add listener for width changes from arrow buttons
+            widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                handleDimensionChange(true, newValue);
+            });
+
+            // Add listener for keyboard input
+            widthSpinner.getEditor().textProperty().addListener((obs, oldText, newText) -> {
+                try {
+                    double value = Double.parseDouble(newText);
+                    widthSpinner.getValueFactory().setValue(value);
+                    // The valueProperty listener will handle the update
+                } catch (NumberFormatException e) {
+                    // Ignore invalid input
+                }
+            });
+
+            // Add focus lost handler to ensure update happens when user clicks away
+            widthSpinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                if (!isFocused) { // Focus lost
+                    try {
+                        double value = Double.parseDouble(widthSpinner.getEditor().getText());
+                        widthSpinner.getValueFactory().setValue(value);
+                    } catch (NumberFormatException e) {
+                        // Reset to current value if invalid input
+                        widthSpinner.getEditor().setText(widthSpinner.getValue().toString());
+                    }
+                }
+            });
+        }
     }
 
     @FXML
@@ -189,9 +260,69 @@ public class DrawingController {
             currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
+            updateControlState(currentShape);
             updateSpinners(unwrapDecorator(currentShape));
-
             redrawCanvas();
+        }
+    }
+
+    private void handleDimensionChange(boolean isWidth, Double newValue) {
+        if (currentShape == null || newValue == null) {
+            return;
+        }
+
+        Shape unwrappedShape = unwrapDecorator(currentShape);
+
+        if (unwrappedShape instanceof Line line) {
+            // For lines, adjust endpoints to maintain the line's angle
+            if (isWidth) {
+                // Calculate current angle
+                double deltaX = line.getEndX() - line.getX();
+                double deltaY = line.getEndY() - line.getY();
+                double currentAngle = Math.atan2(deltaY, deltaX);
+
+                // Set new endpoint based on new length (width) and current angle
+                double newEndX = line.getX() + newValue * Math.cos(currentAngle);
+                double newEndY = line.getY() + newValue * Math.sin(currentAngle);
+
+                line.setEndX(newEndX);
+                line.setEndY(newEndY);
+                line.setWidth(newValue);
+            }
+            // For lines, height doesn't make sense to change (we could implement it
+            // as perpendicular adjustment if needed in the future)
+        } else if (unwrappedShape instanceof AbstractShape abstractShape) {
+            if (isWidth) {
+                abstractShape.setWidth(newValue);
+            } else {
+                abstractShape.setHeight(newValue);
+            }
+        }
+
+        redrawCanvas();
+    }
+
+    private void updateControlState(Shape shape) {
+        // Enable relevant controls based on shape type
+        if (shape != null) {
+            Shape unwrappedShape = unwrapDecorator(shape);
+            heightSpinner.setDisable(unwrappedShape instanceof Line);
+            // All shapes can have their dimensions modified
+            widthSpinner.setDisable(false);
+            heightSpinner.setDisable(false);
+
+            // Only non-Line shapes can have fill color
+            fillPicker.setDisable(unwrappedShape instanceof Line);
+
+            // All shapes can have border color
+            borderPicker.setDisable(false);
+
+        } else {
+            // No shape selected, disable dimension controls
+            widthSpinner.setDisable(true);
+            heightSpinner.setDisable(true);
+            fillPicker.setDisable(true);
+            borderPicker.setDisable(true);
         }
     }
 
@@ -199,6 +330,8 @@ public class DrawingController {
         for (Shape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
                 currentShape = shape; // Imposta la figura selezionata
+                updateSpinners(unwrapDecorator(currentShape));
+                updateControlState(currentShape);
                 System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
                 return shape; // Restituisci la figura selezionata
             }
@@ -224,7 +357,8 @@ public class DrawingController {
         switch (shape) {
             case Line line -> {
                 widthSpinner.getValueFactory().setValue(line.getLength());
-                heightSpinner.getValueFactory().setValue(line.getHeight()); // Altezza fissa per le linee
+                heightSpinner.setDisable(true);
+                heightSpinner.getValueFactory().setValue(1.0); // Altezza fissa per le linee
             }
             case AbstractShape abstractShape -> {
                 widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
@@ -259,6 +393,7 @@ public class DrawingController {
             drawingCanvas.setCursor(Cursor.CLOSED_HAND);
         } else {
             currentShape = null; // Deseleziona se il mouse è troppo lontano
+            updateControlState(currentShape);
         }
 
         updateSpinners(currentShape);
