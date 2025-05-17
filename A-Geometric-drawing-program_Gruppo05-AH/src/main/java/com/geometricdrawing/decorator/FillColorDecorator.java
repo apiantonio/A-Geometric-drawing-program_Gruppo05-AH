@@ -14,8 +14,7 @@ public class FillColorDecorator extends ShapeDecorator {
     }
 
     @Override
-    public void draw(GraphicsContext graficctx) {
-        shape.setFillColor(fillColor);
-        super.draw(graficctx);
+    protected void decorateShape(GraphicsContext gc) {
+        gc.setFill(fillColor);
     }
 }

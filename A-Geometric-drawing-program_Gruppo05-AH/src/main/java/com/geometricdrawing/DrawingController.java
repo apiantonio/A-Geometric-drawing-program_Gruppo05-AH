@@ -101,11 +101,7 @@ public class DrawingController {
             borderPicker.setValue(Color.ORANGE);
 
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
-            deleteButton.setDisable(true);
-            borderPicker.setDisable(true);
-            fillPicker.setDisable(true);
-            widthSpinner.setDisable(true);
-            heightSpinner.setDisable(true);
+            updateControlState(null);
 
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
@@ -113,6 +109,10 @@ public class DrawingController {
              */
             drawingCanvas.widthProperty().bind(canvasContainer.widthProperty());
             drawingCanvas.heightProperty().bind(canvasContainer.heightProperty());
+
+            // ogni volta che cambia altezza e larghezza, senza attendere un click nel canvas si aggiornano le figure
+            drawingCanvas.widthProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
+            drawingCanvas.heightProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
         } else {
             System.err.println("Errore: drawingCanvas non è stato iniettato!");
         }
@@ -201,6 +201,12 @@ public class DrawingController {
 
     @FXML
     private void handleSelectLinea(ActionEvent event) {
+        currentShape = null;  // se è selezionata una figura deseleziona
+        // i controlli abilitati per la selezione, vengono disabilitati
+        updateControlState(null);
+        // aggiornamento del canvas
+        redrawCanvas();
+
         // al momento della creazione potresti selezionare il colore di bordo della linea
         borderPicker.setDisable(false);
         currentShapeFactory = new LineFactory();
@@ -208,6 +214,12 @@ public class DrawingController {
 
     @FXML
     private void handleSelectRettangolo(ActionEvent event) {
+        currentShape = null;  // se è selezionata una figura deseleziona
+        // i controlli abilitati per la selezione, vengono disabilitati
+        updateControlState(null);
+        // aggiornamento del canvas
+        redrawCanvas();
+
         // al momento della creazione potresti selezionare il colore di bordo e riempimento del rettangolo
         fillPicker.setDisable(false);
         borderPicker.setDisable(false);
@@ -216,6 +228,12 @@ public class DrawingController {
 
     @FXML
     private void handleSelectEllisse(ActionEvent event) {
+        currentShape = null;  // se è selezionata una figura deseleziona
+        // i controlli abilitati per la selezione, vengono disabilitati
+        updateControlState(null);
+        // aggiornamento del canvas
+        redrawCanvas();
+
         // al momento della creazione potresti selezionare il colore di bordo e riempimento dell'ellisse
         fillPicker.setDisable(false);
         borderPicker.setDisable(false);
@@ -296,20 +314,27 @@ public class DrawingController {
     }
 
     private void updateControlState(Shape shape) {
+        boolean enableWidth = false;
+        boolean enableHeight = false;
+        boolean enableFill = false;
+        boolean enableBorder = false;
+
         if (shape != null) {
             Shape unwrappedShape = unwrapDecorator(shape);
-            heightSpinner.setDisable(unwrappedShape instanceof Line);
-            widthSpinner.setDisable(false);
-            heightSpinner.setDisable(false);
-            fillPicker.setDisable(unwrappedShape instanceof Line);
-            borderPicker.setDisable(false);
-
-        } else {
-            widthSpinner.setDisable(true);
-            heightSpinner.setDisable(true);
-            fillPicker.setDisable(true);
-            borderPicker.setDisable(true);
+            if (unwrappedShape instanceof Line) {
+                enableWidth = true;
+                enableBorder = true;
+            } else if (unwrappedShape instanceof AbstractShape) {
+                enableWidth = true;
+                enableHeight = true;
+                enableFill = true;
+                enableBorder = true;
+            }
         }
+        widthSpinner.setDisable(!enableWidth);
+        heightSpinner.setDisable(!enableHeight);
+        fillPicker.setDisable(!enableFill);
+        borderPicker.setDisable(!enableBorder);
     }
 
     private Shape selectShapeAt(double x, double y) {

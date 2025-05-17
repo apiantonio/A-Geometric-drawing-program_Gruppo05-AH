@@ -45,7 +45,13 @@ public abstract class AbstractShape implements Shape, Serializable {
 
     //Metodo per disegnare la figura
     @Override
-    public abstract void draw(GraphicsContext gc);
+    public final void draw(GraphicsContext gc) {
+        drawShape(gc);
+    }
+
+    //Metodo da specializzare per il disegno di ciascuna figura
+    protected abstract void drawShape(GraphicsContext gc);
+
 
     // Metodi getter per i colori
     @Override

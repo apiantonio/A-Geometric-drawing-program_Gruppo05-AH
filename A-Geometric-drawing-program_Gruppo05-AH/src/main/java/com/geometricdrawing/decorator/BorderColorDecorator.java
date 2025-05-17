@@ -14,8 +14,7 @@ public class BorderColorDecorator extends ShapeDecorator {
     }
 
     @Override
-    public void draw(GraphicsContext graficctx) {
-        shape.setBorderColor(borderColor);
-        super.draw(graficctx);
+    protected void decorateShape(GraphicsContext gc) {
+        gc.setStroke(borderColor);
     }
 }

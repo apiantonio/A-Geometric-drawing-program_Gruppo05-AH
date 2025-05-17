@@ -10,12 +10,10 @@ public class Ellipse extends AbstractShape {
         super(x, y, width, height); // x,y sono angolo sup-sx del bbox, width/height sono i diametri
     }
 
+    // il metodo procede alla creazione dell'ellisse con i colori di riempimento e bordo settati
     @Override
-    public void draw(GraphicsContext gc) {
-        gc.setFill(getFillColor());
-        gc.fillOval(this.x, this.y, this.width, this.height);
-
-        gc.setStroke(getBorderColor());
-        gc.strokeOval(this.x, this.y, this.width, this.height);
+    protected void drawShape(GraphicsContext gc) {
+        gc.fillOval(x, y, width, height);
+        gc.strokeOval(x, y, width, height);
     }
 }
