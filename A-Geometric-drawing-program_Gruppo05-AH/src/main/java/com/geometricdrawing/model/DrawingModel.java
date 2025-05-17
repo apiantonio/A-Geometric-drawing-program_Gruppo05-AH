@@ -10,27 +10,25 @@ import java.util.List;
 public class DrawingModel {
     // Mark shapes as transient because ObservableList is not reliably serializable by default.
     // We will handle its serialization manually.
-    private transient ObservableList<Shape> shapes;
+    private transient ObservableList<AbstractShape> shapes;
 
     public DrawingModel() {
         this.shapes = FXCollections.observableArrayList();
     }
 
-    public void addShape(Shape s) {
+    public void addShape(AbstractShape s) {
         if (s != null) {
-            Shape unwrappedShape = s instanceof ShapeDecorator decorator ? decorator.unwrap() : s;
-            if (unwrappedShape instanceof AbstractShape abstractShape) {
-                abstractShape.setZ(shapes.size()); // La nuova figura ha lo Z più alto
-            }
+//            AbstractShape unwrappedShape = s instanceof ShapeDecorator decorator ? decorator.unwrap() : s;
+            s.setZ(shapes.size()); // La nuova figura ha lo Z più alto
             this.shapes.add(s);
         }
     }
 
-    public void removeShape(Shape s) {
+    public void removeShape(AbstractShape s) {
         this.shapes.remove(s);
     }
 
-    public ObservableList<Shape> getShapes() {
+    public ObservableList<AbstractShape> getShapes() {
         return this.shapes;
     }
 
@@ -39,10 +37,10 @@ public class DrawingModel {
     }
 
     // restituisce le figure in ordine decrescente di z
-    public ObservableList<Shape> getShapesOrderedByZ() {
+    public ObservableList<AbstractShape> getShapesOrderedByZ() {
         return FXCollections.observableArrayList(
                 shapes.stream()
-                        .map(shape -> shape instanceof ShapeDecorator decorator ? decorator.unwrap() : shape) // rimuove i decoratori
+//                        .map(shape -> shape instanceof ShapeDecorator decorator ? decorator.unwrap() : shape) // rimuove i decoratori
                         .sorted((s1, s2) -> Integer.compare(((AbstractShape) s2).getZ(), ((AbstractShape) s1).getZ()))
                         .toList()
         );
@@ -60,7 +58,7 @@ public class DrawingModel {
     @SuppressWarnings("unchecked")
     public void loadFromFile(File file) throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            List<Shape> loadedShapes = (List<Shape>) ois.readObject();
+            List<AbstractShape> loadedShapes = (List<AbstractShape>) ois.readObject();
             shapes.clear();
             if (loadedShapes != null) {
                 shapes.addAll(loadedShapes);
@@ -83,7 +81,7 @@ public class DrawingModel {
     @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject(); // For any other fields
-        List<Shape> loadedShapes = (List<Shape>) in.readObject();
+        List<AbstractShape> loadedShapes = (List<AbstractShape>) in.readObject();
         this.shapes = FXCollections.observableArrayList(); // Re-initialize
         if (loadedShapes != null) {
             this.shapes.addAll(loadedShapes);

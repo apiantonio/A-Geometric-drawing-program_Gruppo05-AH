@@ -4,12 +4,10 @@ import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.CommandManager;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
-import com.geometricdrawing.decorator.ShapeDecorator;
 import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
-import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
@@ -23,7 +21,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Shape;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
@@ -61,7 +58,7 @@ public class DrawingController {
     private DrawingModel model;
     private GraphicsContext gc;
     private ShapeFactory currentShapeFactory;               // factory per la creazione della figura
-    private Shape currentShape;                             // figura selezionata
+    private AbstractShape currentShape;                             // figura selezionata
     private CommandManager commandManager;
     private double dragOffsetX;
     private double dragOffsetY;
@@ -70,7 +67,7 @@ public class DrawingController {
     public void setModel(DrawingModel model) {
         this.model = model;
         if (this.model != null && this.model.getShapes() != null) {
-            this.model.getShapes().addListener((ListChangeListener.Change<? extends Shape> c) -> {
+            this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> {
                 redrawCanvas();
             });
         }
@@ -269,8 +266,8 @@ public class DrawingController {
         if (currentShapeFactory != null) {
 
             // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
-            Shape newShape = currentShapeFactory.createShape(x, y);
-            Shape styledShape = newShape;
+            AbstractShape newShape = currentShapeFactory.createShape(x, y);
+            AbstractShape styledShape = newShape;
 
             // prelevo il colore di bordo e riempimento
             Color border = borderPicker.getValue();
@@ -292,7 +289,7 @@ public class DrawingController {
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
             updateControlState(currentShape);
-            updateSpinners(unwrapDecorator(currentShape));
+            updateSpinners(currentShape);
             redrawCanvas();
         }
     }
@@ -302,9 +299,7 @@ public class DrawingController {
             return;
         }
 
-        Shape unwrappedShape = unwrapDecorator(currentShape);
-
-        if (unwrappedShape instanceof Line line) {
+        if (currentShape instanceof Line line) {
             if (isWidth) {
                 double deltaX = line.getEndX() - line.getX();
                 double deltaY = line.getEndY() - line.getY();
@@ -317,29 +312,28 @@ public class DrawingController {
                 line.setEndY(newEndY);
                 line.setWidth(newValue);
             }
-        } else if (unwrappedShape instanceof AbstractShape abstractShape) {
+        } else { // Se non è una linea
             if (isWidth) {
-                abstractShape.setWidth(newValue);
+                currentShape.setWidth(newValue);
             } else {
-                abstractShape.setHeight(newValue);
+                currentShape.setHeight(newValue);
             }
         }
 
         redrawCanvas();
     }
 
-    private void updateControlState(Shape shape) {
+    private void updateControlState(AbstractShape shape) {
         boolean enableWidth = false;
         boolean enableHeight = false;
         boolean enableFill = false;
         boolean enableBorder = false;
 
         if (shape != null) {
-            Shape unwrappedShape = unwrapDecorator(shape);
-            if (unwrappedShape instanceof Line) {
+            if (shape instanceof Line) {
                 enableWidth = true;
                 enableBorder = true;
-            } else if (unwrappedShape instanceof AbstractShape) {
+            } else {
                 enableWidth = true;
                 enableHeight = true;
                 enableFill = true;
@@ -352,11 +346,11 @@ public class DrawingController {
         borderPicker.setDisable(!enableBorder);
     }
 
-    private Shape selectShapeAt(double x, double y) {
-        for (Shape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
+    private AbstractShape selectShapeAt(double x, double y) {
+        for (AbstractShape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
                 currentShape = shape; // Imposta la figura selezionata
-                updateSpinners(unwrapDecorator(currentShape));
+                updateSpinners(currentShape);
                 updateControlState(currentShape);
                 System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
                 return shape; // Restituisci la figura selezionata
@@ -371,29 +365,25 @@ public class DrawingController {
      metodo di supporto che serve nel caso in cui la figura sia stata decorataù
      al momento dell'inserimento
      */
-    private Shape unwrapDecorator(Shape s) {
-        if (s instanceof ShapeDecorator) {
-            return ((ShapeDecorator) s).unwrap();
-        }
-        return s;
-    }
+//    private Shape unwrapDecorator(Shape s) {
+//        if (s instanceof ShapeDecorator) {
+//            return ((ShapeDecorator) s).unwrap();
+//        }
+//        return s;
+//    }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
-    private void updateSpinners(Shape shape) {
-        switch (shape) {
-            case Line line -> {
-                widthSpinner.getValueFactory().setValue(line.getLength());
-                heightSpinner.setDisable(true);
-                heightSpinner.getValueFactory().setValue(1.0); // Altezza fissa per le linee
-            }
-            case AbstractShape abstractShape -> {
-                widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
-                heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
-            }
-            case null, default -> {
-                widthSpinner.getValueFactory().setValue(0.0);
-                heightSpinner.getValueFactory().setValue(0.0);
-            }
+    private void updateSpinners(AbstractShape shape) {
+        if (shape instanceof Line line) {
+            widthSpinner.getValueFactory().setValue(line.getLength());
+            heightSpinner.setDisable(true);
+            heightSpinner.getValueFactory().setValue(1.0); // Altezza fissa per le linee4
+        } else if (shape instanceof AbstractShape abstractShape) {
+            widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
+            heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
+        } else {
+            widthSpinner.getValueFactory().setValue(0.0);
+            heightSpinner.getValueFactory().setValue(0.0);
         }
     }
 
@@ -476,30 +466,33 @@ public class DrawingController {
 
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
 
-        for (Shape shape : model.getShapes()) {
+        for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
                 shape.draw(gc);
-
                 // disegna un bordo con manici per la figura selezionata
-                Shape unwrappedShape = unwrapDecorator(shape);
-                if (unwrappedShape == unwrapDecorator(currentShape)) {
-                    if (unwrappedShape instanceof Line line) {
-                        drawHandle(line.getX(), line.getY());
-                        drawHandle(line.getEndX(), line.getEndY());
-                    } else if (unwrappedShape instanceof AbstractShape abstractShape) {
-                        gc.setStroke(Color.SKYBLUE);
-                        gc.setLineWidth(1);
-                        gc.setLineDashes(5);
-                        gc.strokeRect(abstractShape.getX(), abstractShape.getY(), abstractShape.getWidth(), abstractShape.getHeight());
-                        gc.setLineDashes(0);
-
-                        drawHandle(abstractShape.getX(), abstractShape.getY());
-                        drawHandle(abstractShape.getX() + abstractShape.getWidth(), abstractShape.getY());
-                        drawHandle(abstractShape.getX(), abstractShape.getY() + abstractShape.getHeight());
-                        drawHandle(abstractShape.getX() + abstractShape.getWidth(), abstractShape.getY() + abstractShape.getHeight());
-                    }
+                if (shape == currentShape) {
+                    drawHighlightBorder(shape);
                 }
             }
+        }
+    }
+
+    // Metodo per disegnare il bordo di selezione e i manici
+    private void drawHighlightBorder(AbstractShape shape) {
+        if (shape instanceof Line line) {
+            drawHandle(line.getX(), line.getY());
+            drawHandle(line.getEndX(), line.getEndY());
+        } else {
+            gc.setStroke(Color.SKYBLUE);
+            gc.setLineWidth(1);
+            gc.setLineDashes(5);
+            gc.strokeRect(shape.getX(), shape.getY(), shape.getWidth(), shape.getHeight());
+            gc.setLineDashes(0);
+
+            drawHandle(shape.getX(), shape.getY());
+            drawHandle(shape.getX() + shape.getWidth(), shape.getY());
+            drawHandle(shape.getX(), shape.getY() + shape.getHeight());
+            drawHandle(shape.getX() + shape.getWidth(), shape.getY() + shape.getHeight());
         }
     }
 

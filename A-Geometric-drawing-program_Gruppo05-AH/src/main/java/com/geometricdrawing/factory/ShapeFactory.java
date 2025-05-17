@@ -1,6 +1,6 @@
 package com.geometricdrawing.factory;
 
-import com.geometricdrawing.model.Shape;
+import com.geometricdrawing.model.AbstractShape;
 
 public abstract class ShapeFactory {
     // Dimensioni prefissate per US-3
@@ -12,5 +12,5 @@ public abstract class ShapeFactory {
      * Crea una forma alle coordinate specificate con dimensioni/lunghezza di default.
      * I colori di default sono hardcoded nelle classi Shape o AbstractShape.
      */
-    public abstract Shape createShape(double x, double y);
+    public abstract AbstractShape createShape(double x, double y);
 }

@@ -12,7 +12,7 @@ public class Ellipse extends AbstractShape {
 
     // il metodo procede alla creazione dell'ellisse con i colori di riempimento e bordo settati
     @Override
-    protected void drawShape(GraphicsContext gc) {
+    public void draw(GraphicsContext gc) {
         gc.fillOval(x, y, width, height);
         gc.strokeOval(x, y, width, height);
     }

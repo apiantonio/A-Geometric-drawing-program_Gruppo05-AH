@@ -11,7 +11,7 @@ public class Rectangle extends AbstractShape {
 
     // il metodo procede alla creazione del rettangolo con i colori di riempimento e bordo settati
     @Override
-    protected void drawShape(GraphicsContext gc) {
+    public void draw(GraphicsContext gc) {
         gc.fillRect(x, y, width, height);
         gc.strokeRect(x, y, width, height);
     }

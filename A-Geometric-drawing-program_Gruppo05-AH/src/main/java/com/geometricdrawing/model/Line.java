@@ -19,7 +19,7 @@ public class Line extends AbstractShape {
     }
 
     @Override
-    public void drawShape(GraphicsContext gc) {
+    public void draw(GraphicsContext gc) {
         gc.strokeLine(this.x, this.y, this.endX, this.endY);
     }
 

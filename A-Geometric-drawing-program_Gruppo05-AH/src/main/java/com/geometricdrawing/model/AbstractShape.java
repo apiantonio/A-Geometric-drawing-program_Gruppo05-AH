@@ -5,7 +5,7 @@ import javafx.scene.paint.Color;
 
 import java.io.*;
 
-public abstract class AbstractShape implements Shape, Serializable {
+public abstract class AbstractShape implements Serializable {
     protected double x; // Posizione x (es. angolo sup-sx, o startX per linea)
     protected double y; // Posizione y (es. angolo sup-sx, o startY per linea)
     protected int z;    // Livello di profondità della figura
@@ -31,6 +31,9 @@ public abstract class AbstractShape implements Shape, Serializable {
         updateSerializableColors();
     }
 
+    // Costruttore di default
+    protected AbstractShape() {}
+
     // Metodo per aggiornare gli array serializzabili
     private void updateSerializableColors() {
         if (borderColor != null) {
@@ -43,24 +46,14 @@ public abstract class AbstractShape implements Shape, Serializable {
         }
     }
 
-    //Metodo per disegnare la figura
-    @Override
-    public final void draw(GraphicsContext gc) {
-        drawShape(gc);
-    }
-
-    //Metodo da specializzare per il disegno di ciascuna figura
-    protected abstract void drawShape(GraphicsContext gc);
-
+    // Metodo per disegnare la figura
+    public abstract void draw(GraphicsContext gc);
 
     // Metodi getter per i colori
-    @Override
     public Color getBorderColor() { return this.borderColor; }
 
-    @Override
     public Color getFillColor() { return this.fillColor; }
 
-    @Override
     public boolean containsPoint(double x, double y, double threshold) {
         return x >= this.x - threshold && x <= this.x + this.width + threshold &&
                y >= this.y - threshold && y <= this.y + this.height + threshold;
@@ -70,17 +63,14 @@ public abstract class AbstractShape implements Shape, Serializable {
         return x;
     }
 
-    @Override
     public void setX(double x) {
         this.x = x;
     }
 
-    @Override
     public double getY() {
         return y;
     }
 
-    @Override
     public void setY(double y) {
         this.y = y;
     }
@@ -93,12 +83,10 @@ public abstract class AbstractShape implements Shape, Serializable {
         this.z = z;
     }
 
-    @Override
     public double getWidth() {
         return this.width;
     }
 
-    @Override
     public double getHeight() {
         return this.height;
     }
@@ -112,7 +100,6 @@ public abstract class AbstractShape implements Shape, Serializable {
     }
 
     // Aggiungi setter per i colori che aggiornano anche gli array serializzabili
-    @Override
     public void setBorderColor(Color borderColor) {
         this.borderColor = borderColor;
         if (borderColor != null) {
@@ -121,7 +108,6 @@ public abstract class AbstractShape implements Shape, Serializable {
         }
     }
 
-    @Override
     public void setFillColor(Color fillColor) {
         this.fillColor = fillColor;
         if (fillColor != null) {

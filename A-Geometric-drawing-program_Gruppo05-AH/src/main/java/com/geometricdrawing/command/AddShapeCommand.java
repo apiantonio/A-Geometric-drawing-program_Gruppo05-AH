@@ -1,13 +1,13 @@
 package com.geometricdrawing.command;
 
+import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Shape;
 
 public class AddShapeCommand implements Command {
     private final DrawingModel model; // Il "receiver" del comando
-    private final Shape shapeToAdd;   // Lo stato necessario per eseguire/annullare
+    private final AbstractShape shapeToAdd;   // Lo stato necessario per eseguire/annullare
 
-    public AddShapeCommand(DrawingModel model, Shape shapeToAdd) {
+    public AddShapeCommand(DrawingModel model, AbstractShape shapeToAdd) {
         this.model = model;
         this.shapeToAdd = shapeToAdd;
     }

@@ -1,7 +1,6 @@
 package com.geometricdrawing.factory;
 
 import com.geometricdrawing.model.Rectangle;
-import com.geometricdrawing.model.Shape;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

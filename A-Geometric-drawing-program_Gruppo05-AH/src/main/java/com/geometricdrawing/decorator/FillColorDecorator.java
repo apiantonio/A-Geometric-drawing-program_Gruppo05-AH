@@ -1,6 +1,6 @@
 package com.geometricdrawing.decorator;
 
-import com.geometricdrawing.model.Shape;
+import com.geometricdrawing.model.AbstractShape;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -8,7 +8,7 @@ import javafx.scene.paint.Color;
 public class FillColorDecorator extends ShapeDecorator {
     private final Color fillColor;
 
-    public FillColorDecorator(Shape shape, Color fillColor) {
+    public FillColorDecorator(AbstractShape shape, Color fillColor) {
         super(shape);
         this.fillColor = fillColor;
     }
@@ -17,4 +17,5 @@ public class FillColorDecorator extends ShapeDecorator {
     protected void decorateShape(GraphicsContext gc) {
         gc.setFill(fillColor);
     }
+
 }

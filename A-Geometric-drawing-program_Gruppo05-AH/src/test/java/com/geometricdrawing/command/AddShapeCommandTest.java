@@ -1,7 +1,6 @@
 package com.geometricdrawing.command;
 
 import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Shape;
 import com.geometricdrawing.model.Rectangle; // Una forma concreta per il test
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
