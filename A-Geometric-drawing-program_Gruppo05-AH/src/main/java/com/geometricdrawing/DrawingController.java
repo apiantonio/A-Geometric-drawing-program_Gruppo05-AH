@@ -5,6 +5,7 @@ import com.geometricdrawing.command.CommandManager;
 import com.geometricdrawing.command.DeleteShapeCommand;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
+import com.geometricdrawing.decorator.ShapeDecorator;
 import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
@@ -428,23 +429,22 @@ public class DrawingController {
     }
 
     private void handleMouseDragged(MouseEvent event) {
-        // Aggiorna la posizione della figura tenendo conto dell'offset
-        double newX = event.getX() - dragOffsetX;
-        double newY = event.getY() - dragOffsetY;
+        double newX = event.getX();
+        double newY = event.getY();
 
         if (currentShape instanceof Line line) {
-            // Calcola lo spostamento della linea
-            double deltaX = newX - line.getX();
-            double deltaY = newY - line.getY();
+            // Calcola lo spostamento relativo
+            double deltaX = newX - (line.getX() + dragOffsetX);
+            double deltaY = newY - (line.getY() + dragOffsetY);
 
-            // Aggiorna le coordinate di inizio e fine
-            line.setX(newX);
-            line.setY(newY);
+            // Aggiorna coerentemente entrambi i punti della linea
+            line.setX(line.getX() + deltaX);
+            line.setY(line.getY() + deltaY);
             line.setEndX(line.getEndX() + deltaX);
             line.setEndY(line.getEndY() + deltaY);
         } else if (currentShape != null) {
-            currentShape.setX(newX);
-            currentShape.setY(newY);
+            currentShape.setX(newX - dragOffsetX);
+            currentShape.setY(newY - dragOffsetY);
         }
 
         redrawCanvas();
@@ -480,20 +480,28 @@ public class DrawingController {
         for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
                 shape.draw(gc);
-                // disegna un bordo con manici per la figura selezionata
-                if (shape == currentShape) {
-                    drawHighlightBorder(shape);
-                }
             }
+        }
+
+        // Disegna il bordo solo una volta per la figura selezionata
+        if (currentShape != null) {
+            drawHighlightBorder(currentShape);
         }
     }
 
     // Metodo per disegnare il bordo di selezione e i manici
     private void drawHighlightBorder(AbstractShape shape) {
+        // Ottieni la figura base (non decorata)
+        while (shape instanceof ShapeDecorator decorator) {
+            shape = decorator.getInnerShape();
+        }
+
         if (shape instanceof Line line) {
+            System.out.println("DEBUG: Disegno bordo di selezione per la linea");
             drawHandle(line.getX(), line.getY());
             drawHandle(line.getEndX(), line.getEndY());
         } else {
+            System.out.println("DEBUG: Disegno bordo di selezione per la figura");
             gc.setStroke(Color.SKYBLUE);
             gc.setLineWidth(1);
             gc.setLineDashes(5);
