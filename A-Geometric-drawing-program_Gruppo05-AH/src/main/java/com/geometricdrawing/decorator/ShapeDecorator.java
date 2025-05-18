@@ -60,6 +60,4 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public void setBorderColor(Color c)  { decoratedShape.setBorderColor(c); }
     @Override public void setWidth(double width)   { decoratedShape.setWidth(width); }
     @Override public void setHeight(double height) { decoratedShape.setHeight(height); }
-
-
 }

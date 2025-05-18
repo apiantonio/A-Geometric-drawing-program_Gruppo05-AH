@@ -329,25 +329,10 @@ public class DrawingController {
             return;
         }
 
-        if (currentShape instanceof Line line) {
-            if (isWidth) {
-                double deltaX = line.getEndX() - line.getX();
-                double deltaY = line.getEndY() - line.getY();
-                double currentAngle = Math.atan2(deltaY, deltaX);
-
-                double newEndX = line.getX() + newValue * Math.cos(currentAngle);
-                double newEndY = line.getY() + newValue * Math.sin(currentAngle);
-
-                line.setEndX(newEndX);
-                line.setEndY(newEndY);
-                line.setWidth(newValue);
-            }
-        } else { // Se non è una linea
-            if (isWidth) {
-                currentShape.setWidth(newValue);
-            } else {
-                currentShape.setHeight(newValue);
-            }
+        if (isWidth) {
+            currentShape.setWidth(newValue);
+        } else {
+            currentShape.setHeight(newValue);
         }
 
         redrawCanvas();
@@ -361,18 +346,21 @@ public class DrawingController {
         boolean enableDelete = false;
 
         if (shape != null) {
-            if (shape instanceof Line) {
-                enableWidth = true;
-                enableBorder = true;
-                enableDelete = true;
-            } else {
-                enableWidth = true;
-                enableHeight = true;
-                enableFill = true;
-                enableBorder = true;
-                enableDelete = true;
+            // Ottieni la forma base (non decorata)
+            AbstractShape baseShape = shape;
+            while (baseShape instanceof ShapeDecorator decorator) {
+                baseShape = decorator.getInnerShape();
             }
+            if (!(baseShape instanceof Line)) {
+                enableFill = true;
+            }
+
+            enableWidth = true;
+            enableHeight = true;
+            enableBorder = true;
+            enableDelete = true;
         }
+
         widthSpinner.setDisable(!enableWidth);
         heightSpinner.setDisable(!enableHeight);
         fillPicker.setDisable(!enableFill);
