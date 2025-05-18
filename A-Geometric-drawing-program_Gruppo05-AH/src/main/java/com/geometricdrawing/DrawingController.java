@@ -457,7 +457,9 @@ public class DrawingController {
 
         double newX = event.getX() - dragOffsetX;
         double newY = event.getY() - dragOffsetY;
-        currentShape.moveTo(newX, newY);
+
+        MoveShapeCommand moveCmd = new MoveShapeCommand(model, currentShape, newX, newY);
+        commandManager.executeCommand(moveCmd);
 
         redrawCanvas();
     }

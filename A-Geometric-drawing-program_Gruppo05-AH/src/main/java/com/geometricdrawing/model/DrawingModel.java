@@ -27,7 +27,6 @@ public class DrawingModel {
         this.shapes.remove(s);
     }
 
-
     public void setShapeWidth(AbstractShape shape, double width) {
         if (shape != null) {
             shape.setWidth(width);
@@ -37,6 +36,12 @@ public class DrawingModel {
     public void setShapeHeight(AbstractShape shape, double newHeight) {
         if (shape != null) {
             shape.setHeight(newHeight);
+        }
+    }
+
+    public void moveShapeTo(AbstractShape shape, double newX, double newY) {
+        if (shape != null) {
+            shape.moveTo(newX, newY);
         }
     }
 
