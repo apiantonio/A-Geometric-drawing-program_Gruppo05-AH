@@ -83,6 +83,37 @@ public abstract class AbstractShape implements Serializable {
         this.z = z;
     }
 
+    // sposta la figura a una nuova posizione (newX, newY)
+    public void moveTo(double newX, double newY) {
+        double deltaX = newX - this.x;
+        double deltaY = newY - this.y;
+        moveBy(deltaX, deltaY);
+    }
+
+    // sposta la figura di un delta
+    public void moveBy(double deltaX, double deltaY) {
+        this.x += deltaX;
+        this.y += deltaY;
+    }
+
+    public double getEndX() {
+        return x + width;
+    }
+
+    public void setEndX(double endX) {
+        this.width = this.x + endX;
+        this.width -= this.x;
+    }
+
+    public double getEndY() {
+        return y - height;
+    }
+
+    public void setEndY(double endY) {
+        this.height = this.y - endY;
+        this.height -= this.y;
+    }
+
     public double getWidth() {
         return this.width;
     }

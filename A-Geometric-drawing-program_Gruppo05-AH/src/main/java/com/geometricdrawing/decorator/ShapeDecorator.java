@@ -26,24 +26,40 @@ public abstract class ShapeDecorator extends AbstractShape {
 
     protected abstract void decorateShape(GraphicsContext gc);
 
-    @Override public double getX()          { return decoratedShape.getX(); }
-    @Override public double getY()          { return decoratedShape.getY(); }
-    @Override public void setX(double x)    {   decoratedShape.setX(x); }
-    @Override public void setY(double y)    { decoratedShape.setY(y); }
-    @Override public int getZ()             { return decoratedShape.getZ(); }
-    @Override public void setZ(int z)       { decoratedShape.setZ(z); }
-
-    @Override public double getWidth()              { return decoratedShape.getWidth(); }
-    @Override public double getHeight()             { return decoratedShape.getHeight(); }
-    @Override public Color getFillColor()           { return decoratedShape.getFillColor(); }
-    @Override public Color getBorderColor()         { return decoratedShape.getBorderColor(); }
-    @Override public void setFillColor(Color c)     { decoratedShape.setFillColor(c); }
-    @Override public void setBorderColor(Color c)   { decoratedShape.setBorderColor(c); }
-    @Override public void setWidth(double width)    { decoratedShape.setWidth(width); }
-    @Override public void setHeight(double height)  { decoratedShape.setHeight(height); }
-
-    @Override public boolean containsPoint(double x, double y, double threshold) {
+    @Override
+    public boolean containsPoint(double x, double y, double threshold) {
         return decoratedShape.containsPoint(x, y, threshold);
     }
+
+    @Override
+    public void moveTo(double newX, double newY) {
+        decoratedShape.moveTo(newX, newY);
+    }
+
+    @Override
+    public void moveBy(double deltaX, double deltaY) {
+        decoratedShape.moveBy(deltaX, deltaY);
+    }
+
+    @Override public double getX()          { return decoratedShape.getX(); }
+    @Override public double getY()          { return decoratedShape.getY(); }
+    @Override public int getZ()             { return decoratedShape.getZ(); }
+    @Override public double getEndX()       { return decoratedShape.getEndX(); }
+    @Override public double getEndY()       { return decoratedShape.getEndY(); }
+    @Override public double getWidth()      { return decoratedShape.getWidth(); }
+    @Override public double getHeight()     { return decoratedShape.getHeight(); }
+    @Override public Color getFillColor()   { return decoratedShape.getFillColor(); }
+    @Override public Color getBorderColor() { return decoratedShape.getBorderColor(); }
+
+    @Override public void setX(double x)           { decoratedShape.setX(x); }
+    @Override public void setY(double y)           { decoratedShape.setY(y); }
+    @Override public void setZ(int z)              { decoratedShape.setZ(z); }
+    @Override public void setEndX(double x)        { decoratedShape.setEndX(x); }
+    @Override public void setEndY(double y)        { decoratedShape.setEndY(y); }
+    @Override public void setFillColor(Color c)    { decoratedShape.setFillColor(c); }
+    @Override public void setBorderColor(Color c)  { decoratedShape.setBorderColor(c); }
+    @Override public void setWidth(double width)   { decoratedShape.setWidth(width); }
+    @Override public void setHeight(double height) { decoratedShape.setHeight(height); }
+
 
 }

@@ -19,7 +19,6 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
-import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
@@ -77,9 +76,7 @@ public class DrawingController {
     public void setModel(DrawingModel model) {
         this.model = model;
         if (this.model != null && this.model.getShapes() != null) {
-            this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> {
-                redrawCanvas();
-            });
+            this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> redrawCanvas());
         }
         redrawCanvas();
     }
@@ -368,7 +365,7 @@ public class DrawingController {
                 enableWidth = true;
                 enableBorder = true;
                 enableDelete = true;
-            } else if (shape instanceof AbstractShape) {
+            } else {
                 enableWidth = true;
                 enableHeight = true;
                 enableFill = true;
@@ -430,12 +427,6 @@ public class DrawingController {
         }
     }
 
-    // Metodo per disegnare un cerchietto
-    private void drawHandle(double x, double y) {
-        gc.setFill(Color.SKYBLUE);
-        gc.fillOval(x - HANDLE_RADIUS, y - HANDLE_RADIUS, HANDLE_RADIUS * 2, HANDLE_RADIUS * 2);
-    }
-
     private void handleMousePressed(MouseEvent event) {
         double x = event.getX();
         double y = event.getY();
@@ -465,27 +456,19 @@ public class DrawingController {
 
         updateSpinners(currentShape);
         redrawCanvas();
-
     }
 
     private void handleMouseDragged(MouseEvent event) {
-        double newX = event.getX();
-        double newY = event.getY();
 
-        if (currentShape instanceof Line line) {
-            // Calcola lo spostamento relativo
-            double deltaX = newX - (line.getX() + dragOffsetX);
-            double deltaY = newY - (line.getY() + dragOffsetY);
-
-            // Aggiorna coerentemente entrambi i punti della linea
-            line.setX(line.getX() + deltaX);
-            line.setY(line.getY() + deltaY);
-            line.setEndX(line.getEndX() + deltaX);
-            line.setEndY(line.getEndY() + deltaY);
-        } else if (currentShape != null) {
-            currentShape.setX(newX - dragOffsetX);
-            currentShape.setY(newY - dragOffsetY);
+        if (currentShape == null) {
+            return;
         }
+
+        System.out.println("DEBUG: shape dragged");
+
+        double newX = event.getX() - dragOffsetX;
+        double newY = event.getY() - dragOffsetY;
+        currentShape.moveTo(newX, newY);
 
         redrawCanvas();
     }
@@ -520,13 +503,17 @@ public class DrawingController {
         for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
                 shape.draw(gc);
+                if (shape == currentShape) {
+                    drawHighlightBorder(shape); // Disegna il bordo di selezione solo per la figura corrente
+                }
             }
         }
+    }
 
-        // Disegna il bordo solo una volta per la figura selezionata
-        if (currentShape != null) {
-            drawHighlightBorder(currentShape);
-        }
+    // Metodo per disegnare un cerchietto
+    private void drawHandle(double x, double y) {
+        gc.setFill(Color.SKYBLUE);
+        gc.fillOval(x - HANDLE_RADIUS, y - HANDLE_RADIUS, HANDLE_RADIUS * 2, HANDLE_RADIUS * 2);
     }
 
     // Metodo per disegnare il bordo di selezione e i manici
@@ -536,18 +523,20 @@ public class DrawingController {
             shape = decorator.getInnerShape();
         }
 
+        // Disegna il bordo di selezione
+        gc.setStroke(Color.SKYBLUE);
+        gc.setLineWidth(1);
+        gc.setLineDashes(5);
         if (shape instanceof Line line) {
-            System.out.println("DEBUG: Disegno bordo di selezione per la linea");
-            drawHandle(line.getX(), line.getY());
-            drawHandle(line.getEndX(), line.getEndY());
+            gc.strokeLine(line.getX(), line.getY(), line.getEndX(), line.getEndY()); // Linea tratteggiata
+            gc.setLineDashes(0);
+            // Disegna i manici agli estremi della linea
+            drawHandle(line.getX(), line.getY()); // Estremo sinistro
+            drawHandle(line.getEndX(), line.getEndY()); // Estremo destro
         } else {
-            System.out.println("DEBUG: Disegno bordo di selezione per la figura");
-            gc.setStroke(Color.SKYBLUE);
-            gc.setLineWidth(1);
-            gc.setLineDashes(5);
             gc.strokeRect(shape.getX(), shape.getY(), shape.getWidth(), shape.getHeight());
             gc.setLineDashes(0);
-
+            // Disegna i manici agli angoli del rettangolo/ellisse
             drawHandle(shape.getX(), shape.getY());
             drawHandle(shape.getX() + shape.getWidth(), shape.getY());
             drawHandle(shape.getX(), shape.getY() + shape.getHeight());

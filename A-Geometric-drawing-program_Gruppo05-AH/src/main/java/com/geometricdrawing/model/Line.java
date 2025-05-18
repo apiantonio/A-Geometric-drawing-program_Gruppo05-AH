@@ -29,6 +29,16 @@ public class Line extends AbstractShape {
         return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 
+    @Override
+    public void moveBy(double deltaX, double deltaY) {
+        // Sposta entrambi i punti mantenendo la forma della linea
+        super.moveBy(deltaX, deltaY);
+        this.width += deltaX;  // width rappresenta endX - x
+        this.height += deltaY; // height rappresenta endY - y
+        this.endX += deltaX;
+        this.endY += deltaY;
+    }
+
     public double getEndX() {
         return endX;
     }
