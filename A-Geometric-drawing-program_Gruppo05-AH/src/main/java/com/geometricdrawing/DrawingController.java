@@ -351,12 +351,13 @@ public class DrawingController {
             while (baseShape instanceof ShapeDecorator decorator) {
                 baseShape = decorator.getInnerShape();
             }
+
             if (!(baseShape instanceof Line)) {
+                enableHeight = true;
                 enableFill = true;
             }
 
             enableWidth = true;
-            enableHeight = true;
             enableBorder = true;
             enableDelete = true;
         }
