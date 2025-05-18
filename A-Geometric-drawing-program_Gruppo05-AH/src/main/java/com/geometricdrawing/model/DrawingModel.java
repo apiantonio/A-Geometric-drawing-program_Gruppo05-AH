@@ -27,6 +27,19 @@ public class DrawingModel {
         this.shapes.remove(s);
     }
 
+
+    public void setShapeWidth(AbstractShape shape, double width) {
+        if (shape != null) {
+            shape.setWidth(width);
+        }
+    }
+
+    public void setShapeHeight(AbstractShape shape, double newHeight) {
+        if (shape != null) {
+            shape.setHeight(newHeight);
+        }
+    }
+
     public ObservableList<AbstractShape> getShapes() {
         return this.shapes;
     }
@@ -34,7 +47,6 @@ public class DrawingModel {
     public void clear() {
         this.shapes.clear();
     }
-
     // restituisce le figure in ordine decrescente di z
     public ObservableList<AbstractShape> getShapesOrderedByZ() {
         return FXCollections.observableArrayList(
@@ -85,4 +97,6 @@ public class DrawingModel {
             this.shapes.addAll(loadedShapes);
         }
     }
+
+
 }

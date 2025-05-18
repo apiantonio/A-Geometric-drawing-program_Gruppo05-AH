@@ -23,7 +23,7 @@ class DrawingModelTest {
     @Test
     void addShapeShouldIncreaseSizeAndContainShape() {
         // Usiamo una forma concreta con valori qualsiasi, dato che le factory non sono usate qui
-        Shape rect = new Rectangle(10, 10, 5, 5);
+        AbstractShape rect = new Rectangle(10, 10, 5, 5);
         model.addShape(rect);
         assertEquals(1, model.getShapes().size(), "La dimensione del modello dovrebbe essere 1 dopo l'aggiunta.");
         assertTrue(model.getShapes().contains(rect), "Il modello dovrebbe contenere la forma aggiunta.");
@@ -31,8 +31,8 @@ class DrawingModelTest {
 
     @Test
     void addMultipleShapesShouldIncreaseSizeCorrectly() {
-        Shape rect1 = new Rectangle(10, 10, 5, 5);
-        Shape ellipse1 = new Ellipse(20, 20, 8, 8);
+        AbstractShape rect1 = new Rectangle(10, 10, 5, 5);
+        AbstractShape ellipse1 = new Ellipse(20, 20, 8, 8);
         model.addShape(rect1);
         model.addShape(ellipse1);
         assertEquals(2, model.getShapes().size(), "La dimensione del modello dovrebbe essere 2 dopo due aggiunte.");
@@ -46,7 +46,7 @@ class DrawingModelTest {
         assertTrue(model.getShapes().isEmpty());
         assertEquals(0, model.getShapes().size());
 
-        Shape rect = new Rectangle(10, 10, 5, 5);
+        AbstractShape rect = new Rectangle(10, 10, 5, 5);
         model.addShape(rect); // Aggiungi una forma
         model.addShape(null); // Poi aggiungi null
         assertEquals(1, model.getShapes().size(), "Aggiungere null non dovrebbe cambiare un modello con una forma.");

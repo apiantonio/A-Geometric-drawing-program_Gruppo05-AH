@@ -1,5 +1,6 @@
 package com.geometricdrawing.command;
 
+import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Rectangle; // Una forma concreta per il test
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class AddShapeCommandTest {
     private DrawingModel mockDrawingModel; // Mock del receiver
 
     @Mock
-    private Shape mockShapeToAdd; // Mock della forma da aggiungere
+    private AbstractShape mockShapeToAdd; // Mock della forma da aggiungere
 
     @Test
     void constructorShouldStoreModelAndShape() {
@@ -28,7 +29,7 @@ class AddShapeCommandTest {
 
     @Test
     void executeShouldCallAddShapeOnModelWithCorrectShape() {
-        Shape rectangle = new Rectangle(10, 10, 50, 50);
+        AbstractShape rectangle = new Rectangle(10, 10, 50, 50);
         AddShapeCommand command = new AddShapeCommand(mockDrawingModel, rectangle);
 
         command.execute();

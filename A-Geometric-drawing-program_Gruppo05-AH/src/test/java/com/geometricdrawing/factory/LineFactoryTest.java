@@ -2,6 +2,7 @@ package com.geometricdrawing.factory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ class LineFactoryTest {
 
     @Test
     void createShapeShouldReturnLine() {
-        Shape shape = factory.createShape(10, 20);
+        AbstractShape shape = factory.createShape(10, 20);
         assertNotNull(shape);
         assertInstanceOf(Line.class, shape, "Factory should create an instance of Line.");
     }
@@ -26,7 +27,7 @@ class LineFactoryTest {
     void createShapeShouldSetCorrectStartCoordinates() {
         double startX = 30.5;
         double startY = 70.2;
-        Shape shape = factory.createShape(startX, startY);
+        AbstractShape shape = factory.createShape(startX, startY);
         assertEquals(startX, shape.getX(), "Start X coordinate should match input.");
         assertEquals(startY, shape.getY(), "Start Y coordinate should match input.");
     }
@@ -35,7 +36,7 @@ class LineFactoryTest {
     void createShapeShouldSetCorrectEndCoordinatesBasedOnDefaultLength() {
         double startX = 30;
         double startY = 70;
-        Shape shape = factory.createShape(startX, startY);
+        AbstractShape shape = factory.createShape(startX, startY);
         assertInstanceOf(Line.class, shape);
         Line line = (Line) shape;
 

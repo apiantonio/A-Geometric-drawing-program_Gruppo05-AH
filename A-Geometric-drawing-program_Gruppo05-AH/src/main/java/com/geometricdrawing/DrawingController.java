@@ -1,8 +1,6 @@
 package com.geometricdrawing;
 
-import com.geometricdrawing.command.AddShapeCommand;
-import com.geometricdrawing.command.CommandManager;
-import com.geometricdrawing.command.DeleteShapeCommand;
+import com.geometricdrawing.command.*;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
@@ -330,9 +328,11 @@ public class DrawingController {
         }
 
         if (isWidth) {
-            currentShape.setWidth(newValue);
+            ChangeWidthCommand cmd = new ChangeWidthCommand(model, currentShape, newValue);
+            commandManager.executeCommand(cmd);
         } else {
-            currentShape.setHeight(newValue);
+            ChangeHeightCommand cmd = new ChangeHeightCommand(model, currentShape, newValue);
+            commandManager.executeCommand(cmd);
         }
 
         redrawCanvas();
