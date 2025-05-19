@@ -42,9 +42,6 @@ class CommandManagerTest {
         commandManager.executeCommand(mockCommand1);
 
         // Accedi a undoStack tramite reflection per verificare il suo contenuto.
-        // Nota: questo rende il test un po' fragile ai cambiamenti interni di CommandManager.
-        // Un'alternativa sarebbe testare la funzionalità di undo se fosse implementata,
-        // che implicitamente verificherebbe lo stack.
         Field undoStackField = CommandManager.class.getDeclaredField("undoStack");
         undoStackField.setAccessible(true);
         @SuppressWarnings("unchecked")
