@@ -48,16 +48,12 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public double getEndY()       { return decoratedShape.getEndY(); }
     @Override public double getWidth()      { return decoratedShape.getWidth(); }
     @Override public double getHeight()     { return decoratedShape.getHeight(); }
-    @Override public Color getFillColor()   { return decoratedShape.getFillColor(); }
-    @Override public Color getBorderColor() { return decoratedShape.getBorderColor(); }
 
     @Override public void setX(double x)           { decoratedShape.setX(x); }
     @Override public void setY(double y)           { decoratedShape.setY(y); }
     @Override public void setZ(int z)              { decoratedShape.setZ(z); }
     @Override public void setEndX(double x)        { decoratedShape.setEndX(x); }
     @Override public void setEndY(double y)        { decoratedShape.setEndY(y); }
-    @Override public void setFillColor(Color c)    { decoratedShape.setFillColor(c); }
-    @Override public void setBorderColor(Color c)  { decoratedShape.setBorderColor(c); }
     @Override public void setWidth(double width)   { decoratedShape.setWidth(width); }
     @Override public void setHeight(double height) { decoratedShape.setHeight(height); }
 }

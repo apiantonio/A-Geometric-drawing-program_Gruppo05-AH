@@ -1,7 +1,6 @@
 package com.geometricdrawing.model;
 
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -25,8 +24,6 @@ class EllipseTest {
         assertEquals(15, ellipse.getY());
         assertEquals(25, ellipse.getWidth());
         assertEquals(35, ellipse.getHeight());
-        assertEquals(Color.TRANSPARENT, ellipse.getFillColor(), "Default fill color should be LIGHTBLUE.");
-        assertEquals(Color.BLACK, ellipse.getBorderColor(), "Default border color should be BLACK.");
     }
 
     @Test
@@ -35,9 +32,7 @@ class EllipseTest {
 
         ellipse.draw(mockGc);
 
-        verify(mockGc).setFill(Color.TRANSPARENT);
         verify(mockGc).fillOval(5, 15, 25, 35);
-        verify(mockGc).setStroke(Color.BLACK);
         verify(mockGc).strokeOval(5, 15, 25, 35);
     }
 }

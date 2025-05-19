@@ -8,8 +8,6 @@ public class Line extends AbstractShape {
     public Line(double startX, double startY, double endX, double endY) {
         // x,y di AbstractShape saranno startX, startY
         super(startX, startY, endX - startX, endY - startY);
-        super.fillColor = Color.TRANSPARENT; // Le linee non hanno riempimento
-        // borderColor è già BLACK di default da AbstractShape
     }
 
     @Override

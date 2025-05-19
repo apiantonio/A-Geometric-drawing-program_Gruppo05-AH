@@ -52,7 +52,10 @@ public class DrawingModel {
     public void clear() {
         this.shapes.clear();
     }
-    // restituisce le figure in ordine decrescente di z
+
+    /**
+     * restituisce le figure in ordine decrescente di z
+     */
     public ObservableList<AbstractShape> getShapesOrderedByZ() {
         return FXCollections.observableArrayList(
                 shapes.stream()

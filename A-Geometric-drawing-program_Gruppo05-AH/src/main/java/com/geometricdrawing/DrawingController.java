@@ -59,8 +59,11 @@ public class DrawingController {
     @FXML private Spinner<Double> widthSpinner;
     private ContextMenu shapeMenu;
 
-    private static final double HANDLE_RADIUS = 3.0;        // raggio del cerchietto che compare alla selezione di una figura
-    private static final double SELECTION_THRESHOLD = 5.0;  // threshold per la selezione
+    private static final double HANDLE_RADIUS = 3.0;         // raggio del cerchietto che compare alla selezione di una figura
+    private static final double SELECTION_THRESHOLD = 5.0;   // threshold per la selezione
+    private static final double BORDER_MARGIN = 5.0;         // margine per evitare che la figura venga disegnata completamente fuori dal canvas
+    private static final double VISIBLE_SHAPE_PORTION = 0.1; // percentuale visibile della figura quando viene spostata
+    private static final double HIDDEN_SHAPE_PORTION = 0.9;  // percentuale nascosta della figura quando viene spostata
 
     private DrawingModel model;
     private GraphicsContext gc;
@@ -454,6 +457,18 @@ public class DrawingController {
         double newX = event.getX() - dragOffsetX;
         double newY = event.getY() - dragOffsetY;
 
+        // dimensioni attuali del canvas
+        double canvasWidth = drawingCanvas.getWidth();
+        double canvasHeight = drawingCanvas.getHeight();
+        // dimensioni della figura corrente
+        double shapeWidth = currentShape.getWidth();
+        double shapeHeight = currentShape.getHeight();
+
+        // per limitare le coordinate per mantenere la figura all'interno del canvas
+        // lascio un margine di  pixel per evitare che la figura sia completamente nascosta
+        newX = Math.max(BORDER_MARGIN - shapeWidth * VISIBLE_SHAPE_PORTION, Math.min(newX, canvasWidth - shapeWidth * HIDDEN_SHAPE_PORTION));
+        newY = Math.max(BORDER_MARGIN - shapeHeight * VISIBLE_SHAPE_PORTION, Math.min(newY, canvasHeight - shapeHeight * HIDDEN_SHAPE_PORTION));
+
         MoveShapeCommand moveCmd = new MoveShapeCommand(model, currentShape, newX, newY);
         commandManager.executeCommand(moveCmd);
 
@@ -566,13 +581,13 @@ public class DrawingController {
 
         if (file != null) {
             try {
-                model.loadFromFile(file); // This should clear and add shapes
+                model.loadFromFile(file); // carica le forme presenti sul file
+                setModel(model);    // il listener viene ricollegato al model
                 redrawCanvas(); // Redraw with loaded shapes
                 System.out.println("Drawing loaded from " + file.getAbsolutePath());
             } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Error loading drawing: " + e.getMessage());
-                e.printStackTrace();
-                // Show error dialog to user
+                e.printStackTrace(); // stampa a video dell'errore
             }
         }
     }
