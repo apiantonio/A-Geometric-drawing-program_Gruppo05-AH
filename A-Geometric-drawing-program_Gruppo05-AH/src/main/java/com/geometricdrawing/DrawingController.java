@@ -242,7 +242,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSelectLinea(ActionEvent event) {
+    public void handleSelectLinea(ActionEvent event) {
         currentShape = null;  // se è selezionata una figura deseleziona
         // i controlli abilitati per la selezione, vengono disabilitati
         updateControlState(null);
@@ -255,7 +255,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSelectRettangolo(ActionEvent event) {
+    public void handleSelectRettangolo(ActionEvent event) {
         currentShape = null;  // se è selezionata una figura deseleziona
         // i controlli abilitati per la selezione, vengono disabilitati
         updateControlState(null);
@@ -269,7 +269,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSelectEllisse(ActionEvent event) {
+    public void handleSelectEllisse(ActionEvent event) {
         currentShape = null;  // se è selezionata una figura deseleziona
         // i controlli abilitati per la selezione, vengono disabilitati
         updateControlState(null);
@@ -282,7 +282,7 @@ public class DrawingController {
         currentShapeFactory = new EllipseFactory();
     }
 
-    private void handleCanvasClick(MouseEvent event) {
+    public void handleCanvasClick(MouseEvent event) {
         if (model == null || commandManager == null || heightSpinner == null || widthSpinner == null) {
             System.err.println("Errore: Componenti non inizializzati (model, commandManager o spinners).");
             return;
@@ -403,7 +403,7 @@ public class DrawingController {
      * Metodo per la gestione dell'eliminazione di una figura selezionata
      */
     @FXML
-    private void handleDeleteShape(ActionEvent event) {
+    public void handleDeleteShape(ActionEvent event) {
         if (currentShape != null && model != null) {
             // per gestire il caso in cui si clicca il tasto destro ma si cancella con canc e il context menu è ancora aperto
             shapeMenu.hide();

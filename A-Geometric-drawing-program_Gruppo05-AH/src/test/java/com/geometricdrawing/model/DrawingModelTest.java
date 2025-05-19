@@ -51,4 +51,19 @@ class DrawingModelTest {
         model.addShape(null); // Poi aggiungi null
         assertEquals(1, model.getShapes().size(), "Aggiungere null non dovrebbe cambiare un modello con una forma.");
     }
+
+    @Test
+    void addMultipleShapesShouldAssignIncreasingZOrder() {
+        AbstractShape rect1 = new Rectangle(10, 10, 5, 5);
+        AbstractShape ellipse1 = new Ellipse(20, 20, 8, 8);
+        AbstractShape line1 = new Line(0,0,1,1);
+
+        model.addShape(rect1);
+        model.addShape(ellipse1);
+        model.addShape(line1);
+
+        assertEquals(0, rect1.getZ());
+        assertEquals(1, ellipse1.getZ());
+        assertEquals(2, line1.getZ());
+    }
 }
