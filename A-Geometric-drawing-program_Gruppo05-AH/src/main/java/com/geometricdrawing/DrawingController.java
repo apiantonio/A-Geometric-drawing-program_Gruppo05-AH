@@ -297,6 +297,12 @@ public class DrawingController {
 
             // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
             AbstractShape newShape = currentShapeFactory.createShape(x, y);
+
+            // se la figura è troppo vicina ai bordi del canvas, non viene disegnata
+            if (isTooClose(newShape, x, y)) {
+                return;
+            }
+
             AbstractShape styledShape = newShape;
 
             // prelevo il colore di bordo e riempimento
@@ -322,6 +328,23 @@ public class DrawingController {
             updateSpinners(currentShape);
             redrawCanvas();
         }
+    }
+
+    private boolean isTooClose(AbstractShape newShape, double x, double y) {
+        double shapeWidth = newShape.getWidth();
+        double shapeHeight = newShape.getHeight();
+
+        // Verifica se la posizione è troppo vicina ai bordi
+        boolean isTooClose = x < BORDER_MARGIN ||
+                y < BORDER_MARGIN ||
+                x + shapeWidth > drawingCanvas.getWidth() - BORDER_MARGIN ||
+                y + shapeHeight > drawingCanvas.getHeight() - BORDER_MARGIN;
+
+        if (isTooClose) {
+            return true;
+        }
+
+        return false;
     }
 
     private void handleDimensionChange(boolean isWidth, Double newValue) {
