@@ -570,13 +570,13 @@ public class DrawingController {
 
         if (file != null) {
             try {
-                model.loadFromFile(file); // This should clear and add shapes
+                model.loadFromFile(file); // carica le forme presenti sul file
+                setModel(model);    // il listener viene ricollegato al model
                 redrawCanvas(); // Redraw with loaded shapes
                 System.out.println("Drawing loaded from " + file.getAbsolutePath());
             } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Error loading drawing: " + e.getMessage());
-                e.printStackTrace();
-                // Show error dialog to user
+                e.printStackTrace(); // stampa a video dell'errore
             }
         }
     }
