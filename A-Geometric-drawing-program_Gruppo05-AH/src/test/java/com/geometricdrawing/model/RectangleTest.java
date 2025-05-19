@@ -38,5 +38,17 @@ class RectangleTest {
         verify(mockGc).fillRect(10, 20, 100, 80);
         verify(mockGc).strokeRect(10, 20, 100, 80);
     }
+    @Test
+    void setWidthShouldUpdateWidth() {
+        double newWidth = 150.0;
+        rectangle.setWidth(newWidth);
+        assertEquals(newWidth, rectangle.getWidth(), "La larghezza del rettangolo non è stata aggiornata correttamente.");
+    }
 
+    @Test
+    void setHeightShouldUpdateHeight() {
+        double newHeight = 120.0;
+        rectangle.setHeight(newHeight);
+        assertEquals(newHeight, rectangle.getHeight(), "L'altezza del rettangolo non è stata aggiornata correttamente.");
+    }
 }

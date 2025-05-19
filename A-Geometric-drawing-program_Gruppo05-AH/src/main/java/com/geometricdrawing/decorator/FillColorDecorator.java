@@ -4,10 +4,7 @@ import com.geometricdrawing.model.AbstractShape;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 
 /*
     La classe decoratore per il colore del riempimento implementa Serializable
