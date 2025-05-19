@@ -26,7 +26,7 @@ public class GeometricDrawingApp extends Application {
         controller.setCommandManager(commandManager);
 
         Scene scene = new Scene(root);
-        stage.setTitle("Hello!");
+        stage.setTitle("Geometric Drawing App");
 
         // setting di un minimo rimpicciolimento dello stage in altezza e larghezza
         stage.setMinWidth(500);
