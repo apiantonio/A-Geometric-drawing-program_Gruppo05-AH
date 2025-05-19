@@ -87,21 +87,4 @@ public class DrawingModel {
         }
     }
 
-    // Optional: If DrawingModel itself needs to be serializable (e.g. part of a larger state)
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject(); // For any other fields in DrawingModel
-        out.writeObject(new ArrayList<>(shapes)); // Serialize shapes as ArrayList
-    }
-
-    @SuppressWarnings("unchecked")
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject(); // For any other fields
-        List<AbstractShape> loadedShapes = (List<AbstractShape>) in.readObject();
-        this.shapes = FXCollections.observableArrayList(); // Re-initialize
-        if (loadedShapes != null) {
-            this.shapes.addAll(loadedShapes);
-        }
-    }
-
-
 }

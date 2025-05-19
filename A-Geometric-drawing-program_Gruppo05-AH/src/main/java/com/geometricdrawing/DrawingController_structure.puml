@@ -1,0 +1,252 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam groupInheritance 5
+scale 0.7
+
+
+' =========================
+' PACKAGE: model
+' =========================
+package model {
+
+  abstract class AbstractShape <<Serializable>> {
+    - x: double
+    - y: double
+    - z: int
+    - width: double
+    - height: double
+    - borderColor: Color
+    - fillColor: Color
+    + AbstractShape(x: double, y: double, width: double, height: double)
+    + moveTo(newX: double, newY: double): void
+    + moveBy(deltaX: double, deltaY: double): void
+    + containsPoint(x: double, y: double): boolean
+    + {abstract} draw(gc: GraphicsContext): void
+    + getX(): double
+    + getY(): double
+    + setX(x: double): void
+    + setY(y: double): void
+    + getZ(): double
+    + setZ(z: int): void
+    + getWidth(): double
+    + setWidth(width: double): void
+    + getHeight(): double
+    + getBorderColor(): Color
+    + setFillColor(fillColor: Color): void
+    + setBorderColor(borderColor: Color): void
+    + setFillColor(fillColor: Color): void
+    + getFillColor(): Color
+  }
+
+  class Rectangle extends AbstractShape {
+    + Rectangle(x: double, y: double, width: double, height: double)
+    + draw(gc: GraphicsContext): void
+  }
+
+  class Ellipse extends AbstractShape {
+    + Ellipse(x: double, y: double, radiusX: double, radiusY: double)
+    + draw(gc: GraphicsContext): void
+  }
+
+  class Line extends AbstractShape {
+    + Line(startX: double, startY: double, endX: double, endY: double)
+    + draw(gc: GraphicsContext): void
+    + getLenght(): double
+    + moveBy(deltaX: double, deltaY: double): void
+    + getEndX(): double
+    + setEndX(endX: double): void
+    + getEndY(): double
+    + setEndY(endY: double): void
+  }
+
+  class DrawingModel {
+    - shapes: ObservableList<AbstractShape>
+    + DrawingModel()
+    + addShape(s: AbstractShape): void
+    + removeShape(s: AbstractShape): void
+    + getShapes(): ObservableList<Shape>
+    + setShapeWidth(shape: AbstractShape, width: double): void
+    + setShapeheight(shape: AbstractShape, height: double): void
+    + moveShapeTo(shape: AbstractShape, double: newX, double: newY): void
+    + getShapes(): ObservableList<AbstractShape>
+    + getShapesOrderedByZ(): ObservableList<AbstractShape>
+    + clear(): void
+    + saveToFile(file: File): void
+    + loadFromFile(file: File): void
+  }
+
+}
+
+' =========================
+' Desing pattern: Decorator
+' =========================
+package decorator {
+
+  abstract class ShapeDecorator extends model.AbstractShape {
+    # decoratedShape: AbstractShape
+    + ShapeDecorator(shape: AbstractShape)
+    + getInnerShape(): AbstractShape
+    + draw(gc: GraphicsContext): void
+    # {abstract} decorateShape(gc: GraphicsContext): void
+    <<metodi chiamati sul wrappee>>
+  }
+
+  class FillColorDecorator extends ShapeDecorator {
+    - fillColor: Color
+    + FillColorDecorator(shape: Shape, color: Color)
+    + decorateShape(gc: GraphicsContext): void
+  }
+
+  class BorderColorDecorator extends ShapeDecorator {
+    - borderColor: Color
+    + BorderColorDecorator(shape: Shape, color: Color)
+    + decorateShape(gc: GraphicsContext): void
+  }
+}
+
+' =========================
+' Desing pattern: Factory
+' =========================
+package factory {
+  abstract class ShapeFactory {
+    - ShapeFactory()
+    + {abstract} createShape(x: double, y: double): AbstractShape
+  }
+
+  class RectangleFactory extends ShapeFactory {
+    + createShape(x: double, y: double): Shape
+  }
+
+  class EllipseFactory extends ShapeFactory {
+    + createShape(x: double, y: double): Shape
+  }
+
+  class LineFactory extends ShapeFactory {
+    + createShape(x: double, y: double): Shape
+  }
+}
+
+' =========================
+' Desing pattern: Command
+' =========================
+package command {
+  interface Command {
+    + execute(): void
+  }
+
+  class AddShapeCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShapeShape
+    + AddShapeCommand(model: DrawingModel, shape: AbstractShape)
+    + execute(): void
+  }
+
+  class MoveShapeCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    - newX: double
+    - newY: double
+    + MoveShapeCommand(model: DrawingModel, shape: Shape, newX: double, newY: double)
+    + execute(): void
+  }
+
+  class DeleteShapeCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    + DeleteShapeCommand(model: DrawingModel, shape: AbstractShape)
+    + execute(): void
+    + undo(): void
+  }
+
+  class ChangeWidthCommand implements Command {
+    - shape: AbstractShape
+    - newWidth: double
+    + ChangeWidthCommand(model: DrawingModel, shape: AbstractShape, newWidth: double)
+    + execute(): void
+  }
+
+  class ChangeHeightCommand implements Command {
+    - shape: AbstractShape
+    - newHeight: double
+    + ChangeHeightCommand(gc: GraphicsContext, shape: AbstractShape, newHeight: double)
+    + execute(): void
+  }
+
+  class CommandManager {
+    - undoStack: Stack<Command>
+    + executeCommand(cmd: Command): void
+  }
+
+
+}
+
+' =========================
+' controller
+' =========================
+class DrawingController {
+  - shapeMenu: ContextMenu
+  - model: DrawingModel
+  - factory: currentShapeFactory
+  - cmdManager: CommandManager
+  - currentType:
+  - currentShape: AbstractShape
+  - gc: GraphicsContext
+  - dragOffsetX: double
+  - dragOffsetY: double
+  + initialize(): void
+  + setModel(DrawingModel: model)
+  + onRootKeyPressed(KeyEvent: key): void
+  + handleMousePressed(evt: MouseEvent): void
+  + handleMouseDragged(evt: MouseEvent): void
+  + handleMouseReleased(evt: MouseEvent): voi
+  + handleCanvasClick(evt: Event): void
+  + handleDimensionChange(boolean: isWidth, Double newValue): void
+  + handleDeleteShape(): void
+  + selecteShapeAt(x: double, y: double): AbstractShape
+  + redrawCanvas(): void
+  - handleSaveSerialized(): void
+  - handleLoadSerialized(): void
+  - handleSaveAsPng(): void
+  - handleSaveAsPdf(): void
+}
+
+' =========================
+' view
+' =========================
+class GeometricDrawingApp <<Application>> {
+  + start(primaryStage: Stage): void
+  + main(args: String[]): void
+}
+
+class DrawingView.fxml << (F,orange) File>> {
+}
+
+
+' =========================
+' RELATIONSHIPS
+' =========================
+
+' Decorator relations
+decorator.ShapeDecorator o--> model.AbstractShape
+
+' Factory relations
+factory.ShapeFactory ..> model.AbstractShape : creates
+
+' Controller uses Model, Factory, Command
+DrawingController --> model.DrawingModel
+DrawingController --> factory.ShapeFactory
+DrawingController --> command.CommandManager
+DrawingController --> command.Command
+
+' Commands relations
+command.AddShapeCommand --> model.DrawingModel : receiver
+command.MoveShapeCommand --> model.DrawingModel : receiver
+command.DeleteShapeCommand --> model.DrawingModel : receiver
+command.ChangeHeightCommand --> model.DrawingModel : receiver
+command.ChangeWidthCommand --> model.DrawingModel : receiver
+command.CommandManager --> command.Command      : executes
+
+' View relations
+GeometricDrawingApp --> DrawingController : loads
+GeometricDrawingApp --> DrawingView.fxml : loads
+@enduml

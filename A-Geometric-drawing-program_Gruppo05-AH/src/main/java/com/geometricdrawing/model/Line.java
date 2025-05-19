@@ -17,7 +17,6 @@ public class Line extends AbstractShape {
         gc.strokeLine(x, y, getEndX(), getEndY());
     }
 
-
     public double getLength() {
         return Math.sqrt(width * width + height * height);
     }

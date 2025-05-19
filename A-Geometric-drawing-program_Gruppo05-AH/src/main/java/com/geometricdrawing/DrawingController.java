@@ -65,11 +65,10 @@ public class DrawingController {
     private DrawingModel model;
     private GraphicsContext gc;
     private ShapeFactory currentShapeFactory;               // factory per la creazione della figura
-    private AbstractShape currentShape;                             // figura selezionata
+    private AbstractShape currentShape;                     // figura selezionata
     private CommandManager commandManager;
     private double dragOffsetX;
     private double dragOffsetY;
-
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -112,7 +111,7 @@ public class DrawingController {
             //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
             updateControlState(null);
 
-            // affinchè rootPane possa ricevere focus
+            // affinché rootPane possa ricevere focus
             rootPane.setFocusTraversable(true);
 
             /*
@@ -448,12 +447,9 @@ public class DrawingController {
     }
 
     private void handleMouseDragged(MouseEvent event) {
-
         if (currentShape == null) {
             return;
         }
-
-        System.out.println("DEBUG: shape dragged");
 
         double newX = event.getX() - dragOffsetX;
         double newY = event.getY() - dragOffsetY;
