@@ -325,6 +325,11 @@ public class DrawingController {
 
             // Dopo aver aggiunto la forma, aggiorna gli spinner
             updateControlState(currentShape);
+
+            // MOMENTANEE PER LA PRIMA SPRINT (da rimuovere poi)
+            fillPicker.setDisable(true);
+            borderPicker.setDisable(true);
+
             updateSpinners(currentShape);
             redrawCanvas();
         }
@@ -400,6 +405,8 @@ public class DrawingController {
     @FXML
     private void handleDeleteShape(ActionEvent event) {
         if (currentShape != null && model != null) {
+            // per gestire il caso in cui si clicca il tasto destro ma si cancella con canc e il context menu è ancora aperto
+            shapeMenu.hide();
             // si crea l'oggetto command responsabile della cancellazione e si chiede al commandManager di eseguirlo
             DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
             commandManager.executeCommand(deleteCmd);
@@ -417,6 +424,11 @@ public class DrawingController {
                 currentShape = shape; // Imposta la figura selezionata
                 updateSpinners(currentShape);
                 updateControlState(currentShape);
+
+                // MOMENTANEE PER LA PRIMA SPRINT (da rimuovere poi)
+                fillPicker.setDisable(true);
+                borderPicker.setDisable(true);
+
                 System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
                 return shape; // Restituisci la figura selezionata
             }
