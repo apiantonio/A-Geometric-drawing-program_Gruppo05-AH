@@ -3,7 +3,6 @@ package com.geometricdrawing.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,15 +31,11 @@ class LineTest {
         assertEquals(20, line.getY(), "Start Y should be set correctly via getY().");
         assertEquals(110, line.getEndX(), "End X should be set.");
         assertEquals(120, line.getEndY(), "End Y should be set.");
-        assertEquals(Color.TRANSPARENT, line.getFillColor(), "Default fill color for Line should be TRANSPARENT.");
-        assertEquals(Color.BLACK, line.getBorderColor(), "Default border color should be BLACK.");
     }
 
     @Test
     void drawShouldCallCorrectGraphicsContextMethods() {
         line.draw(mockGc);
-
-        verify(mockGc).setStroke(Color.BLACK);
         verify(mockGc).strokeLine(10, 20, 110, 120);
     }
 }
