@@ -15,8 +15,6 @@ package model {
     - z: int
     - width: double
     - height: double
-    - borderColor: Color
-    - fillColor: Color
     + AbstractShape(x: double, y: double, width: double, height: double)
     + moveTo(newX: double, newY: double): void
     + moveBy(deltaX: double, deltaY: double): void
@@ -31,11 +29,6 @@ package model {
     + getWidth(): double
     + setWidth(width: double): void
     + getHeight(): double
-    + getBorderColor(): Color
-    + setFillColor(fillColor: Color): void
-    + setBorderColor(borderColor: Color): void
-    + setFillColor(fillColor: Color): void
-    + getFillColor(): Color
   }
 
   class Rectangle extends AbstractShape {
@@ -88,17 +81,34 @@ package decorator {
     + getInnerShape(): AbstractShape
     + draw(gc: GraphicsContext): void
     # {abstract} decorateShape(gc: GraphicsContext): void
-    <<metodi chiamati sul wrappee>>
+    + containsPoint(x: double, y: double): boolean
+    + getX(): double
+    + getY(): double
+    + setX(x: double): void
+    + setY(y: double): void
+    + getZ(): double
+    + setZ(z: int): void
+    + getWidth(): double
+    + setWidth(width: double): void
+    + getHeight(): double
   }
 
   class FillColorDecorator extends ShapeDecorator {
     - fillColor: Color
+    - red: double
+    - green: double
+    - blue: double
+    - alpha: double
     + FillColorDecorator(shape: Shape, color: Color)
     + decorateShape(gc: GraphicsContext): void
   }
 
   class BorderColorDecorator extends ShapeDecorator {
     - borderColor: Color
+    - red: double
+    - green: double
+    - blue: double
+    - alpha: double
     + BorderColorDecorator(shape: Shape, color: Color)
     + decorateShape(gc: GraphicsContext): void
   }
@@ -155,7 +165,6 @@ package command {
     - shape: AbstractShape
     + DeleteShapeCommand(model: DrawingModel, shape: AbstractShape)
     + execute(): void
-    + undo(): void
   }
 
   class ChangeWidthCommand implements Command {
@@ -186,9 +195,8 @@ package command {
 class DrawingController {
   - shapeMenu: ContextMenu
   - model: DrawingModel
-  - factory: currentShapeFactory
+  - currentFactory: ShapeFactory
   - cmdManager: CommandManager
-  - currentType:
   - currentShape: AbstractShape
   - gc: GraphicsContext
   - dragOffsetX: double
@@ -227,10 +235,10 @@ class DrawingView.fxml << (F,orange) File>> {
 ' =========================
 
 ' Decorator relations
-decorator.ShapeDecorator o--> model.AbstractShape
+decorator.ShapeDecorator o--> model.AbstractShape : decorates >
 
 ' Factory relations
-factory.ShapeFactory ..> model.AbstractShape : creates
+factory.ShapeFactory ..> model.AbstractShape : creates >
 
 ' Controller uses Model, Factory, Command
 DrawingController --> model.DrawingModel
@@ -239,14 +247,14 @@ DrawingController --> command.CommandManager
 DrawingController --> command.Command
 
 ' Commands relations
-command.AddShapeCommand --> model.DrawingModel : receiver
-command.MoveShapeCommand --> model.DrawingModel : receiver
-command.DeleteShapeCommand --> model.DrawingModel : receiver
-command.ChangeHeightCommand --> model.DrawingModel : receiver
-command.ChangeWidthCommand --> model.DrawingModel : receiver
-command.CommandManager --> command.Command      : executes
+command.AddShapeCommand --> model.DrawingModel : receiver >
+command.MoveShapeCommand --> model.DrawingModel : receiver >
+command.DeleteShapeCommand --> model.DrawingModel : receiver >
+command.ChangeHeightCommand --> model.DrawingModel : receiver >
+command.ChangeWidthCommand --> model.DrawingModel : receiver >
+command.CommandManager --> command.Command      : executes  >
 
 ' View relations
-GeometricDrawingApp --> DrawingController : loads
-GeometricDrawingApp --> DrawingView.fxml : loads
+GeometricDrawingApp --> DrawingController : loads >
+GeometricDrawingApp --> DrawingView.fxml : loads >
 @enduml
