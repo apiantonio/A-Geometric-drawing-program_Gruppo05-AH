@@ -3,6 +3,10 @@ package com.geometricdrawing.command;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Command per lo spopstamento di una figura
+ */
 public class MoveShapeCommand implements Command {
     private final DrawingModel model;
     private final AbstractShape shape;

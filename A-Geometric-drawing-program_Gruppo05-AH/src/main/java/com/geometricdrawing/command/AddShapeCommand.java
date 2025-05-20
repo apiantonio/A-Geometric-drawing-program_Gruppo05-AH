@@ -7,7 +7,6 @@ import com.geometricdrawing.model.DrawingModel;
  * Autore: Gruppo05
  * Scopo: Command per l'aggiunta di una nuova figura
  */
-
 public class AddShapeCommand implements Command {
     private final DrawingModel model; // Il "receiver" del comando
     private final AbstractShape shape;   // Lo stato necessario per eseguire/annullare
