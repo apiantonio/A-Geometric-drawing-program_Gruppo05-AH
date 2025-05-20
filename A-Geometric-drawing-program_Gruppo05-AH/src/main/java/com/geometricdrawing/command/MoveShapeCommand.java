@@ -16,8 +16,8 @@ public class MoveShapeCommand implements Command {
         this.model = model;
         this.newX = newX;
         this.newY = newY;
-        this.oldX = shape.getX();
-        this.oldY = shape.getY();
+        this.oldX = shape != null ? shape.getX() : 0.0;
+        this.oldY = shape != null ? shape.getY() : 0.0;
     }
 
     @Override
