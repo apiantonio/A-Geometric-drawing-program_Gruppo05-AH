@@ -7,9 +7,12 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Modello dell'applicazione, contiene le figure e gestisce le operazioni fondamentali ssu di esse.
+ */
+
 public class DrawingModel {
-    // Mark shapes as transient because ObservableList is not reliably serializable by default.
-    // We will handle its serialization manually.
     private transient ObservableList<AbstractShape> shapes;
 
     public DrawingModel() {
@@ -23,8 +26,13 @@ public class DrawingModel {
         }
     }
 
+    /**
+     * @param s rimuove una figura dalla lista delle figure del modello
+     */
     public void removeShape(AbstractShape s) {
-        this.shapes.remove(s);
+        if (s != null) {
+            this.shapes.remove(s);
+        }
     }
 
     public void setShapeWidth(AbstractShape shape, double width) {
@@ -54,7 +62,7 @@ public class DrawingModel {
     }
 
     /**
-     * restituisce le figure in ordine decrescente di z
+     * Metodo che restituisce le figure in ordine decrescente di z
      */
     public ObservableList<AbstractShape> getShapesOrderedByZ() {
         return FXCollections.observableArrayList(
@@ -64,7 +72,9 @@ public class DrawingModel {
         );
     }
 
-    // Method to save shapes to a file
+    /**
+     * @param file  per il salvataggio di figure su un file
+     */
     public void saveToFile(File file) throws IOException {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             // Convert ObservableList to ArrayList for serialization
@@ -72,7 +82,9 @@ public class DrawingModel {
         }
     }
 
-    // Method to load shapes from a file
+    /**
+     * @param file  per il caricameento di figure da un file
+     */
     @SuppressWarnings("unchecked")
     public void loadFromFile(File file) throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
@@ -82,9 +94,6 @@ public class DrawingModel {
                 shapes.addAll(loadedShapes);
             }
         }
-        // Note: If shapes were not transient and you tried to serialize ObservableList directly,
-        // you might need custom readObject/writeObject for DrawingModel as well.
-        // For simplicity, we re-initialize if it was null (e.g. after deserialization of DrawingModel itself)
         if (this.shapes == null) {
             this.shapes = FXCollections.observableArrayList();
         }

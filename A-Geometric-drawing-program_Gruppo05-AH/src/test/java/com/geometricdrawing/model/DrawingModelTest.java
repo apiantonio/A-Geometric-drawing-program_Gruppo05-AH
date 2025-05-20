@@ -23,6 +23,8 @@ class DrawingModelTest {
         assertEquals(0, newModel.getShapes().size(), "Un nuovo modello dovrebbe avere dimensione 0.");
     }
 
+    // TEST INSERIMENTO FIGURE
+
     @Test
     void modelShouldContainInitiallyAddedShape() {
         assertEquals(1, model.getShapes().size(), "Il modello dovrebbe contenere la forma aggiunta nel setup.");
@@ -71,6 +73,11 @@ class DrawingModelTest {
         assertEquals(1, ellipse1.getZ());
         assertEquals(2, line1.getZ());
     }
+
+    // END TEST INSERIMENTO FIGURE
+
+    // TEST RIDIMENSIONAMENTO
+
     @Test
     void setShapeWidthShouldUpdateShapeWidthInModel() {
         double newWidth = 80.0;
@@ -87,4 +94,35 @@ class DrawingModelTest {
         assertEquals(newHeight, rect.getHeight(), "L'altezza della forma nel modello non è stata aggiornata.");
     }
 
+    // END TEST RIDIMENSIONAMENTO
+
+    // TEST RIMOZIONE FIGURE
+
+    @Test
+    void removeShapeShouldDecreaseSizeAndNotContainShape() {
+        AbstractShape ellipse = new Ellipse(20, 20, 8, 8); //creazione figura di test
+
+        model.removeShape(ellipse);
+        assertEquals(1, model.getShapes().size(), "La dimensione del modello dovrebbe essere 1 dopo la rimozione di una delle figure");
+        assertTrue(model.getShapes().contains(rect), "Il modello dovrebbe ancora contenere la forma aggiunta nel setup");
+        assertFalse(model.getShapes().contains(ellipse), "Il modello NON dovrebbe contenere la forma di test aggiunta.");
+    }
+
+    @Test
+    void removeShapeShouldNotDecreaseSizeIfShapeNotPresent() {
+        AbstractShape ellipse = new Ellipse(20, 20, 8, 8); //creazione figura di test che NON verrà aggiunta
+
+        model.removeShape(ellipse);
+        assertEquals(1, model.getShapes().size(), "La dimensione del modello deve continuare ad essere 1");
+        assertTrue(model.getShapes().contains(rect), "Il modello dovrebbe ancora contenere la forma aggiunta nel setup");
+    }
+
+    @Test
+    void removeNullShapeChangeNothing(){
+        model.removeShape(null);
+        assertEquals(1, model.getShapes().size(), "La dimensione del modello deve continuare ad essere 1");
+        assertTrue(model.getShapes().contains(rect), "Il modello dovrebbe ancora contenere la forma aggiunta nel setup");
+    }
+
+    // END TEST RIMOZIONE FIGURE
 }

@@ -11,6 +11,11 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Classe che estende application e carica il file FXML
+ */
+
 public class GeometricDrawingApp extends Application {
     @Override
     public void start(Stage stage) throws IOException {
