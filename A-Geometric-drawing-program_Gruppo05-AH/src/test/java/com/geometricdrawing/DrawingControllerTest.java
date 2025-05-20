@@ -5,6 +5,7 @@ import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Rectangle;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.input.MouseButton;
@@ -14,15 +15,14 @@ import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Spinner;
 
@@ -37,8 +37,7 @@ class DrawingControllerTest {
     private Spinner<Double> heightSpinner;
     private Spinner<Double> widthSpinner;
     private Button deleteButton;
-
-
+    private Canvas canvas;
     @BeforeAll
     static void initFX() throws InterruptedException {
         if (fxInitialized) {
@@ -81,7 +80,7 @@ class DrawingControllerTest {
                 heightSpinner = new Spinner<>(1.0, 1000.0, 40.0);
                 widthSpinner = new Spinner<>(1.0, 1000.0, 60.0);
                 deleteButton = new Button();
-                Canvas canvas = new Canvas();
+                this.canvas = new Canvas();
                 Pane canvasContainer = new Pane();
                 AnchorPane rootPane = new AnchorPane();
 
@@ -174,6 +173,46 @@ class DrawingControllerTest {
                     "Width spinner dovrebbe mostrare la larghezza corretta");
             assertEquals(existingShape.getHeight(), heightSpinner.getValue(),
                     "Height spinner dovrebbe mostrare l'altezza corretta");
+        });
+    }
+
+    // Se il model è null, il metodo dovrebbe salvare comunque un file (potenzialmente vuoto) senza lanciare eccezioni.
+    @Test
+    void handleSaveSerialized_ModelIsNull() throws Exception {
+        setPrivateField("model", null);
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> controller.handleSaveSerialized(new ActionEvent()));
+        });
+    }
+
+    // Se il model è inizialmente null, il metodo dovrebbe inizializzarne uno nuovo e vuoto durante il caricamento.
+    @Test
+    void handleLoadSerialized_WhenModelIsInitiallyNull_ShouldCreateNewModel() throws Exception {
+        setPrivateField("model", null);
+        Platform.runLater(() -> {
+
+            controller.handleLoadSerialized(new ActionEvent());
+
+            DrawingModel currentModel = (DrawingModel) getPrivateField(controller, "model");
+            assertNotNull(currentModel, "Model should have been initialized");
+            assertTrue(currentModel.getShapes().isEmpty(), "Newly initialized model should be empty");
+        });
+    }
+
+    // Quando il canvas è vuoto, il metodo dovrebbe comunque permettere il salvataggio in PNG senza lanciare eccezioni.
+    @Test
+    void handleSaveAsPng_CanvasIsEmpty() throws Exception {
+        setPrivateField("drawingCanvas", new Canvas(600, 600));
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> controller.handleSaveAsPng(new ActionEvent()));
+        });
+    }
+    // Quando il canvas è vuoto, il metodo dovrebbe comunque permettere il salvataggio in PDF senza lanciare eccezioni.
+    @Test
+    void handleSaveAsPdf_CanvasIsEmpty() throws Exception {
+        setPrivateField("drawingCanvas", new Canvas(600, 600));
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> controller.handleSaveAsPdf(new ActionEvent()));
         });
     }
 }

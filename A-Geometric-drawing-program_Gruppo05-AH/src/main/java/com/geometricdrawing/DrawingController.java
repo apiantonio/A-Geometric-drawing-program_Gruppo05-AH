@@ -13,6 +13,7 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
+import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
@@ -582,11 +583,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSaveSerialized(ActionEvent event) {
-        if (model == null) {
-            System.err.println("Model not initialized. Cannot save.");
-            return;
-        }
+    public void handleSaveSerialized(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Drawing");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Serialized Drawing (*.ser)", "*.ser"));
@@ -604,11 +601,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleLoadSerialized(ActionEvent event) {
-        if (model == null) {
-            this.model = new DrawingModel();
-            setModel(this.model); // Make sure listeners are (re)attached
-        }
+    public void handleLoadSerialized(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Load Drawing");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Serialized Drawing (*.ser)", "*.ser"));
@@ -628,7 +621,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSaveAsPng(ActionEvent event) {
+    public void handleSaveAsPng(ActionEvent event) {
         if (drawingCanvas == null) {
             System.err.println("Canvas not available. Cannot save as PNG.");
             return;
@@ -652,7 +645,7 @@ public class DrawingController {
         }
     }
     @FXML
-    private void handleSaveAsPdf(ActionEvent event) {
+    public void handleSaveAsPdf(ActionEvent event) {
         if (drawingCanvas == null || drawingCanvas.getWidth() == 0 || drawingCanvas.getHeight() == 0) {
             System.err.println("Canvas non disponibile o dimensioni nulle. Impossibile salvare come PDF.");
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -727,7 +720,15 @@ public class DrawingController {
     }
 
     private Window getWindow() {
-        return drawingCanvas != null ? drawingCanvas.getScene().getWindow() : null;
+        if (drawingCanvas == null) {
+            return null;
+        }
+        Scene scene = drawingCanvas.getScene();
+        if (scene == null) {
+            return null;
+        }
+        return scene.getWindow();
     }
+
 }
 
