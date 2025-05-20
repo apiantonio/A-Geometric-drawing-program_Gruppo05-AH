@@ -368,7 +368,7 @@ public class DrawingController {
         redrawCanvas();
     }
 
-    private void updateControlState(AbstractShape shape) {
+    public void updateControlState(AbstractShape shape) {
         boolean enableWidth = false;
         boolean enableHeight = false;
         boolean enableFill = false;
