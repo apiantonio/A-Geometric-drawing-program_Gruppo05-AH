@@ -273,7 +273,7 @@ public class ShapeInsertionIntegrationTest {
         assertFalse(widthSpinner.isDisabled());
         assertTrue(heightSpinner.isDisabled());
         assertTrue(fillColorPicker.isDisabled());
-        assertFalse(borderColorPicker.isDisabled());
+        assertTrue(borderColorPicker.isDisabled());
         assertFalse(deleteButton.isDisabled());
         assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, widthSpinner.getValueFactory().getValue(), "Lo spinner larghezza dovrebbe mostrare la lunghezza di default iniziale della linea.");
     }
