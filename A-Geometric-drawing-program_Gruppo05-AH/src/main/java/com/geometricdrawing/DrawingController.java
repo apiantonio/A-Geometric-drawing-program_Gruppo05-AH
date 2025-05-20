@@ -46,6 +46,10 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.function.UnaryOperator;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Controller dell'applicazione, gestisce gli eventi e le interazioni con l'interfaccia utente.
+ */
 public class DrawingController {
 
     @FXML private AnchorPane rootPane;
@@ -345,11 +349,7 @@ public class DrawingController {
                 x + shapeWidth > drawingCanvas.getWidth() - BORDER_MARGIN ||
                 y + shapeHeight > drawingCanvas.getHeight() - BORDER_MARGIN;
 
-        if (isTooClose) {
-            return true;
-        }
-
-        return false;
+        return isTooClose;
     }
 
     private void handleDimensionChange(boolean isWidth, Double newValue) {

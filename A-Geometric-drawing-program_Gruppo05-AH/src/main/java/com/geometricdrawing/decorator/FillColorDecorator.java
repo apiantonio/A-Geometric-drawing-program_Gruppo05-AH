@@ -6,9 +6,9 @@ import javafx.scene.paint.Color;
 
 import java.io.*;
 
-/*
-    La classe decoratore per il colore del riempimento implementa Serializable
-    per consentire l'esportazione e importazione
+/**
+ *  La classe decoratore per il colore del riempimento implementa Serializable
+ *  per consentire l'esportazione e importazione
  */
 public class FillColorDecorator extends ShapeDecorator {
     private transient Color fillColor;

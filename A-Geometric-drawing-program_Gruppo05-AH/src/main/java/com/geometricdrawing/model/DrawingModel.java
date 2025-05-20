@@ -11,7 +11,6 @@ import java.util.List;
  * Autore: Gruppo05
  * Scopo: Modello dell'applicazione, contiene le figure e gestisce le operazioni fondamentali ssu di esse.
  */
-
 public class DrawingModel {
     private transient ObservableList<AbstractShape> shapes;
 
