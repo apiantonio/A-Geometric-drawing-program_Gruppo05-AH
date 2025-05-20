@@ -72,12 +72,10 @@ class DrawingControllerTest {
 
         Platform.runLater(() -> {
             try {
-                // Inizializza controller e componenti
                 controller = new DrawingController();
                 model = new DrawingModel();
                 commandManager = new CommandManager();
 
-                // Inizializza i controlli JavaFX
                 fillPicker = new ColorPicker();
                 borderPicker = new ColorPicker();
                 heightSpinner = new Spinner<>(1.0, 1000.0, 40.0);
@@ -87,7 +85,6 @@ class DrawingControllerTest {
                 Pane canvasContainer = new Pane();
                 AnchorPane rootPane = new AnchorPane();
 
-                // Imposta i campi privati nel controller usando reflection
                 setPrivateField("model", model);
                 setPrivateField("commandManager", commandManager);
                 setPrivateField("fillPicker", fillPicker);
@@ -121,12 +118,12 @@ class DrawingControllerTest {
 
     @Test
     void handleCanvasClickShouldSelectExistingShape() throws Exception {
-        // Inizializzazione del modello e del controller
+
         DrawingModel model = new DrawingModel();
         controller.setModel(model);
         controller.setCommandManager(new CommandManager());
 
-        // Crea e aggiungi una figura al modello
+        // crep e aggiungo una figura al model
         Rectangle existingShape = new Rectangle(100, 100, 50, 30);
         CountDownLatch addShapeLatch = new CountDownLatch(1);
         Platform.runLater(() -> {
@@ -135,7 +132,7 @@ class DrawingControllerTest {
         });
         addShapeLatch.await(5, TimeUnit.SECONDS);
 
-        // Crea l'evento di click sulla figura
+        // evento di click sulla figura
         MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_PRESSED,
                 125, 115, // Coordinate all'interno della figura
                 0, 0, MouseButton.PRIMARY, 1,
@@ -143,7 +140,7 @@ class DrawingControllerTest {
                 true, false, false, false, false,
                 true, null);
 
-        // Simula prima il mousePressed (necessario per la selezione)
+        // simulo mousePressed sulla figura usando il metodo privato handleMousePressed
         CountDownLatch pressedLatch = new CountDownLatch(1);
         Platform.runLater(() -> {
            try {
@@ -157,7 +154,6 @@ class DrawingControllerTest {
         });
         pressedLatch.await(5, TimeUnit.SECONDS);
 
-        // Attendi che la selezione venga completata
         Thread.sleep(100);
 
         // Verifica che la figura sia stata selezionata
