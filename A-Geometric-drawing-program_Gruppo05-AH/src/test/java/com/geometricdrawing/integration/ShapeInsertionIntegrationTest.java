@@ -11,6 +11,7 @@ import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.model.*;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
@@ -24,6 +25,7 @@ import java.lang.reflect.Field;
 import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,6 +47,9 @@ public class ShapeInsertionIntegrationTest {
     private Spinner<Double> widthSpinner;
     private Button deleteButton;
 
+    private static final double CANVAS_WIDTH_FOR_TEST = 800;
+    private static final double CANVAS_HEIGHT_FOR_TEST = 600;
+
     @BeforeAll
     public static void initFX() throws InterruptedException {
         if (fxInitialized) {
@@ -62,6 +67,7 @@ public class ShapeInsertionIntegrationTest {
 
     @AfterAll
     public static void cleanupFX() {
+        // Platform.exit();
     }
 
     @BeforeEach
@@ -73,26 +79,35 @@ public class ShapeInsertionIntegrationTest {
                 commandManager = new CommandManager();
                 controller = new DrawingController();
 
-                // Istanziazione dei componenti UI reali SUL THREAD JAVAFX
-                drawingCanvas = new Canvas(800, 600);
+                drawingCanvas = new Canvas();
                 canvasContainer = new Pane(drawingCanvas);
-                rootPane = new AnchorPane(); // Necessario per il controller.initialize()
+                canvasContainer.setPrefSize(CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
+
+                rootPane = new AnchorPane(canvasContainer);
+                AnchorPane.setTopAnchor(canvasContainer, 0.0);
+                AnchorPane.setBottomAnchor(canvasContainer, 0.0);
+                AnchorPane.setLeftAnchor(canvasContainer, 0.0);
+                AnchorPane.setRightAnchor(canvasContainer, 0.0);
+
+                new Scene(rootPane, CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
+                rootPane.applyCss();
+                rootPane.layout();
+
                 fillColorPicker = new ColorPicker(Color.LIGHTGREEN);
                 borderColorPicker = new ColorPicker(Color.ORANGE);
 
-                heightSpinner = new Spinner<>(); // Istanziazione base
+                heightSpinner = new Spinner<>();
                 SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0);
                 heightSpinner.setValueFactory(heightFactory);
-                heightSpinner.setEditable(true); // Come nel controller
+                heightSpinner.setEditable(true);
 
-                widthSpinner = new Spinner<>(); // Istanziazione base
+                widthSpinner = new Spinner<>();
                 SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0);
                 widthSpinner.setValueFactory(widthFactory);
-                widthSpinner.setEditable(true); // Come nel controller
+                widthSpinner.setEditable(true);
 
                 deleteButton = new Button("Elimina");
 
-                // Iniezione dei campi FXML nel controller
                 setPrivateField(controller, "drawingCanvas", drawingCanvas);
                 setPrivateField(controller, "canvasContainer", canvasContainer);
                 setPrivateField(controller, "rootPane", rootPane);
@@ -104,11 +119,9 @@ public class ShapeInsertionIntegrationTest {
 
                 controller.setModel(model);
                 controller.setCommandManager(commandManager);
-
-                // Chiama initialize DOPO che tutti i campi e le dipendenze sono stati impostati
                 controller.initialize();
 
-            } catch (Exception e) { // Cattura eccezioni generiche per il logging
+            } catch (Exception e) {
                 e.printStackTrace();
                 fail("Setup fallito sul thread JavaFX: " + e.getMessage());
             } finally {
@@ -116,12 +129,11 @@ public class ShapeInsertionIntegrationTest {
             }
         });
 
-        if (!setupLatch.await(10, TimeUnit.SECONDS)) { // Aumentato timeout per sicurezza
+        if (!setupLatch.await(10, TimeUnit.SECONDS)) {
             throw new InterruptedException("Timeout durante l'attesa del setup sul thread JavaFX.");
         }
     }
 
-    // Helper per impostare campi privati (usare con cautela)
     private void setPrivateField(Object target, String fieldName, Object value)
             throws NoSuchFieldException, IllegalAccessException {
         Field field = target.getClass().getDeclaredField(fieldName);
@@ -129,15 +141,21 @@ public class ShapeInsertionIntegrationTest {
         field.set(target, value);
     }
 
-    // Helper per leggere campi privati (usare con cautela)
     private Object getPrivateField(Object target, String fieldName)
             throws NoSuchFieldException, IllegalAccessException {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         return field.get(target);
     }
+    private Object getPrivateFieldNonFailing(Object target, String fieldName) {
+        try {
+            return getPrivateField(target, fieldName);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            System.err.println("Errore riflessione in getPrivateFieldNonFailing per il campo " + fieldName + ": " + e.getMessage());
+            return "ERRORE_RIFLESSIONE";
+        }
+    }
 
-    // Helper per ottenere lo stack undo (richiede accesso al campo privato)
     @SuppressWarnings("unchecked")
     private Stack<Command> getUndoStack(CommandManager cm)
             throws NoSuchFieldException, IllegalAccessException {
@@ -146,19 +164,40 @@ public class ShapeInsertionIntegrationTest {
         return (Stack<Command>) stackField.get(cm);
     }
 
-    // Helper per eseguire codice sul thread JavaFX e attendere
     private void runOnFxThreadAndWait(Runnable action) throws InterruptedException {
         final CountDownLatch actionLatch = new CountDownLatch(1);
         Platform.runLater(() -> {
             try {
                 action.run();
-            } finally {
+            } catch (Throwable t) {
+                System.err.println("Eccezione imprevista sul thread JavaFX durante action.run():");
+                t.printStackTrace();
+            }
+            finally {
                 actionLatch.countDown();
             }
         });
         if (!actionLatch.await(5, TimeUnit.SECONDS)) {
             throw new InterruptedException("Timeout durante l'esecuzione dell'azione sul thread JavaFX.");
         }
+    }
+    private AbstractShape insertAndGetSelectedShapeFromController(String shapeType, double x, double y) throws Exception {
+        AtomicReference<AbstractShape> currentShapeRef = new AtomicReference<>(null);
+        runOnFxThreadAndWait(() -> {
+            if ("Rectangle".equalsIgnoreCase(shapeType)) {
+                controller.handleSelectRettangolo(new ActionEvent());
+            } else if ("Ellipse".equalsIgnoreCase(shapeType)) {
+                controller.handleSelectEllisse(new ActionEvent());
+            } else if ("Line".equalsIgnoreCase(shapeType)) {
+                controller.handleSelectLinea(new ActionEvent());
+            }
+            MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, x, y, x, y, MouseButton.PRIMARY, 1,
+                    false, false, false, false, true, false, false, true, false, false, null);
+            controller.handleCanvasClick(clickEvent);
+            currentShapeRef.set((AbstractShape) getPrivateFieldNonFailing(controller, "currentShape"));
+        });
+        assertNotNull(currentShapeRef.get(), "Nessuna forma corrente selezionata dopo l'inserimento (letto da controller).");
+        return currentShapeRef.get();
     }
 
 
@@ -168,16 +207,14 @@ public class ShapeInsertionIntegrationTest {
         final double clickX = 100.0;
         final double clickY = 150.0;
 
-        runOnFxThreadAndWait(() -> {
-            controller.handleSelectRettangolo(new ActionEvent());
-            MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, clickX, clickY, clickX, clickY, MouseButton.PRIMARY, 1,
-                    false, false, false, false, true, false, false, true, false, false, null);
-            // Assicurati che handleCanvasClick sia accessibile (non private) in DrawingController
-            controller.handleCanvasClick(clickEvent);
-        });
+        AbstractShape decoratedShape = insertAndGetSelectedShapeFromController("Rectangle", clickX, clickY);
+        // La forma è già stata aggiunta al modello e currentShape è impostato nel controller
 
         assertEquals(1, model.getShapes().size(), "Il modello dovrebbe contenere una forma.");
-        AbstractShape decoratedShape = model.getShapes().get(0);
+        // decoratedShape è currentShape dal controller, che è anche nell'elenco del modello.
+        assertSame(decoratedShape, model.getShapes().get(0), "La forma nel controller e nel modello non corrispondono.");
+
+
         assertTrue(decoratedShape instanceof BorderColorDecorator, "La forma dovrebbe essere decorata con BorderColorDecorator.");
         AbstractShape shapeAfterBorder = ((ShapeDecorator) decoratedShape).getInnerShape();
         assertTrue(shapeAfterBorder instanceof FillColorDecorator, "Dopo BorderColor, ci si aspetta FillColorDecorator.");
@@ -186,46 +223,47 @@ public class ShapeInsertionIntegrationTest {
         assertTrue(baseShape instanceof Rectangle, "La forma base aggiunta dovrebbe essere un Rettangolo.");
         assertEquals(clickX, baseShape.getX(), "La coordinata X non corrisponde.");
         assertEquals(clickY, baseShape.getY(), "La coordinata Y non corrisponde.");
-        assertEquals(ShapeFactory.DEFAULT_WIDTH, baseShape.getWidth(), "La larghezza di default non corrisponde.");
-        assertEquals(ShapeFactory.DEFAULT_HEIGHT, baseShape.getHeight(), "L'altezza di default non corrisponde.");
+        assertEquals(ShapeFactory.DEFAULT_WIDTH, baseShape.getWidth(), "La larghezza non corrisponde.");
+        assertEquals(ShapeFactory.DEFAULT_HEIGHT, baseShape.getHeight(), "L'altezza non corrisponde.");
         assertEquals(0, baseShape.getZ(), "Lo Z-order dovrebbe essere 0 per la prima forma.");
 
         Stack<Command> undoStack = getUndoStack(commandManager);
-        assertFalse(undoStack.isEmpty(), "Lo stack undo non dovrebbe essere vuoto.");
-        assertEquals(3, undoStack.size(), "Dovrebbero esserci 3 comandi nello stack undo.");
-        assertTrue(undoStack.get(0) instanceof AddShapeCommand, "Il primo comando dovrebbe essere AddShapeCommand.");
-        assertTrue(undoStack.get(1) instanceof com.geometricdrawing.command.ChangeWidthCommand, "Il secondo comando dovrebbe essere ChangeWidthCommand."); // Usa il nome completo se non importato
-        assertTrue(undoStack.peek() instanceof com.geometricdrawing.command.ChangeHeightCommand, "Il comando in cima allo stack undo dovrebbe essere ChangeHeightCommand."); // Usa il nome completo se non importato
+        assertEquals(3, undoStack.size(), "Dovrebbero esserci 3 comandi nello stack undo: AddShape, ChangeWidth, ChangeHeight.");
+        assertTrue(undoStack.get(0) instanceof AddShapeCommand);
+        assertTrue(undoStack.get(1) instanceof com.geometricdrawing.command.ChangeWidthCommand);
+        assertTrue(undoStack.get(2) instanceof com.geometricdrawing.command.ChangeHeightCommand);
 
         assertNull(getPrivateField(controller, "currentShapeFactory"), "currentShapeFactory dovrebbe essere resettata.");
-        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"), "La forma corrente nel controller non è quella inserita.");
+        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"));
+
         assertFalse(widthSpinner.isDisabled(), "Width spinner dovrebbe essere abilitato.");
         assertFalse(heightSpinner.isDisabled(), "Height spinner dovrebbe essere abilitato.");
         assertFalse(deleteButton.isDisabled(), "Delete button dovrebbe essere abilitato.");
-        assertEquals(baseShape.getWidth(), widthSpinner.getValueFactory().getValue(), "Valore errato nello spinner larghezza.");
-        assertEquals(baseShape.getHeight(), heightSpinner.getValueFactory().getValue(), "Valore errato nello spinner altezza.");
+
+        // Secondo il nuovo requisito, i picker sono disabilitati dopo la selezione
+        assertTrue(fillColorPicker.isDisabled(),"Fill picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
+        assertTrue(borderColorPicker.isDisabled(),"Border picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
+
+        assertEquals(baseShape.getWidth(), widthSpinner.getValueFactory().getValue());
+        assertEquals(baseShape.getHeight(), heightSpinner.getValueFactory().getValue());
     }
 
     @Test
     @DisplayName("Inserimento Ellisse con colori personalizzati")
     void testInsertEllipseWithCustomColors() throws Exception {
-        final Color customFill = Color.RED;
-        final Color customBorder = Color.BLUE;
+        final Color customFill = Color.RED; // Questi colori vengono usati per creare la forma
+        final Color customBorder = Color.BLUE; // ma i picker saranno disabilitati dopo
         final double clickX = 50.0;
         final double clickY = 75.0;
 
-        runOnFxThreadAndWait(() -> {
+        runOnFxThreadAndWait(() -> { // Imposta i valori dei picker PRIMA della selezione tipo e del click
             fillColorPicker.setValue(customFill);
             borderColorPicker.setValue(customBorder);
-            controller.handleSelectEllisse(new ActionEvent());
-            MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, clickX, clickY, clickX, clickY, MouseButton.PRIMARY, 1,
-                    false, false, false, false, true, false, false, true, false, false, null);
-            controller.handleCanvasClick(clickEvent);
         });
 
-        assertEquals(1, model.getShapes().size());
-        AbstractShape decoratedShape = model.getShapes().get(0);
+        AbstractShape decoratedShape = insertAndGetSelectedShapeFromController("Ellipse", clickX, clickY);
 
+        assertEquals(1, model.getShapes().size());
         assertTrue(decoratedShape instanceof BorderColorDecorator);
         AbstractShape shapeAfterBorder = ((ShapeDecorator) decoratedShape).getInnerShape();
         assertTrue(shapeAfterBorder instanceof FillColorDecorator);
@@ -237,71 +275,64 @@ public class ShapeInsertionIntegrationTest {
         assertEquals(ShapeFactory.DEFAULT_WIDTH, baseShape.getWidth());
         assertEquals(ShapeFactory.DEFAULT_HEIGHT, baseShape.getHeight());
         assertEquals(decoratedShape, getPrivateField(controller, "currentShape"));
+
+        // I picker sono disabilitati dopo la selezione, anche se i loro valori sono stati usati per la creazione
+        assertTrue(fillColorPicker.isDisabled(),"Fill picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
+        assertTrue(borderColorPicker.isDisabled(),"Border picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
     }
 
     @Test
-    @DisplayName("Inserimento Linea disabilita FillPicker e HeightSpinner")
-    void testInsertLineDisablesFillPickerAndHeightSpinner() throws Exception {
+    @DisplayName("Inserimento Linea disabilita FillPicker, HeightSpinner e i ColorPicker")
+    void testInsertLineDisablesControls() throws Exception {
         final double clickX = 200.0;
         final double clickY = 250.0;
 
+        // handleSelectLinea abilita borderPicker e disabilita fillPicker (tramite updateControlState(null) e poi logica specifica)
         runOnFxThreadAndWait(() -> controller.handleSelectLinea(new ActionEvent()));
 
         // Verifica stato UI *dopo* la selezione del tipo Linea, ma *prima* dell'inserimento
-        final boolean[] fillDisabledInitial = new boolean[1];
-        runOnFxThreadAndWait(() -> fillDisabledInitial[0] = fillColorPicker.isDisabled());
-        assertTrue(fillDisabledInitial[0], "Fill picker dovrebbe essere disabilitato dopo aver selezionato Linea.");
+        assertTrue(fillColorPicker.isDisabled(), "Fill picker dovrebbe essere disabilitato dopo aver selezionato Linea.");
+        assertFalse(borderColorPicker.isDisabled(), "Border picker dovrebbe essere abilitato dopo aver selezionato Linea (prima del click).");
 
-        runOnFxThreadAndWait(() -> {
-            MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, clickX, clickY, clickX, clickY, MouseButton.PRIMARY, 1,
-                    false, false, false, false, true, false, false, true, false, false, null);
-            controller.handleCanvasClick(clickEvent);
-        });
+        AbstractShape decoratedShape = insertAndGetSelectedShapeFromController("Line", clickX, clickY);
 
         assertEquals(1, model.getShapes().size());
-        AbstractShape decoratedShape = model.getShapes().get(0);
         assertTrue(decoratedShape instanceof BorderColorDecorator);
         AbstractShape baseShape = ((ShapeDecorator) decoratedShape).getInnerShape();
+        assertFalse(baseShape instanceof FillColorDecorator); // Una linea non ha riempimento
 
         assertTrue(baseShape instanceof Line);
         assertEquals(clickX, baseShape.getX());
         assertEquals(clickY, baseShape.getY());
         assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, baseShape.getWidth());
-        assertEquals(1.0, baseShape.getHeight());
+        assertEquals(1.0, baseShape.getHeight()); // Altezza impostata a 1.0 dal ChangeHeightCommand iniziale
 
         assertEquals(decoratedShape, getPrivateField(controller, "currentShape"));
+
+        // Stato UI dopo l'inserimento della linea:
         assertFalse(widthSpinner.isDisabled());
-        assertTrue(heightSpinner.isDisabled());
-        assertTrue(fillColorPicker.isDisabled());
-        assertTrue(borderColorPicker.isDisabled());
+        assertTrue(heightSpinner.isDisabled()); // Specifico per la linea
+        assertTrue(fillColorPicker.isDisabled()); // Specifico per la linea E per "MOMENTANEE"
+        assertTrue(borderColorPicker.isDisabled());// Per "MOMENTANEE"
         assertFalse(deleteButton.isDisabled());
-        assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, widthSpinner.getValueFactory().getValue(), "Lo spinner larghezza dovrebbe mostrare la lunghezza di default iniziale della linea.");
+        assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, widthSpinner.getValueFactory().getValue());
     }
 
     @Test
     @DisplayName("Z-order per inserimenti consecutivi")
     void testZOrderOnConsecutiveInsertions() throws Exception {
-        runOnFxThreadAndWait(() -> {
-            controller.handleSelectRettangolo(new ActionEvent());
-            controller.handleCanvasClick(new MouseEvent(MouseEvent.MOUSE_CLICKED, 10, 10, 10, 10, MouseButton.PRIMARY, 1, false, false, false, false, true, false, false, true, false, false, null));
-        });
-        AbstractShape baseShape1 = ((ShapeDecorator)((ShapeDecorator)model.getShapes().get(0)).getInnerShape()).getInnerShape();
-        assertEquals(0, baseShape1.getZ());
+        AbstractShape shape1Decorated = insertAndGetSelectedShapeFromController("Rectangle", 10, 10);
+        AbstractShape shape1Base = ((ShapeDecorator)((ShapeDecorator)shape1Decorated).getInnerShape()).getInnerShape();
+        assertEquals(0, shape1Base.getZ());
 
-        runOnFxThreadAndWait(() -> {
-            controller.handleSelectLinea(new ActionEvent());
-            controller.handleCanvasClick(new MouseEvent(MouseEvent.MOUSE_CLICKED, 20, 20, 20, 20, MouseButton.PRIMARY, 1, false, false, false, false, true, false, false, true, false, false, null));
-        });
-        assertEquals(2, model.getShapes().size());
-        AbstractShape baseShape2 = ((ShapeDecorator)model.getShapes().get(1)).getInnerShape();
-        assertEquals(1, baseShape2.getZ());
+        AbstractShape shape2Decorated = insertAndGetSelectedShapeFromController("Line", 20, 20);
+        assertEquals(2, model.getShapes().size()); // Verifica che la seconda forma sia stata aggiunta
+        AbstractShape shape2Base = ((ShapeDecorator)shape2Decorated).getInnerShape();
+        assertEquals(1, shape2Base.getZ());
 
-        runOnFxThreadAndWait(() -> {
-            controller.handleSelectEllisse(new ActionEvent());
-            controller.handleCanvasClick(new MouseEvent(MouseEvent.MOUSE_CLICKED, 30, 30, 30, 30, MouseButton.PRIMARY, 1, false, false, false, false, true, false, false, true, false, false, null));
-        });
-        assertEquals(3, model.getShapes().size());
-        AbstractShape baseShape3 = ((ShapeDecorator)((ShapeDecorator)model.getShapes().get(2)).getInnerShape()).getInnerShape();
-        assertEquals(2, baseShape3.getZ());
+        AbstractShape shape3Decorated = insertAndGetSelectedShapeFromController("Ellipse", 30, 30);
+        assertEquals(3, model.getShapes().size()); // Verifica che la terza forma sia stata aggiunta
+        AbstractShape shape3Base = ((ShapeDecorator)((ShapeDecorator)shape3Decorated).getInnerShape()).getInnerShape();
+        assertEquals(2, shape3Base.getZ());
     }
 }
