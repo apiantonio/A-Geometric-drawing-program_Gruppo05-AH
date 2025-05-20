@@ -10,6 +10,7 @@ import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.model.*;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
@@ -23,6 +24,7 @@ import java.lang.reflect.Field;
 import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,7 +37,6 @@ public class ShapeResizeIntegrationTest {
     private DrawingModel model;
     private CommandManager commandManager;
 
-    // Componenti UI reali
     private Canvas drawingCanvas;
     private Pane canvasContainer;
     private AnchorPane rootPane;
@@ -44,6 +45,10 @@ public class ShapeResizeIntegrationTest {
     private Spinner<Double> heightSpinner;
     private Spinner<Double> widthSpinner;
     private Button deleteButton;
+
+    private static final double CANVAS_WIDTH_FOR_TEST = 800;
+    private static final double CANVAS_HEIGHT_FOR_TEST = 600;
+
 
     @BeforeAll
     public static void initFX() throws InterruptedException {
@@ -62,7 +67,7 @@ public class ShapeResizeIntegrationTest {
 
     @AfterAll
     public static void cleanupFX() {
-        // Considera Platform.exit(); se necessario, ma può interferire con altri test suite
+        // Platform.exit();
     }
 
     @BeforeEach
@@ -74,19 +79,30 @@ public class ShapeResizeIntegrationTest {
                 commandManager = new CommandManager();
                 controller = new DrawingController();
 
-                drawingCanvas = new Canvas(800, 600);
+                drawingCanvas = new Canvas();
                 canvasContainer = new Pane(drawingCanvas);
-                rootPane = new AnchorPane();
+                canvasContainer.setPrefSize(CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
+
+                rootPane = new AnchorPane(canvasContainer);
+                AnchorPane.setTopAnchor(canvasContainer, 0.0);
+                AnchorPane.setBottomAnchor(canvasContainer, 0.0);
+                AnchorPane.setLeftAnchor(canvasContainer, 0.0);
+                AnchorPane.setRightAnchor(canvasContainer, 0.0);
+
+                new Scene(rootPane, CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
+                rootPane.applyCss();
+                rootPane.layout();
+
                 fillColorPicker = new ColorPicker(Color.LIGHTGREEN);
                 borderColorPicker = new ColorPicker(Color.ORANGE);
 
                 heightSpinner = new Spinner<>();
-                SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
+                SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0);
                 heightSpinner.setValueFactory(heightFactory);
                 heightSpinner.setEditable(true);
 
                 widthSpinner = new Spinner<>();
-                SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0);
+                SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0);
                 widthSpinner.setValueFactory(widthFactory);
                 widthSpinner.setEditable(true);
 
@@ -118,7 +134,6 @@ public class ShapeResizeIntegrationTest {
         }
     }
 
-    // Metodi helper (setPrivateField, getPrivateField, getUndoStack, runOnFxThreadAndWait)
     private void setPrivateField(Object target, String fieldName, Object value)
             throws NoSuchFieldException, IllegalAccessException {
         Field field = target.getClass().getDeclaredField(fieldName);
@@ -131,6 +146,14 @@ public class ShapeResizeIntegrationTest {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         return field.get(target);
+    }
+    private Object getPrivateFieldNonFailing(Object target, String fieldName) {
+        try {
+            return getPrivateField(target, fieldName);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            System.err.println("Errore riflessione in getPrivateFieldNonFailing per il campo " + fieldName + ": " + e.getMessage());
+            return "ERRORE_RIFLESSIONE";
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -146,7 +169,11 @@ public class ShapeResizeIntegrationTest {
         Platform.runLater(() -> {
             try {
                 action.run();
-            } finally {
+            } catch (Throwable t) {
+                System.err.println("Eccezione imprevista sul thread JavaFX durante action.run():");
+                t.printStackTrace();
+            }
+            finally {
                 actionLatch.countDown();
             }
         });
@@ -154,9 +181,10 @@ public class ShapeResizeIntegrationTest {
             throw new InterruptedException("Timeout durante l'esecuzione dell'azione sul thread JavaFX.");
         }
     }
-    // FINE METODI HELPER
 
-    private AbstractShape insertAndGetCurrentShape(String shapeType, double x, double y) throws Exception {
+    // Metodo helper rinominato per chiarezza, simile a quello in ShapeInsertionIntegrationTest
+    private AbstractShape insertAndGetSelectedShapeFromController(String shapeType, double x, double y) throws Exception {
+        AtomicReference<AbstractShape> currentShapeRef = new AtomicReference<>(null);
         runOnFxThreadAndWait(() -> {
             if ("Rectangle".equalsIgnoreCase(shapeType)) {
                 controller.handleSelectRettangolo(new ActionEvent());
@@ -167,11 +195,11 @@ public class ShapeResizeIntegrationTest {
             }
             MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, x, y, x, y, MouseButton.PRIMARY, 1,
                     false, false, false, false, true, false, false, true, false, false, null);
-            controller.handleCanvasClick(clickEvent);
+            controller.handleCanvasClick(clickEvent); // Questo imposta currentShape
+            currentShapeRef.set((AbstractShape) getPrivateFieldNonFailing(controller, "currentShape"));
         });
-        AbstractShape currentDecoratedShape = (AbstractShape) getPrivateField(controller, "currentShape");
-        assertNotNull(currentDecoratedShape, "Nessuna forma corrente selezionata dopo l'inserimento.");
-        return currentDecoratedShape;
+        assertNotNull(currentShapeRef.get(), "Nessuna forma corrente selezionata dopo l'inserimento (letto da controller). Controllare i log del thread FX.");
+        return currentShapeRef.get();
     }
 
     private AbstractShape getBaseShape(AbstractShape decoratedShape) {
@@ -186,97 +214,103 @@ public class ShapeResizeIntegrationTest {
     @Test
     @DisplayName("Modifica larghezza di un Rettangolo tramite Spinner")
     void testResizeRectangleWidthViaSpinner() throws Exception {
-        final double initialWidth = ShapeFactory.DEFAULT_WIDTH;
+        final double initialWidthFromFactory = ShapeFactory.DEFAULT_WIDTH;
         final double newWidth = 200.0;
 
-        AbstractShape decoratedRectangle = insertAndGetCurrentShape("Rectangle", 100, 100);
+        AbstractShape decoratedRectangle = insertAndGetSelectedShapeFromController("Rectangle", 100, 100);
         AbstractShape baseRectangle = getBaseShape(decoratedRectangle);
 
-        assertEquals(initialWidth, baseRectangle.getWidth(), "Larghezza iniziale del rettangolo non corretta.");
+        assertEquals(initialWidthFromFactory, baseRectangle.getWidth());
+        assertEquals(initialWidthFromFactory, widthSpinner.getValueFactory().getValue());
 
         runOnFxThreadAndWait(() -> widthSpinner.getValueFactory().setValue(newWidth));
 
-        assertEquals(newWidth, baseRectangle.getWidth(), "Larghezza del rettangolo non aggiornata dopo modifica spinner.");
-        assertEquals(newWidth, widthSpinner.getValueFactory().getValue(), "Valore dello spinner larghezza non corretto.");
+        assertEquals(newWidth, baseRectangle.getWidth());
+        assertEquals(newWidth, widthSpinner.getValueFactory().getValue());
 
         Stack<Command> undoStack = getUndoStack(commandManager);
-        // Stack atteso: AddShape, ChangeWidth (iniziale), ChangeHeight (iniziale), ChangeWidth (da spinner)
-        assertEquals(4, undoStack.size(), "Numero comandi errato.");
-        assertTrue(undoStack.peek() instanceof ChangeWidthCommand, "Ultimo comando non è ChangeWidthCommand.");
+        assertEquals(4, undoStack.size());
+        assertTrue(undoStack.peek() instanceof ChangeWidthCommand);
     }
 
     @Test
     @DisplayName("Modifica altezza di un Ellisse tramite Spinner")
     void testResizeEllipseHeightViaSpinner() throws Exception {
-        final double initialHeight = ShapeFactory.DEFAULT_HEIGHT;
+        final double initialHeightFromFactory = ShapeFactory.DEFAULT_HEIGHT;
         final double newHeight = 150.0;
 
-        AbstractShape decoratedEllipse = insertAndGetCurrentShape("Ellipse", 150, 150);
+        AbstractShape decoratedEllipse = insertAndGetSelectedShapeFromController("Ellipse", 150, 150);
         AbstractShape baseEllipse = getBaseShape(decoratedEllipse);
 
-        assertEquals(initialHeight, baseEllipse.getHeight(), "Altezza iniziale dell'ellisse non corretta.");
+        assertEquals(initialHeightFromFactory, baseEllipse.getHeight());
+        assertEquals(initialHeightFromFactory, heightSpinner.getValueFactory().getValue());
 
         runOnFxThreadAndWait(() -> heightSpinner.getValueFactory().setValue(newHeight));
 
-        assertEquals(newHeight, baseEllipse.getHeight(), "Altezza dell'ellisse non aggiornata dopo modifica spinner.");
-        assertEquals(newHeight, heightSpinner.getValueFactory().getValue(), "Valore dello spinner altezza non corretto.");
+        assertEquals(newHeight, baseEllipse.getHeight());
+        assertEquals(newHeight, heightSpinner.getValueFactory().getValue());
 
         Stack<Command> undoStack = getUndoStack(commandManager);
-        // Stack atteso: AddShape, ChangeWidth (iniziale), ChangeHeight (iniziale), ChangeHeight (da spinner)
-        assertEquals(4, undoStack.size(), "Numero comandi errato.");
-        assertTrue(undoStack.peek() instanceof ChangeHeightCommand, "Ultimo comando non è ChangeHeightCommand.");
+        assertEquals(4, undoStack.size());
+        assertTrue(undoStack.peek() instanceof ChangeHeightCommand);
     }
 
     @Test
     @DisplayName("Modifica 'larghezza' (lunghezza) di una Linea tramite Spinner")
     void testResizeLineWidthViaSpinner() throws Exception {
-        final double factoryDefaultWidthForLine = ShapeFactory.DEFAULT_LINE_LENGTH; // Es. 100.0
+        final double factoryDefaultLineLength = ShapeFactory.DEFAULT_LINE_LENGTH;
         final double newSpinnerSetting = 180.0;
 
-        AbstractShape decoratedLine = insertAndGetCurrentShape("Line", 50, 50);
+        AbstractShape decoratedLine = insertAndGetSelectedShapeFromController("Line", 50, 50);
         AbstractShape baseLine = getBaseShape(decoratedLine);
 
-        assertEquals(factoryDefaultWidthForLine, baseLine.getWidth(), 0.0001, "Proprietà 'width' della linea dopo l'inserimento non corretta.");
-        assertEquals(1.0, baseLine.getHeight(), 0.0001, "Proprietà 'height' della linea dopo l'inserimento non corretta.");
+        assertEquals(factoryDefaultLineLength, baseLine.getWidth(), 0.0001);
+        assertEquals(1.0, baseLine.getHeight(), 0.0001);
+        assertEquals(factoryDefaultLineLength, widthSpinner.getValueFactory().getValue(), 0.0001);
+        assertTrue(heightSpinner.isDisabled());
 
-        double geometricLengthAfterHeightChange = Math.sqrt(Math.pow(factoryDefaultWidthForLine, 2) + Math.pow(1.0, 2)); // Es. 100.00499...
-        assertEquals(geometricLengthAfterHeightChange, ((Line) baseLine).getLength(), 0.0001, "Lunghezza geometrica della linea dopo l'inserimento non corretta.");
-
-        assertEquals(factoryDefaultWidthForLine, widthSpinner.getValueFactory().getValue(), 0.0001, "Valore iniziale spinner larghezza per linea non corretto."); // <<< QUESTA È LA CORREZIONE CHIAVE
-
-        assertTrue(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere disabilitato per la linea.");
-
-        // Adesso simula la modifica dello spinner a un nuovo valore
         runOnFxThreadAndWait(() -> widthSpinner.getValueFactory().setValue(newSpinnerSetting));
 
-        assertEquals(newSpinnerSetting, widthSpinner.getValueFactory().getValue(), 0.0001, "Valore dello spinner larghezza per linea non corretto dopo modifica.");
-        assertEquals(newSpinnerSetting, baseLine.getWidth(), 0.0001, "Proprietà 'width' della linea non aggiornata dopo modifica spinner.");
+        assertEquals(newSpinnerSetting, widthSpinner.getValueFactory().getValue(), 0.0001);
+        assertEquals(newSpinnerSetting, baseLine.getWidth(), 0.0001);
+        assertEquals(1.0, baseLine.getHeight(), 0.0001);
+        double expectedGeometricLength = Math.sqrt(Math.pow(newSpinnerSetting, 2) + Math.pow(1.0, 2));
+        assertEquals(expectedGeometricLength, ((Line)baseLine).getLength(), 0.0001);
     }
 
+
     @Test
-    @DisplayName("Spinners disabilitati se nessuna figura è selezionata")
-    void testSpinnersDisabledWhenNoShapeSelected() throws Exception {
-        // All'inizio, nessuna forma è selezionata, quindi gli spinner dovrebbero essere disabilitati
-        // come da logica in controller.initialize() -> updateControlState(null)
+    @DisplayName("Spinners e Picker disabilitati/abilitati correttamente")
+    void testControlsStateWhenNoShapeSelectedAndWhenShapeSelected() throws Exception {
+        // Stato iniziale: nessuna forma selezionata
         assertTrue(widthSpinner.isDisabled(), "Spinner larghezza dovrebbe essere disabilitato all'avvio.");
         assertTrue(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere disabilitato all'avvio.");
+        assertTrue(fillColorPicker.isDisabled(), "Fill picker dovrebbe essere disabilitato all'avvio.");
+        assertTrue(borderColorPicker.isDisabled(), "Border picker dovrebbe essere disabilitato all'avvio.");
+        assertTrue(deleteButton.isDisabled(), "Delete button dovrebbe essere disabilitato all'avvio.");
 
-        // Inserisci una forma e selezionala (automaticamente dopo l'inserimento)
-        insertAndGetCurrentShape("Rectangle", 100, 100);
-        assertFalse(widthSpinner.isDisabled(), "Spinner larghezza dovrebbe essere abilitato dopo selezione.");
-        assertFalse(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere abilitato dopo selezione.");
+        // Inserisci un Rettangolo (viene selezionato automaticamente)
+        insertAndGetSelectedShapeFromController("Rectangle", 100, 100);
+        assertFalse(widthSpinner.isDisabled(), "Spinner larghezza dovrebbe essere abilitato per Rettangolo.");
+        assertFalse(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere abilitato per Rettangolo.");
+        assertFalse(deleteButton.isDisabled(), "Delete button dovrebbe essere abilitato per Rettangolo.");
+        // Picker disabilitati per requisito "MOMENTANEE"
+        assertTrue(fillColorPicker.isDisabled(), "Fill picker DISABILITATO per Rettangolo (MOMENTANEE).");
+        assertTrue(borderColorPicker.isDisabled(), "Border picker DISABILITATO per Rettangolo (MOMENTANEE).");
 
-        // Deseleziona la forma (cliccando sul canvas vuoto)
+
+        // Deseleziona la forma
         runOnFxThreadAndWait(() -> {
             MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_PRESSED, 1, 1, 1, 1, MouseButton.PRIMARY, 1,
                     false, false, false, false, false, false, false, true, false, false, null);
-            // handleMousePressed dovrebbe deselezionare la forma e chiamare updateControlState(null)
             drawingCanvas.getOnMousePressed().handle(clickEvent);
         });
 
-        // Verifica che currentShape sia null nel controller
-        assertNull(getPrivateField(controller, "currentShape"), "Nessuna forma dovrebbe essere selezionata.");
-        assertTrue(widthSpinner.isDisabled(), "Spinner larghezza dovrebbe essere disabilitato dopo deselezione.");
-        assertTrue(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere disabilitato dopo deselezione.");
+        assertNull(getPrivateField(controller, "currentShape"), "Nessuna forma selezionata dopo click su area vuota.");
+        assertTrue(widthSpinner.isDisabled(), "Spinner larghezza disabilitato dopo deselezione.");
+        assertTrue(heightSpinner.isDisabled(), "Spinner altezza disabilitato dopo deselezione.");
+        assertTrue(fillColorPicker.isDisabled(), "Fill picker disabilitato dopo deselezione.");
+        assertTrue(borderColorPicker.isDisabled(), "Border picker disabilitato dopo deselezione.");
+        assertTrue(deleteButton.isDisabled(), "Delete button disabilitato dopo deselezione.");
     }
 }

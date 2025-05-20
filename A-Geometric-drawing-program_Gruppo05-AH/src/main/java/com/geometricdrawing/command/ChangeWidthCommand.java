@@ -3,6 +3,10 @@ package com.geometricdrawing.command;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Command per il cambio larghezza di una figura
+ */
 public class ChangeWidthCommand implements Command {
     private final DrawingModel model;
     private final AbstractShape shape;
