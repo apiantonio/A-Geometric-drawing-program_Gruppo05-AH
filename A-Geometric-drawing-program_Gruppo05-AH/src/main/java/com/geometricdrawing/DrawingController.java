@@ -45,11 +45,11 @@ public class DrawingController {
     @FXML private Pane canvasContainer;
 
     @FXML private Button deleteButton;
+    @FXML private Button copyButton; // Bottone per la Copia
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
-    @FXML private Button copyButton;
     private ContextMenu shapeMenu;
 
     private static final double HANDLE_RADIUS = 3.0;         // raggio del cerchietto che compare alla selezione di una figura
@@ -221,46 +221,30 @@ public class DrawingController {
         }
     }
 
-    @FXML
-    public void handleSelectLinea(ActionEvent event) {
-        currentShape = null;  // se è selezionata una figura deseleziona
-        // i controlli abilitati per la selezione, vengono disabilitati
+    // Metodo di utilità per inizializzare la selezione della figura
+    private void initializeShapeSelection(ShapeFactory factory, boolean stateFillPicker, boolean stateBorderPicker) {
+        currentShape = null;  // deseleziona la figura corrente
         updateControlState(null);
-        // aggiornamento del canvas
         redrawCanvas();
 
-        // al momento della creazione potresti selezionare il colore di bordo della linea
-        borderPicker.setDisable(false);
-        fillPicker.setDisable(true);
-        currentShapeFactory = new LineFactory();
+        fillPicker.setDisable(stateFillPicker);
+        borderPicker.setDisable(stateBorderPicker);
+        currentShapeFactory = factory;
+    }
+
+    @FXML
+    public void handleSelectLinea(ActionEvent event) {
+        initializeShapeSelection(new LineFactory(), false, true);
     }
 
     @FXML
     public void handleSelectRettangolo(ActionEvent event) {
-        currentShape = null;  // se è selezionata una figura deseleziona
-        // i controlli abilitati per la selezione, vengono disabilitati
-        updateControlState(null);
-        // aggiornamento del canvas
-        redrawCanvas();
-
-        // al momento della creazione potresti selezionare il colore di bordo e riempimento del rettangolo
-        fillPicker.setDisable(false);
-        borderPicker.setDisable(false);
-        currentShapeFactory = new RectangleFactory();
+        initializeShapeSelection(new RectangleFactory(), true, true);
     }
 
     @FXML
     public void handleSelectEllisse(ActionEvent event) {
-        currentShape = null;  // se è selezionata una figura deseleziona
-        // i controlli abilitati per la selezione, vengono disabilitati
-        updateControlState(null);
-        // aggiornamento del canvas
-        redrawCanvas();
-
-        // al momento della creazione potresti selezionare il colore di bordo e riempimento dell'ellisse
-        fillPicker.setDisable(false);
-        borderPicker.setDisable(false);
-        currentShapeFactory = new EllipseFactory();
+        initializeShapeSelection(new EllipseFactory(), true, true);
     }
 
     public boolean isTooClose(AbstractShape newShape, double x, double y) {
@@ -309,7 +293,6 @@ public class DrawingController {
         return base;
     }
 
-
     public void updateControlState(AbstractShape shape) {
         boolean enableWidth = false;
         boolean enableHeight = false;
@@ -347,7 +330,7 @@ public class DrawingController {
         if (copyButton != null) copyButton.setDisable(!enableCopy); // Aggiorna stato bottone Copia
     }
 
-    /*
+    /**
      * Metodo per la gestione dell'eliminazione di una figura selezionata
      */
     @FXML
@@ -379,6 +362,12 @@ public class DrawingController {
         }
     }
 
+    /**
+     * Metodo per selezionare una figura al click del mouse
+     * @param x coordinata x del click
+     * @param y coordinata y del click
+     * @return la figura selezionata, null se non c'è nessuna figura
+     */
     public AbstractShape selectShapeAt(double x, double y) {
         if (model == null) return null;
         for (AbstractShape shape : model.getShapesOrderedByZ()) {
@@ -429,13 +418,19 @@ public class DrawingController {
         }
     }
 
+    /**
+     * Metodo per disegnare il canvas
+     * Cancella tutto ciò che è sul canvas e ridisegna le figure
+     */
     public void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {
             return;
         }
 
+        // Cancella tutto ciò che è sul canvas
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
 
+        // Disegna tutte le figure nel modello
         for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
                 shape.draw(gc);
@@ -454,10 +449,7 @@ public class DrawingController {
 
     // Metodo per disegnare il bordo di selezione e i manici
     private void drawHighlightBorder(AbstractShape shape) {
-        AbstractShape baseShape = shape;
-        while (baseShape instanceof ShapeDecorator decorator) {
-            baseShape = decorator.getInnerShape();
-        }
+        AbstractShape baseShape = getBaseShape(shape);
 
         // Disegna il bordo di selezione
         gc.setStroke(Color.SKYBLUE);
