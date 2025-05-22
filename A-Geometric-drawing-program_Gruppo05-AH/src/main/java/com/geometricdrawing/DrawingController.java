@@ -9,6 +9,7 @@ import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.templateMethod.AbstractMouseHandler;
+import com.geometricdrawing.templateMethod.MouseDraggedHandler;
 import com.geometricdrawing.templateMethod.MousePressedHandler;
 import com.geometricdrawing.strategy.*;
 import javafx.collections.ListChangeListener;
@@ -100,7 +101,7 @@ public class DrawingController {
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
-            drawingCanvas.setOnMouseDragged(this::handleMouseDragged);
+            drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseReleased(this::handleMouseReleased);
             drawingCanvas.setOnMouseMoved(this::handleMouseMoved); // per il cambio cursore
 
@@ -450,32 +451,6 @@ public class DrawingController {
         shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
     }
 
-    private void handleMouseDragged(MouseEvent event) {
-        if (currentShape == null) {
-            return;
-        }
-
-        double newX = event.getX() - dragOffsetX;
-        double newY = event.getY() - dragOffsetY;
-
-        // dimensioni attuali del canvas
-        double canvasWidth = drawingCanvas.getWidth();
-        double canvasHeight = drawingCanvas.getHeight();
-        // dimensioni della figura corrente
-        double shapeWidth = currentShape.getWidth();
-        double shapeHeight = currentShape.getHeight();
-
-        // per limitare le coordinate per mantenere la figura all'interno del canvas
-        // lascio un margine di  pixel per evitare che la figura sia completamente nascosta
-        newX = Math.max(BORDER_MARGIN - shapeWidth * VISIBLE_SHAPE_PORTION, Math.min(newX, canvasWidth - shapeWidth * HIDDEN_SHAPE_PORTION));
-        newY = Math.max(BORDER_MARGIN - shapeHeight * VISIBLE_SHAPE_PORTION, Math.min(newY, canvasHeight - shapeHeight * HIDDEN_SHAPE_PORTION));
-
-        MoveShapeCommand moveCmd = new MoveShapeCommand(model, currentShape, newX, newY);
-        commandManager.executeCommand(moveCmd);
-
-        redrawCanvas();
-    }
-
     private void handleMouseReleased(MouseEvent event) {
         drawingCanvas.setCursor(Cursor.DEFAULT);
         redrawCanvas();
@@ -627,6 +602,10 @@ public class DrawingController {
 
     public void setCurrentShape(Object o) {
         this.currentShape = (AbstractShape) o;
+    }
+
+    public CommandManager getCommandManager() {
+        return commandManager;
     }
 }
 
