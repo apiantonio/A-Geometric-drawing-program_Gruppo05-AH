@@ -85,7 +85,11 @@ public class DrawingController {
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
+            setModel(new DrawingModel());
+            setCommandManager(new CommandManager());
+
             this.fileOperationContext = new FileOperationContext(this);
+
             // Al click col tasto destro richiama la creazione del ContextMenu
             shapeMenu = new ContextMenu();
             MenuItem deleteItem = new MenuItem("Elimina");
@@ -407,7 +411,7 @@ public class DrawingController {
         }
     }
 
-    private AbstractShape selectShapeAt(double x, double y) {
+    public AbstractShape selectShapeAt(double x, double y) {
         for (AbstractShape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
                 currentShape = shape; // Imposta la figura selezionata
@@ -428,7 +432,7 @@ public class DrawingController {
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
-    private void updateSpinners(AbstractShape shape) {
+    public void updateSpinners(AbstractShape shape) {
         if (shape instanceof Line line) {
             widthSpinner.getValueFactory().setValue(line.getLength());
             heightSpinner.setDisable(true);
@@ -492,7 +496,7 @@ public class DrawingController {
         }
     }
 
-    private void redrawCanvas() {
+    public void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {
             return;
         }
@@ -615,6 +619,10 @@ public class DrawingController {
 
     public DrawingModel getModel() {
         return model;
+    }
+
+    public AnchorPane getRootPane() {
+        return rootPane;
     }
 
     public void setCurrentShape(Object o) {
