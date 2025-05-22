@@ -568,22 +568,22 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSaveSerialized(ActionEvent event) {
+    public void handleSaveSerialized(ActionEvent event) {
         fileOperationContext.executeSave(new SerializedSaveStrategy());
     }
 
     @FXML
-    private void handleLoadSerialized(ActionEvent event) {
+    public void handleLoadSerialized(ActionEvent event) {
         fileOperationContext.executeLoad(new SerializedLoadStrategy());
     }
 
     @FXML
-    private void handleSaveAsPng(ActionEvent event) {
+    public void handleSaveAsPng(ActionEvent event) {
         fileOperationContext.executeSave(new PngSaveStrategy());
     }
 
     @FXML
-    private void handleSaveAsPdf(ActionEvent event) {
+    public void handleSaveAsPdf(ActionEvent event) {
         fileOperationContext.executeSave(new PdfSaveStrategy());
     }
 
