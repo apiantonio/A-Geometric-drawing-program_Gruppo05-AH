@@ -47,6 +47,14 @@ La repository è organizzata per riflettere le varie fasi di sviluppo:
 │       Week1_PreGame.pdf
 │
 ├───Sprint1
+|       Class Diagram.pdf
+│       presentazioneSprint1.pptx
+│       Product and Sprint Backlog.pdf
+│       PROJECT BURNDOWN (1).pdf
+│       Sprint Retrospective.pdf
+│       Sprint Review.pdf
+│       Test_funzionali.pdf
+│       Updated_Mockup.pdf
 │       README.md
 │
 ├───Sprint2
