@@ -8,6 +8,8 @@ import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
+import com.geometricdrawing.templateMethod.AbstractMouseHandler;
+import com.geometricdrawing.templateMethod.MousePressedHandler;
 import javafx.collections.ListChangeListener;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
@@ -48,8 +50,8 @@ import java.nio.file.Files;
 import java.util.function.UnaryOperator;
 
 /**
- * Autore: Gruppo05
- * Scopo: Controller dell'applicazione, gestisce gli eventi e le interazioni con l'interfaccia utente.
+ * @Autore: Gruppo05
+ * @Scopo: Controller dell'applicazione, gestisce gli eventi e le interazioni con l'interfaccia utente.
  */
 public class DrawingController {
 
@@ -97,6 +99,8 @@ public class DrawingController {
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
+            model = new DrawingModel();
+            commandManager = new CommandManager();
 
             // Al click col tasto destro richiama la creazione del ContextMenu
             shapeMenu = new ContextMenu();
@@ -106,8 +110,8 @@ public class DrawingController {
             // contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
             // TO ADD ALTRI PER LE ALTRE FUNZIONALITA'
 
-            drawingCanvas.setOnMouseClicked(this::handleCanvasClick); //
-            drawingCanvas.setOnMousePressed(this::handleMousePressed);
+            drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
+            drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseDragged(this::handleMouseDragged);
             drawingCanvas.setOnMouseReleased(this::handleMouseReleased);
             drawingCanvas.setOnMouseMoved(this::handleMouseMoved); // per il cambio cursore
@@ -419,7 +423,7 @@ public class DrawingController {
         }
     }
 
-    private AbstractShape selectShapeAt(double x, double y) {
+    public AbstractShape selectShapeAt(double x, double y) {
         for (AbstractShape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
                 currentShape = shape; // Imposta la figura selezionata
@@ -440,7 +444,13 @@ public class DrawingController {
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
-    private void updateSpinners(AbstractShape shape) {
+    public void updateSpinners(AbstractShape shape) {
+        if (shape == null) {
+            // Se non c'è nessuna figura selezionata, disabilita gli spinner
+            widthSpinner.setDisable(true);
+            heightSpinner.setDisable(true);
+        }
+
         if (shape instanceof Line line) {
             widthSpinner.getValueFactory().setValue(line.getLength());
             heightSpinner.setDisable(true);
@@ -454,35 +464,8 @@ public class DrawingController {
         }
     }
 
-    private void handleMousePressed(MouseEvent event) {
-        double x = event.getX();
-        double y = event.getY();
-
-        shapeMenu.hide();
-
-        // Se non c'è una figura selezionata o il mouse non è sopra la figura corrente
-        if (currentShape == null || !currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
-            currentShape = selectShapeAt(x, y); // Seleziona la figura sotto il mouse
-        }
-
-        if (currentShape != null && currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
-            // Calcola l'offset tra il mouse e la posizione della figura
-            dragOffsetX = x - currentShape.getX();
-            dragOffsetY = y - currentShape.getY();
-            drawingCanvas.setCursor(Cursor.CLOSED_HAND);
-            // appena l’utente clicca, fai prendere il focus al rootPane
-            rootPane.requestFocus();
-            // se fai click col tasto destro sulla figura, devi mostrare il contextMenu
-            if (event.getButton() == MouseButton.SECONDARY) {
-                shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
-            }
-        } else {
-            currentShape = null; // Deseleziona se il mouse è troppo lontano
-            updateControlState(currentShape);
-        }
-
-        updateSpinners(currentShape);
-        redrawCanvas();
+    public void showContextMenu(MouseEvent event) {
+        shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
     }
 
     private void handleMouseDragged(MouseEvent event) {
@@ -531,7 +514,7 @@ public class DrawingController {
         }
     }
 
-    private void redrawCanvas() {
+    public void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {
             return;
         }
@@ -719,6 +702,10 @@ public class DrawingController {
         }
     }
 
+    public AnchorPane getRootPane() {
+        return rootPane;
+    }
+
     private Window getWindow() {
         if (drawingCanvas == null) {
             return null;
@@ -730,5 +717,32 @@ public class DrawingController {
         return scene.getWindow();
     }
 
+    public AbstractShape getCurrentShape() {
+        return currentShape;
+    }
+
+    public void setCurrentShape(AbstractShape shape) {
+        this.currentShape = shape;
+    }
+
+    public ContextMenu getShapeMenu() {
+        return shapeMenu;
+    }
+
+    public double getDragOffsetX() {
+        return dragOffsetX;
+    }
+
+    public double getDragOffsetY() {
+        return dragOffsetY;
+    }
+
+    public void setDragOffsetX(double dragOffsetX) {
+        this.dragOffsetX = dragOffsetX;
+    }
+
+    public void setDragOffsetY(double dragOffsetY) {
+        this.dragOffsetY = dragOffsetY;
+    }
 }
 

@@ -12,8 +12,8 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 /**
- * Autore: Gruppo05
- * Scopo: Classe che estende application e carica il file FXML
+ * @Autore: Gruppo05
+ * @Scopo: Classe che estende application e carica il file FXML
  */
 
 public class GeometricDrawingApp extends Application {
@@ -24,11 +24,7 @@ public class GeometricDrawingApp extends Application {
         AnchorPane root = fxmlLoader.load();
 
         DrawingController controller = fxmlLoader.getController();
-        DrawingModel model = new DrawingModel();
-        CommandManager commandManager = new CommandManager();
 
-        controller.setModel(model);
-        controller.setCommandManager(commandManager);
 
         Scene scene = new Scene(root);
         stage.setTitle("Geometric Drawing App");
