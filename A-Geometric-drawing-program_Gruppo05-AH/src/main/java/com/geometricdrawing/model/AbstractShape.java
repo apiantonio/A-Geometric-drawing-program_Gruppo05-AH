@@ -101,4 +101,23 @@ public abstract class AbstractShape implements Serializable{
         this.height = height;
     }
 
+    //Utilizzato per copiare la figura nella clipboard
+    public AbstractShape deepClone() {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(this);
+            oos.close();
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            AbstractShape clonedShape = (AbstractShape) ois.readObject();
+            ois.close();
+            return clonedShape;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Errore durante il deep cloning della figura: " + e.getMessage());
+            e.printStackTrace();
+            return null; // o lanciare una RuntimeException
+        }
+    }
 }

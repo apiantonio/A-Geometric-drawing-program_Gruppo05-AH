@@ -19,6 +19,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
@@ -48,6 +49,7 @@ public class DrawingController {
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
+    @FXML private Button copyButton;
     private ContextMenu shapeMenu;
 
     private static final double HANDLE_RADIUS = 3.0;         // raggio del cerchietto che compare alla selezione di una figura
@@ -61,13 +63,15 @@ public class DrawingController {
     private double dragOffsetX;
     private double dragOffsetY;
     private FileOperationContext fileOperationContext;
+    private ClipboardManager clipboardManager; // Gestore per la clipboard
+
 
     public void setModel(DrawingModel model) {
         this.model = model;
         if (this.model != null && this.model.getShapes() != null) {
             this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> redrawCanvas());
         }
-        redrawCanvas();
+        // redrawCanvas(); // Ridisegna se il modello cambia
     }
 
     //Metodo per iniezione del CommandManager
@@ -81,8 +85,12 @@ public class DrawingController {
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
-            setModel(new DrawingModel());
-            setCommandManager(new CommandManager());
+            // Inizializza model, commandManager e clipboardManager se non sono già stati iniettati o creati
+            if (this.model == null) this.model = new DrawingModel();
+            if (this.commandManager == null) this.commandManager = new CommandManager();
+            if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager(); // Inizializza ClipboardManager
+
+            setModel(this.model); // Imposta il modello e aggiungi listener
 
             this.fileOperationContext = new FileOperationContext(this);
 
@@ -90,9 +98,9 @@ public class DrawingController {
             shapeMenu = new ContextMenu();
             MenuItem deleteItem = new MenuItem("Elimina");
             deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
-            shapeMenu.getItems().add(deleteItem);
-            // contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
-            // TO ADD ALTRI PER LE ALTRE FUNZIONALITA'
+            MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
+            copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); // Associa l'handler
+            shapeMenu.getItems().addAll(deleteItem, copyItem); // Aggiungi "Copia" al context menu
 
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -104,11 +112,11 @@ public class DrawingController {
             fillPicker.setValue(Color.LIGHTGREEN);
             borderPicker.setValue(Color.ORANGE);
 
-            //per il binding all'avvio, solo una nuova forma può essere premuto come bottone nella barra degli strumenti
-            updateControlState(null);
+            updateControlState(null); // Stato iniziale dei controlli
 
             // affinché rootPane possa ricevere focus
             rootPane.setFocusTraversable(true);
+            rootPane.setOnKeyPressed(this::onRootKeyPressed); // Assicura che onRootKeyPressed sia chiamato
 
             /*
             nel momento in cui si allarga la finestra, il pane che contiene il canvas (che non è estensibile di suo)
@@ -124,105 +132,79 @@ public class DrawingController {
             System.err.println("Errore: drawingCanvas non è stato iniettato!");
         }
 
+        // Inizializzazione Spinner Altezza
         if (heightSpinner != null) {
-            SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0); // min, max, initial, step
-            heightSpinner.setValueFactory(heightFactory);
-            heightSpinner.setEditable(false);
-        }
-        if (widthSpinner != null) {
-            SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0); // min, max, initial, step
-            widthSpinner.setValueFactory(widthFactory);
-            widthSpinner.setEditable(false);
-        }
-        currentShapeFactory = null; // Nessuna forma selezionata all'inizio
-
-
-        if (heightSpinner != null) {
-            SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 40.0, 1.0);
+            SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
             heightSpinner.setValueFactory(heightFactory);
             heightSpinner.setEditable(true);
 
             // listener per ridimensionamento con freccette
             heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
-                handleDimensionChange(false, newValue);
+                if (newValue != null) handleDimensionChange(false, newValue);
             });
-
-            // listener per input da tastiera
-            UnaryOperator<TextFormatter.Change> filter = change -> {
-                String newText = change.getControlNewText();
-                // Accetta solo numeri validi (inclusi decimali con punto o virgola)
-                if (newText.matches("-?\\d*(\\.\\d*)?")) {
-                    return change;
-                }
-                return null; // blocca il cambiamento
-            };
-            TextFormatter<String> textFormatter = new TextFormatter<>(filter);
-            heightSpinner.getEditor().setTextFormatter(textFormatter);
-            textFormatter.valueProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal != null && !newVal.isEmpty()) {
-                    try {
-                        double value = Double.parseDouble(newVal);
-                        heightSpinner.getValueFactory().setValue(value);
-                    } catch (NumberFormatException ignored) {
-                        // Questo blocco non dovrebbe mai attivarsi grazie al filtro
-                    }
-                }
-            });
-
-            heightSpinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                if (!isFocused) {
-                    try {
-                        double value = Double.parseDouble(heightSpinner.getEditor().getText());
-                        heightSpinner.getValueFactory().setValue(value);
-                    } catch (NumberFormatException e) {
-                        heightSpinner.getEditor().setText(heightSpinner.getValue().toString());
-                    }
-                }
-            });
+            configureSpinnerFocusListener(heightSpinner);
+            configureNumericTextFormatter(heightSpinner);
         }
 
+        // Inizializzazione Spinner Larghezza
         if (widthSpinner != null) {
-            SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, 60.0, 1.0);
+            SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0);
             widthSpinner.setValueFactory(widthFactory);
             widthSpinner.setEditable(true);
 
             widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
-                handleDimensionChange(true, newValue);
+                if (newValue != null) handleDimensionChange(true, newValue);
             });
-
-            UnaryOperator<TextFormatter.Change> filter = change -> {
-                String newText = change.getControlNewText();
-                // Accetta solo numeri validi (inclusi decimali con punto o virgola)
-                if (newText.matches("-?\\d*(\\.\\d*)?")) {
-                    return change;
-                }
-                return null; // blocca il cambiamento
-            };
-            TextFormatter<String> textFormatter = new TextFormatter<>(filter);
-            widthSpinner.getEditor().setTextFormatter(textFormatter);
-            textFormatter.valueProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal != null && !newVal.isEmpty()) {
-                    try {
-                        double value = Double.parseDouble(newVal);
-                        widthSpinner.getValueFactory().setValue(value);
-                    } catch (NumberFormatException ignored) {
-                        // Questo blocco non dovrebbe mai attivarsi grazie al filtro
-                    }
-                }
-            });
-
-            widthSpinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                if (!isFocused) {
-                    try {
-                        double value = Double.parseDouble(widthSpinner.getEditor().getText());
-                        widthSpinner.getValueFactory().setValue(value);
-                    } catch (NumberFormatException e) {
-                        widthSpinner.getEditor().setText(widthSpinner.getValue().toString());
-                    }
-                }
-            });
+            configureSpinnerFocusListener(widthSpinner);
+            configureNumericTextFormatter(widthSpinner);
         }
+        currentShapeFactory = null;
+        redrawCanvas(); // Prima ridisegnata
     }
+
+    private void configureNumericTextFormatter(Spinner<Double> spinner) {
+        UnaryOperator<TextFormatter.Change> filter = change -> {
+            String newText = change.getControlNewText();
+            if (newText.matches("-?\\d*([.,]\\d*)?")) { // Accetta punto o virgola come separatore decimale
+                return change;
+            }
+            return null;
+        };
+        TextFormatter<String> textFormatter = new TextFormatter<>(filter);
+        spinner.getEditor().setTextFormatter(textFormatter);
+
+        textFormatter.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && !newVal.isEmpty()) {
+                try {
+                    double value = Double.parseDouble(newVal.replace(',', '.'));
+                    if (spinner.getValueFactory() != null && spinner.getValueFactory().getValue() != value) {
+                        spinner.getValueFactory().setValue(value);
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignora se il formato non è ancora valido
+                }
+            }
+        });
+    }
+
+
+    private void configureSpinnerFocusListener(Spinner<Double> spinner) {
+        spinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (!isFocused && spinner.getValueFactory() != null) {
+                try {
+                    String text = spinner.getEditor().getText().replace(',', '.');
+                    double value = Double.parseDouble(text);
+                    SpinnerValueFactory.DoubleSpinnerValueFactory factory = (SpinnerValueFactory.DoubleSpinnerValueFactory) spinner.getValueFactory();
+                    if (value < factory.getMin()) value = factory.getMin();
+                    if (value > factory.getMax()) value = factory.getMax();
+                    factory.setValue(value);
+                } catch (NumberFormatException e) {
+                    spinner.getEditor().setText(String.valueOf(spinner.getValue()).replace('.', ','));
+                }
+            }
+        });
+    }
+
 
     @FXML
     private void onRootKeyPressed(KeyEvent event) {
@@ -230,6 +212,11 @@ public class DrawingController {
         if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
             // richiama il metodo per la cancellazione tramite bottone
             handleDeleteShape(new ActionEvent());
+            event.consume();
+        }
+        // Scorciatoia per Copia (CTRL+C)
+        if (KeyCombination.keyCombination("CTRL+C").match(event)) {
+            handleCopyShape(new ActionEvent());
             event.consume();
         }
     }
@@ -244,6 +231,7 @@ public class DrawingController {
 
         // al momento della creazione potresti selezionare il colore di bordo della linea
         borderPicker.setDisable(false);
+        fillPicker.setDisable(true);
         currentShapeFactory = new LineFactory();
     }
 
@@ -287,7 +275,16 @@ public class DrawingController {
     }
 
     private void handleDimensionChange(boolean isWidth, Double newValue) {
-        if (currentShape == null || newValue == null) {
+        if (currentShape == null || newValue == null || model == null || commandManager == null) {
+            return;
+        }
+
+        if (newValue <= 0) {
+            if (isWidth) {
+                widthSpinner.getValueFactory().setValue(currentShape.getWidth());
+            } else {
+                heightSpinner.getValueFactory().setValue(currentShape.getHeight());
+            }
             return;
         }
 
@@ -295,12 +292,23 @@ public class DrawingController {
             ChangeWidthCommand cmd = new ChangeWidthCommand(model, currentShape, newValue);
             commandManager.executeCommand(cmd);
         } else {
-            ChangeHeightCommand cmd = new ChangeHeightCommand(model, currentShape, newValue);
-            commandManager.executeCommand(cmd);
+            if (!(getBaseShape(currentShape) instanceof Line)) {
+                ChangeHeightCommand cmd = new ChangeHeightCommand(model, currentShape, newValue);
+                commandManager.executeCommand(cmd);
+            }
         }
 
         redrawCanvas();
     }
+
+    private AbstractShape getBaseShape(AbstractShape shape) {
+        AbstractShape base = shape;
+        while (base instanceof ShapeDecorator) {
+            base = ((ShapeDecorator) base).getInnerShape();
+        }
+        return base;
+    }
+
 
     public void updateControlState(AbstractShape shape) {
         boolean enableWidth = false;
@@ -308,17 +316,22 @@ public class DrawingController {
         boolean enableFill = false;
         boolean enableBorder = false;
         boolean enableDelete = false;
+        boolean enableCopy = false; // Solo per copia
 
         if (shape != null) {
-            // Ottieni la forma base (non decorata)
-            AbstractShape baseShape = shape;
-            while (baseShape instanceof ShapeDecorator decorator) {
-                baseShape = decorator.getInnerShape();
-            }
+            AbstractShape baseShape = getBaseShape(shape);
+            enableWidth = true;
+            enableDelete = true;
+            enableCopy = true; // Abilita copia se una forma è selezionata
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
-                enableFill = true;
+                enableFill = false;
+                enableBorder = false;
+            } else {
+                enableHeight = false;
+                enableFill = false;
+                enableBorder = false;
             }
 
             enableWidth = true;
@@ -326,11 +339,12 @@ public class DrawingController {
             enableDelete = true;
         }
 
-        widthSpinner.setDisable(!enableWidth);
-        heightSpinner.setDisable(!enableHeight);
-        fillPicker.setDisable(!enableFill);
-        borderPicker.setDisable(!enableBorder);
-        deleteButton.setDisable(!enableDelete);
+        if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
+        if (heightSpinner != null) heightSpinner.setDisable(!enableHeight);
+        if (fillPicker != null) fillPicker.setDisable(!enableFill);
+        if (borderPicker != null) borderPicker.setDisable(!enableBorder);
+        if (deleteButton != null) deleteButton.setDisable(!enableDelete);
+        if (copyButton != null) copyButton.setDisable(!enableCopy); // Aggiorna stato bottone Copia
     }
 
     /*
@@ -338,10 +352,8 @@ public class DrawingController {
      */
     @FXML
     public void handleDeleteShape(ActionEvent event) {
-        if (currentShape != null && model != null) {
-            // per gestire il caso in cui si clicca il tasto destro ma si cancella con canc e il context menu è ancora aperto
-            shapeMenu.hide();
-            // si crea l'oggetto command responsabile della cancellazione e si chiede al commandManager di eseguirlo
+        if (currentShape != null && model != null && commandManager != null) {
+            if(shapeMenu != null) shapeMenu.hide();
             DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
             commandManager.executeCommand(deleteCmd);
 
@@ -352,43 +364,69 @@ public class DrawingController {
         }
     }
 
+    /**
+     * Gestisce l'azione di copia di una figura.
+     * @param event L'evento che ha scatenato l'azione.
+     */
+    @FXML
+    public void handleCopyShape(ActionEvent event) {
+        if (currentShape != null && commandManager != null && clipboardManager != null) {
+            CopyShapeCommand copyCmd = new CopyShapeCommand(currentShape, clipboardManager);
+            commandManager.executeCommand(copyCmd);
+            System.out.println("DEBUG: Figura copiata nella clipboard interna.");
+            // La figura rimane selezionata dopo la copia. Non è necessario ridisegnare o aggiornare lo stato dei controlli
+            // a meno che non si voglia dare un feedback visivo specifico per la copia.
+        }
+    }
+
     public AbstractShape selectShapeAt(double x, double y) {
-        for (AbstractShape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
+        if (model == null) return null;
+        for (AbstractShape shape : model.getShapesOrderedByZ()) {
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
-                currentShape = shape; // Imposta la figura selezionata
+                currentShape = shape;
                 updateSpinners(currentShape);
                 updateControlState(currentShape);
 
-                // MOMENTANEE PER LA PRIMA SPRINT (da rimuovere poi)
-                fillPicker.setDisable(true);
-                borderPicker.setDisable(true);
+                // Logica "MOMENTANEE PER LA PRIMA SPRINT"
+                if (fillPicker != null) fillPicker.setDisable(true);
+                if (borderPicker != null) borderPicker.setDisable(true);
 
                 System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
-                return shape; // Restituisci la figura selezionata
+                return shape;
             }
         }
-        currentShape = null; // Deseleziona se nessuna figura è cliccata
+        currentShape = null;
+        updateSpinners(null);
+        updateControlState(null);
         System.out.println("DEBUG: Nessuna figura selezionata.");
         return null;
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
     public void updateSpinners(AbstractShape shape) {
-        if (shape instanceof Line line) {
-            widthSpinner.getValueFactory().setValue(line.getLength());
-            heightSpinner.setDisable(true);
-            heightSpinner.getValueFactory().setValue(1.0); // Altezza fissa per le linee4
-        } else if (shape instanceof AbstractShape abstractShape) {
-            widthSpinner.getValueFactory().setValue(abstractShape.getWidth());
-            heightSpinner.getValueFactory().setValue(abstractShape.getHeight());
+        if (widthSpinner == null || heightSpinner == null || widthSpinner.getValueFactory() == null || heightSpinner.getValueFactory() == null) return;
+
+        if (shape != null) {
+            AbstractShape baseShape = getBaseShape(shape);
+            if (baseShape instanceof Line line) {
+                widthSpinner.getValueFactory().setValue(line.getWidth());
+                heightSpinner.getValueFactory().setValue(line.getHeight());
+                heightSpinner.setDisable(true);
+            } else {
+                widthSpinner.getValueFactory().setValue(baseShape.getWidth());
+                heightSpinner.getValueFactory().setValue(baseShape.getHeight());
+                heightSpinner.setDisable(false);
+            }
         } else {
-            widthSpinner.getValueFactory().setValue(0.0);
-            heightSpinner.getValueFactory().setValue(0.0);
+            widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
+            heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
         }
     }
 
     public void showContextMenu(MouseEvent event) {
-        shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
+        if (shapeMenu != null) {
+            shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
+        }
     }
 
     public void redrawCanvas() {
@@ -416,61 +454,51 @@ public class DrawingController {
 
     // Metodo per disegnare il bordo di selezione e i manici
     private void drawHighlightBorder(AbstractShape shape) {
-        // Ottieni la figura base (non decorata)
-        while (shape instanceof ShapeDecorator decorator) {
-            shape = decorator.getInnerShape();
+        AbstractShape baseShape = shape;
+        while (baseShape instanceof ShapeDecorator decorator) {
+            baseShape = decorator.getInnerShape();
         }
 
         // Disegna il bordo di selezione
         gc.setStroke(Color.SKYBLUE);
         gc.setLineWidth(1);
         gc.setLineDashes(5);
-        if (shape instanceof Line line) {
-            gc.strokeLine(line.getX(), line.getY(), line.getEndX(), line.getEndY()); // Linea tratteggiata
-            gc.setLineDashes(0);
-            // Disegna i manici agli estremi della linea
-            drawHandle(line.getX(), line.getY()); // Estremo sinistro
-            drawHandle(line.getEndX(), line.getEndY()); // Estremo destro
+        if (baseShape instanceof Line line) {
+            gc.strokeLine(line.getX(), line.getY(), line.getEndX(), line.getEndY());
+            drawHandle(line.getX(), line.getY());
+            drawHandle(line.getEndX(), line.getEndY());
         } else {
-            gc.strokeRect(shape.getX(), shape.getY(), shape.getWidth(), shape.getHeight());
-            gc.setLineDashes(0);
-            // Disegna i manici agli angoli del rettangolo/ellisse
-            drawHandle(shape.getX(), shape.getY());
-            drawHandle(shape.getX() + shape.getWidth(), shape.getY());
-            drawHandle(shape.getX(), shape.getY() + shape.getHeight());
-            drawHandle(shape.getX() + shape.getWidth(), shape.getY() + shape.getHeight());
+            gc.strokeRect(baseShape.getX(), baseShape.getY(), baseShape.getWidth(), baseShape.getHeight());
+            drawHandle(baseShape.getX(), baseShape.getY());
+            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY());
+            drawHandle(baseShape.getX(), baseShape.getY() + baseShape.getHeight());
+            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY() + baseShape.getHeight());
         }
+        gc.setLineDashes(0);
     }
 
     @FXML
     public void handleSaveSerialized(ActionEvent event) {
-        fileOperationContext.executeSave(new SerializedSaveStrategy());
+        if (fileOperationContext != null) fileOperationContext.executeSave(new SerializedSaveStrategy());
     }
 
     @FXML
     public void handleLoadSerialized(ActionEvent event) {
-        fileOperationContext.executeLoad(new SerializedLoadStrategy());
+        if (fileOperationContext != null) fileOperationContext.executeLoad(new SerializedLoadStrategy());
     }
 
     @FXML
     public void handleSaveAsPng(ActionEvent event) {
-        fileOperationContext.executeSave(new PngSaveStrategy());
+        if (fileOperationContext != null) fileOperationContext.executeSave(new PngSaveStrategy());
     }
 
     @FXML
     public void handleSaveAsPdf(ActionEvent event) {
-        fileOperationContext.executeSave(new PdfSaveStrategy());
+        if (fileOperationContext != null) fileOperationContext.executeSave(new PdfSaveStrategy());
     }
 
     public Window getWindow() {
-        if (drawingCanvas == null) {
-            return null;
-        }
-        Scene scene = drawingCanvas.getScene();
-        if (scene == null) {
-            return null;
-        }
-        return scene.getWindow();
+        return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null;
     }
 
     public void showAlertDialog(Alert.AlertType alertType, String title, String content) {
@@ -481,73 +509,45 @@ public class DrawingController {
         alert.showAndWait();
     }
 
-    public AbstractShape getCurrentShape() {
-        return currentShape;
-    }
-
-    public void setCurrentShape(AbstractShape shape) {
-        this.currentShape = shape;
-    }
-
-    public ContextMenu getShapeMenu() {
-        return shapeMenu;
-    }
-
-    public double getDragOffsetX() {
-        return dragOffsetX;
-    }
-
-    public double getDragOffsetY() {
-        return dragOffsetY;
-    }
-
-    public void setDragOffsetX(double dragOffsetX) {
-        this.dragOffsetX = dragOffsetX;
-    }
-
-    public void setDragOffsetY(double dragOffsetY) {
-        this.dragOffsetY = dragOffsetY;
-    }
-
-    public Canvas getDrawingCanvas() {
-        return drawingCanvas;
-    }
-
-    public DrawingModel getModel() {
-        return model;
-    }
-
-    public AnchorPane getRootPane() {
-        return rootPane;
-    }
+    public AbstractShape getCurrentShape() { return currentShape; }
 
     public void setCurrentShape(Object o) {
-        this.currentShape = (AbstractShape) o;
+        if (o instanceof AbstractShape || o == null) {
+            this.currentShape = (AbstractShape) o;
+        } else {
+            throw new IllegalArgumentException("Tentativo di impostare currentShape con un tipo non valido: " + o.getClass().getName());
+        }
     }
 
-    public CommandManager getCommandManager() {
-        return commandManager;
-    }
+    public void setCurrentShape(AbstractShape shape) { this.currentShape = shape; }
 
-    public ColorPicker getBorderPicker() {
-        return borderPicker;
-    }
+    public ContextMenu getShapeMenu() { return shapeMenu; }
 
-    public ColorPicker getFillPicker() {
-        return fillPicker;
-    }
+    public double getDragOffsetX() { return dragOffsetX; }
 
-    public Spinner<Double> getHeightSpinner() {
-        return heightSpinner;
-    }
+    public void setDragOffsetX(double dragOffsetX) { this.dragOffsetX = dragOffsetX; }
 
-    public Spinner<Double> getWidthSpinner() {
-        return widthSpinner;
-    }
+    public double getDragOffsetY() { return dragOffsetY; }
 
-    public ShapeFactory getCurrentShapeFactory() {
-        return currentShapeFactory;
-    }
+    public void setDragOffsetY(double dragOffsetY) { this.dragOffsetY = dragOffsetY; }
+
+    public Canvas getDrawingCanvas() { return drawingCanvas; }
+
+    public DrawingModel getModel() { return model; }
+
+    public AnchorPane getRootPane() { return rootPane; }
+
+    public CommandManager getCommandManager() { return commandManager; }
+
+    public ColorPicker getBorderPicker() { return borderPicker; }
+
+    public ColorPicker getFillPicker() { return fillPicker; }
+
+    public Spinner<Double> getHeightSpinner() { return heightSpinner; }
+
+    public Spinner<Double> getWidthSpinner() { return widthSpinner; }
+
+    public ShapeFactory getCurrentShapeFactory() { return currentShapeFactory; }
 
     public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
         this.currentShapeFactory = currentShapeFactory;
