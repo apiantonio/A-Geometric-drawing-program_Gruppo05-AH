@@ -460,6 +460,8 @@ public class DrawingController {
         MoveShapeCommand moveCmd = new MoveShapeCommand(model, currentShape, newX, newY);
         commandManager.executeCommand(moveCmd);
 
+        redrawCanvas();
+
     }
 
     private void handleMouseReleased(MouseEvent event) {
