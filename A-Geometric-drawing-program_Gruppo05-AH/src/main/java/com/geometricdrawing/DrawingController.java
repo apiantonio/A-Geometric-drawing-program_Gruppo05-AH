@@ -222,29 +222,29 @@ public class DrawingController {
     }
 
     // Metodo di utilità per inizializzare la selezione della figura
-    private void initializeShapeSelection(ShapeFactory factory, boolean stateFillPicker, boolean stateBorderPicker) {
+    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
         currentShape = null;  // deseleziona la figura corrente
         updateControlState(null);
         redrawCanvas();
 
-        fillPicker.setDisable(stateFillPicker);
-        borderPicker.setDisable(stateBorderPicker);
+        fillPicker.setDisable(disableFillPicker);
+        borderPicker.setDisable(disableBorderPicker);
         currentShapeFactory = factory;
     }
 
     @FXML
     public void handleSelectLinea(ActionEvent event) {
-        initializeShapeSelection(new LineFactory(), false, true);
+        initializeShapeSelection(new LineFactory(), true, false);
     }
 
     @FXML
     public void handleSelectRettangolo(ActionEvent event) {
-        initializeShapeSelection(new RectangleFactory(), true, true);
+        initializeShapeSelection(new RectangleFactory(), false, false);
     }
 
     @FXML
     public void handleSelectEllisse(ActionEvent event) {
-        initializeShapeSelection(new EllipseFactory(), true, true);
+        initializeShapeSelection(new EllipseFactory(), false, false);
     }
 
     public boolean isTooClose(AbstractShape newShape, double x, double y) {

@@ -182,7 +182,8 @@ public class SaveLoadIntegrationTest {
             }
             MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, x, y, x, y, MouseButton.PRIMARY, 1,
                     false, false, false, false, true, false, false, true, false, false, null);
-            controller.handleCanvasClick(clickEvent);
+            // Simula il click sul canvas usando il handler appropriato
+            controller.getDrawingCanvas().fireEvent(clickEvent);
             currentShapeRef.set((AbstractShape) getPrivateFieldNonFailing(controller, "currentShape"));
         });
         assertNotNull(currentShapeRef.get(), "Nessuna forma corrente selezionata dopo l'inserimento.");
