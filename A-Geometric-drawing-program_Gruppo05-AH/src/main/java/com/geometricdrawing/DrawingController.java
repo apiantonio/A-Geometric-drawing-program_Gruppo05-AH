@@ -13,6 +13,7 @@ import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -588,8 +589,16 @@ public class DrawingController {
     }
 
     public Window getWindow() {
-        return drawingCanvas != null ? drawingCanvas.getScene().getWindow() : null;
+        if (drawingCanvas == null) {
+            return null;
+        }
+        Scene scene = drawingCanvas.getScene();
+        if (scene == null) {
+            return null;
+        }
+        return scene.getWindow();
     }
+
     public void showAlertDialog(Alert.AlertType alertType, String title, String content) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
