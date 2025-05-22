@@ -8,9 +8,7 @@ import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
-import com.geometricdrawing.templateMethod.AbstractMouseHandler;
-import com.geometricdrawing.templateMethod.MouseDraggedHandler;
-import com.geometricdrawing.templateMethod.MousePressedHandler;
+import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
@@ -54,9 +52,6 @@ public class DrawingController {
 
     private static final double HANDLE_RADIUS = 3.0;         // raggio del cerchietto che compare alla selezione di una figura
     private static final double SELECTION_THRESHOLD = 5.0;   // threshold per la selezione
-    private static final double BORDER_MARGIN = 5.0;         // margine per evitare che la figura venga disegnata completamente fuori dal canvas
-    private static final double VISIBLE_SHAPE_PORTION = 0.1; // percentuale visibile della figura quando viene spostata
-    private static final double HIDDEN_SHAPE_PORTION = 0.9;  // percentuale nascosta della figura quando viene spostata
 
     private DrawingModel model;
     private GraphicsContext gc;
@@ -99,11 +94,11 @@ public class DrawingController {
             // contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
             // TO ADD ALTRI PER LE ALTRE FUNZIONALITA'
 
-            drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
+            drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent);
-            drawingCanvas.setOnMouseReleased(this::handleMouseReleased);
-            drawingCanvas.setOnMouseMoved(this::handleMouseMoved); // per il cambio cursore
+            drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent);
+            drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent); // per il cambio cursore
 
             // colore di partenza dei colorPicker
             fillPicker.setValue(Color.LIGHTGREEN);
@@ -280,68 +275,13 @@ public class DrawingController {
         currentShapeFactory = new EllipseFactory();
     }
 
-    public void handleCanvasClick(MouseEvent event) {
-        if (model == null || commandManager == null || heightSpinner == null || widthSpinner == null) {
-            System.err.println("Errore: Componenti non inizializzati (model, commandManager o spinners).");
-            return;
-        }
-
-        double x = event.getX();
-        double y = event.getY();
-
-        // l'utente ha scelto una figura da voler inserire
-        // (il caso in cui l'utente ha cliccato su una figura esistente/spazio vuoto è gestito nel mousePressed)
-        if (currentShapeFactory != null) {
-
-            // la shape factory non null significa che l'utente ha selezionato l'inserimento di una figura
-            AbstractShape newShape = currentShapeFactory.createShape(x, y);
-
-            // se la figura è troppo vicina ai bordi del canvas, non viene disegnata
-            if (isTooClose(newShape, x, y)) {
-                return;
-            }
-
-            AbstractShape styledShape = newShape;
-
-            // prelevo il colore di bordo e riempimento
-            Color border = borderPicker.getValue();
-            Color fill = fillPicker.getValue();
-
-            // Applica i decorator solo se non già applicati (evita stacking)
-            if (newShape instanceof Line && border != null) {
-                styledShape = new BorderColorDecorator(newShape, border);
-            } else if (border != null && fill != null) { // se newShape non è una linea
-                styledShape = new FillColorDecorator(newShape, fill);
-                styledShape = new BorderColorDecorator(styledShape, border);
-            }
-
-            AddShapeCommand addCmd = new AddShapeCommand(model, styledShape);
-            commandManager.executeCommand(addCmd);
-
-            currentShape = styledShape; // La forma corrente è quella appena inserita
-            currentShapeFactory = null; // Resetta la factory per richiedere una nuova selezione
-
-            // Dopo aver aggiunto la forma, aggiorna gli spinner
-            updateControlState(currentShape);
-
-            // MOMENTANEE PER LA PRIMA SPRINT (da rimuovere poi)
-            fillPicker.setDisable(true);
-            borderPicker.setDisable(true);
-
-            updateSpinners(currentShape);
-            redrawCanvas();
-        }
-    }
-
-    private boolean isTooClose(AbstractShape newShape, double x, double y) {
+    public boolean isTooClose(AbstractShape newShape, double x, double y) {
         double shapeWidth = newShape.getWidth();
         double shapeHeight = newShape.getHeight();
 
         // Verifica se la posizione è troppo vicina ai bordi
-        boolean isTooClose = x < BORDER_MARGIN ||
-                y < BORDER_MARGIN ||
-                x + shapeWidth > drawingCanvas.getWidth() - BORDER_MARGIN ||
-                y + shapeHeight > drawingCanvas.getHeight() - BORDER_MARGIN;
+        boolean isTooClose = x + shapeWidth > drawingCanvas.getWidth() ||
+                            y + shapeHeight > drawingCanvas.getHeight();
 
         return isTooClose;
     }
@@ -451,26 +391,6 @@ public class DrawingController {
         shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
     }
 
-    private void handleMouseReleased(MouseEvent event) {
-        drawingCanvas.setCursor(Cursor.DEFAULT);
-        redrawCanvas();
-    }
-
-    private void handleMouseMoved(MouseEvent event) {
-        double x = event.getX();
-        double y = event.getY();
-
-        // Controlla se il mouse è sopra una figura
-        boolean isOverShape = model.getShapesOrderedByZ().stream()
-                .anyMatch(shape -> shape.containsPoint(x, y, SELECTION_THRESHOLD));
-
-        if (isOverShape) {
-            drawingCanvas.setCursor(Cursor.HAND); // Cambia il cursore in una mano
-        } else {
-            drawingCanvas.setCursor(Cursor.DEFAULT); // Ripristina il cursore predefinito
-        }
-    }
-
     public void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {
             return;
@@ -553,6 +473,14 @@ public class DrawingController {
         return scene.getWindow();
     }
 
+    public void showAlertDialog(Alert.AlertType alertType, String title, String content) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
     public AbstractShape getCurrentShape() {
         return currentShape;
     }
@@ -580,13 +508,6 @@ public class DrawingController {
     public void setDragOffsetY(double dragOffsetY) {
         this.dragOffsetY = dragOffsetY;
     }
-    public void showAlertDialog(Alert.AlertType alertType, String title, String content) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
-    }
 
     public Canvas getDrawingCanvas() {
         return drawingCanvas;
@@ -607,5 +528,28 @@ public class DrawingController {
     public CommandManager getCommandManager() {
         return commandManager;
     }
-}
 
+    public ColorPicker getBorderPicker() {
+        return borderPicker;
+    }
+
+    public ColorPicker getFillPicker() {
+        return fillPicker;
+    }
+
+    public Spinner<Double> getHeightSpinner() {
+        return heightSpinner;
+    }
+
+    public Spinner<Double> getWidthSpinner() {
+        return widthSpinner;
+    }
+
+    public ShapeFactory getCurrentShapeFactory() {
+        return currentShapeFactory;
+    }
+
+    public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
+        this.currentShapeFactory = currentShapeFactory;
+    }
+}
