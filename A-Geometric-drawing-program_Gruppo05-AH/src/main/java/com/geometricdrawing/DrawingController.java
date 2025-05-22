@@ -10,16 +10,14 @@ import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.templateMethod.AbstractMouseHandler;
 import com.geometricdrawing.templateMethod.MousePressedHandler;
+import com.geometricdrawing.strategy.*;
 import javafx.collections.ListChangeListener;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
@@ -32,21 +30,8 @@ import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
 
-import javafx.stage.FileChooser;
 import javafx.stage.Window;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.util.function.UnaryOperator;
 
 /**
@@ -79,6 +64,7 @@ public class DrawingController {
     private CommandManager commandManager;
     private double dragOffsetX;
     private double dragOffsetY;
+    private FileOperationContext fileOperationContext;
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -99,9 +85,7 @@ public class DrawingController {
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
-            model = new DrawingModel();
-            commandManager = new CommandManager();
-
+            this.fileOperationContext = new FileOperationContext(this);
             // Al click col tasto destro richiama la creazione del ContextMenu
             shapeMenu = new ContextMenu();
             MenuItem deleteItem = new MenuItem("Elimina");
@@ -423,7 +407,7 @@ public class DrawingController {
         }
     }
 
-    public AbstractShape selectShapeAt(double x, double y) {
+    private AbstractShape selectShapeAt(double x, double y) {
         for (AbstractShape shape : model.getShapesOrderedByZ()) { // Ordina per z decrescente
             if (shape.containsPoint(x, y, SELECTION_THRESHOLD)) {
                 currentShape = shape; // Imposta la figura selezionata
@@ -444,13 +428,7 @@ public class DrawingController {
     }
 
     // Metodo aggiornare gli spinner quando la figura corrente cambia
-    public void updateSpinners(AbstractShape shape) {
-        if (shape == null) {
-            // Se non c'è nessuna figura selezionata, disabilita gli spinner
-            widthSpinner.setDisable(true);
-            heightSpinner.setDisable(true);
-        }
-
+    private void updateSpinners(AbstractShape shape) {
         if (shape instanceof Line line) {
             widthSpinner.getValueFactory().setValue(line.getLength());
             heightSpinner.setDisable(true);
@@ -514,7 +492,7 @@ public class DrawingController {
         }
     }
 
-    public void redrawCanvas() {
+    private void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null) {
             return;
         }
@@ -567,146 +545,25 @@ public class DrawingController {
 
     @FXML
     public void handleSaveSerialized(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save Drawing");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Serialized Drawing (*.ser)", "*.ser"));
-        File file = fileChooser.showSaveDialog(getWindow());
-
-        if (file != null) {
-            try {
-                model.saveToFile(file);
-                System.out.println("Drawing saved to " + file.getAbsolutePath());
-            } catch (IOException e) {
-                System.err.println("Error saving drawing: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
+        fileOperationContext.executeSave(new SerializedSaveStrategy());
     }
 
     @FXML
     public void handleLoadSerialized(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Load Drawing");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Serialized Drawing (*.ser)", "*.ser"));
-        File file = fileChooser.showOpenDialog(getWindow());
-
-        if (file != null) {
-            try {
-                model.loadFromFile(file); // carica le forme presenti sul file
-                setModel(model);    // il listener viene ricollegato al model
-                redrawCanvas(); // Redraw with loaded shapes
-                System.out.println("Drawing loaded from " + file.getAbsolutePath());
-            } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Error loading drawing: " + e.getMessage());
-                e.printStackTrace(); // stampa a video dell'errore
-            }
-        }
+        fileOperationContext.executeLoad(new SerializedLoadStrategy());
     }
 
     @FXML
     public void handleSaveAsPng(ActionEvent event) {
-        if (drawingCanvas == null) {
-            System.err.println("Canvas not available. Cannot save as PNG.");
-            return;
-        }
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save as PNG");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Image (*.png)", "*.png"));
-        File file = fileChooser.showSaveDialog(getWindow());
-
-        if (file != null) {
-            try {
-                WritableImage writableImage = new WritableImage((int) drawingCanvas.getWidth(), (int) drawingCanvas.getHeight());
-                drawingCanvas.snapshot(new SnapshotParameters(), writableImage);
-                BufferedImage bufferedImage = SwingFXUtils.fromFXImage(writableImage, null);
-                ImageIO.write(bufferedImage, "png", file);
-                System.out.println("Canvas saved as PNG to " + file.getAbsolutePath());
-            } catch (IOException e) {
-                System.err.println("Error saving as PNG: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
+        fileOperationContext.executeSave(new PngSaveStrategy());
     }
+
     @FXML
     public void handleSaveAsPdf(ActionEvent event) {
-        if (drawingCanvas == null || drawingCanvas.getWidth() == 0 || drawingCanvas.getHeight() == 0) {
-            System.err.println("Canvas non disponibile o dimensioni nulle. Impossibile salvare come PDF.");
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText("Impossibile salvare come PDF,il canvas non è pronto o non ha dimensioni valide per l'esportazione. ");
-            alert.showAndWait();
-            return;
-        }
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Salva Disegno come PDF");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Document (*.pdf)", "*.pdf"));
-        File file = fileChooser.showSaveDialog(getWindow());
-
-        if (file != null) {
-            System.out.println("Salvataggio PDF tramite snapshot e Apache PDFBox...");
-            try {
-                WritableImage writableImage = new WritableImage(
-                        (int) Math.round(drawingCanvas.getWidth()),  // Usa Math.round per sicurezza
-                        (int) Math.round(drawingCanvas.getHeight()));
-                drawingCanvas.snapshot(new SnapshotParameters(), writableImage);
-                BufferedImage bufferedImage = SwingFXUtils.fromFXImage(writableImage, null);
-                if (bufferedImage == null) {
-                    System.err.println("Errore: la conversione dello snapshot in BufferedImage è fallita.");
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Errore Esportazione PDF, impossibile eseguire la immagine dal canvas.");
-                    return;
-                }
-                try (PDDocument document = new PDDocument()) {
-                    PDRectangle pageSize = new PDRectangle(bufferedImage.getWidth(), bufferedImage.getHeight());
-                    PDPage page = new PDPage(pageSize);
-                    document.addPage(page);
-                    PDImageXObject pdImage = LosslessFactory.createFromImage(document, bufferedImage);
-
-                    try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                        // Disegna l'immagine sulla pagina, riempiendo tutta la pagina
-                        contentStream.drawImage(pdImage, 0, 0, bufferedImage.getWidth(), bufferedImage.getHeight());
-                    }
-
-                    try (OutputStream outputStream = Files.newOutputStream(file.toPath())) {
-                        document.save(outputStream);
-                    }
-                    System.out.println("Canvas salvato come PDF in: " + file.getAbsolutePath());
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Esportazione PDF Completata\", \"Il disegno è stato salvato come PDF:\\n\"" + file.getName());
-
-                } catch (IOException pdfEx) {
-                    System.err.println("Errore durante la creazione o scrittura del PDF con Apache PDFBox: " + pdfEx.getMessage());
-                    pdfEx.printStackTrace();
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Impossibile scrivere il file PDF: " + pdfEx.getMessage());
-                }
-
-            } catch (NoClassDefFoundError e) {
-                // Questo errore è comune se manca javafx.swing o la dipendenza PDFBox non è configurata correttamente
-                System.err.println("Errore di dipendenza: classe non trovata. " + e.getMessage());
-                e.printStackTrace();
-                if (e.getMessage() != null && e.getMessage().contains("SwingFXUtils")) {
-                } else if (e.getMessage() != null && e.getMessage().toLowerCase().contains("pdfbox")) {
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Errore Dipendenza\", \"Una classe necessaria non è stata trovata. Controlla le dipendenze del progetto.");
-                }
-            } catch (Exception e) { // Catch generico per altri errori imprevisti durante lo snapshot
-                System.err.println("Errore imprevisto durante l'esportazione in PDF: " + e.getMessage());
-                e.printStackTrace();
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("Errore Imprevisto PDF\", \"Si è verificato un errore imprevisto: \"" + e.getMessage());
-            }
-        } else {
-            System.out.println("Salvataggio PDF annullato dall'utente.");
-        }
+        fileOperationContext.executeSave(new PdfSaveStrategy());
     }
 
-    public AnchorPane getRootPane() {
-        return rootPane;
-    }
-
-    private Window getWindow() {
+    public Window getWindow() {
         if (drawingCanvas == null) {
             return null;
         }
@@ -743,6 +600,25 @@ public class DrawingController {
 
     public void setDragOffsetY(double dragOffsetY) {
         this.dragOffsetY = dragOffsetY;
+    }
+    public void showAlertDialog(Alert.AlertType alertType, String title, String content) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    public Canvas getDrawingCanvas() {
+        return drawingCanvas;
+    }
+
+    public DrawingModel getModel() {
+        return model;
+    }
+
+    public void setCurrentShape(Object o) {
+        this.currentShape = (AbstractShape) o;
     }
 }
 

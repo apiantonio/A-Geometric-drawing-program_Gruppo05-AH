@@ -24,11 +24,9 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.control.ContextMenu?>
-
-<AnchorPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="572.0" prefWidth="821.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController" focusTraversable="true" onKeyPressed="#onRootKeyPressed">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
-      <Pane fx:id="canvasContainer" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
+      <Pane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
       </Pane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -62,19 +60,54 @@
                            <children>
                               <ToolBar layoutX="-1.0" layoutY="1.0" prefHeight="168.0" prefWidth="821.0" AnchorPane.bottomAnchor="-9.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                  <items>
-                                    <VBox alignment="CENTER">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="231.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <children>
                                                 <Button fx:id="deleteButton" alignment="BOTTOM_CENTER" contentDisplay="TOP" mnemonicParsing="false" onAction="#handleDeleteShape" prefHeight="17.0" prefWidth="55.0" stylesheets="@../../style.css" text="Elimina" wrapText="true">
                                                    <graphic>
-                                                      <ImageView fitHeight="54.0" fitWidth="37.0" pickOnBounds="true" preserveRatio="true">
+                                                      <ImageView fitHeight="43.0" fitWidth="42.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
                                                             <Image url="@../../icons/delete.png" />
                                                          </image>
                                                       </ImageView>
                                                    </graphic>
                                                 </Button>
+                                                <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0">
+                                                   <children>
+                                                      <Button fx:id="copyButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Copia">
+                                                         <graphic>
+                                                            <ImageView fitHeight="26.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+                                                               <image>
+                                                                  <Image url="@../../icons/copia.png" />
+                                                               </image>
+                                                            </ImageView>
+                                                         </graphic>
+                                                         <VBox.margin>
+                                                            <Insets bottom="10.0" />
+                                                         </VBox.margin>
+                                                      </Button>
+                                                      <Button mnemonicParsing="false" style="-fx-background-color: None;" text="Button" />
+                                                   </children>
+                                                </VBox>
+                                                <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0">
+                                                   <children>
+                                                      <Button mnemonicParsing="false" style="-fx-background-color: none;" text="Button">
+                                                         <VBox.margin>
+                                                            <Insets bottom="10.0" />
+                                                         </VBox.margin>
+                                                      </Button>
+                                                      <Button fx:id="undoButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Annulla">
+                                                         <graphic>
+                                                            <ImageView fitHeight="20.0" fitWidth="19.0" pickOnBounds="true" preserveRatio="true">
+                                                               <image>
+                                                                  <Image url="@../../icons/annulla.png" />
+                                                               </image>
+                                                            </ImageView>
+                                                         </graphic>
+                                                      </Button>
+                                                   </children>
+                                                </VBox>
                                              </children>
                                              <VBox.margin>
                                                 <Insets bottom="2.0" />
@@ -97,7 +130,7 @@
                                              <children>
                                                 <MenuButton id="new_shape" contentDisplay="TOP" mnemonicParsing="false" stylesheets="@../../style.css" text="Forme">
                                                    <graphic>
-                                                      <ImageView fitHeight="61.0" fitWidth="38.0" pickOnBounds="true" preserveRatio="true">
+                                                      <ImageView fitHeight="61.0" fitWidth="34.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
                                                             <Image url="@../../icons/forme.png" />
                                                          </image>
