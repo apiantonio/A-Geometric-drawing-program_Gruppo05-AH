@@ -9,10 +9,12 @@
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -43,6 +45,23 @@
                            </items>
                         </Menu>
                         <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica" />
+                     </items>
+                  </Menu>
+                  <Menu mnemonicParsing="false" text="Visualizza">
+                     <items>
+                        <Menu mnemonicParsing="false" text="Zoom">
+                           <items>
+                              <RadioMenuItem mnemonicParsing="false" text="25%">
+                                 <toggleGroup>
+                                    <ToggleGroup fx:id="zoomGroup" />
+                                 </toggleGroup>
+                              </RadioMenuItem>
+                              <RadioMenuItem mnemonicParsing="false" text="50%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" selected="true" text="75%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" text="100%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" text="150%" toggleGroup="$zoomGroup" />
+                           </items>
+                        </Menu>
                      </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Help">
