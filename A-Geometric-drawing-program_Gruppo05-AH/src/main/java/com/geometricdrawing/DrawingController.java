@@ -17,6 +17,8 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCombination;
@@ -94,13 +96,18 @@ public class DrawingController {
 
             this.fileOperationContext = new FileOperationContext(this);
 
+            createContextMenu();
             // Al click col tasto destro richiama la creazione del ContextMenu
             shapeMenu = new ContextMenu();
             MenuItem deleteItem = new MenuItem("Elimina");
             deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
             MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
             copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); // Associa l'handler
-            shapeMenu.getItems().addAll(deleteItem, copyItem); // Aggiungi "Copia" al context menu
+            MenuItem pasteItem = new MenuItem("Incolla");
+            pasteItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
+
+            pasteItem.setDisable(!clipboardManager.hasContent());
+            shapeMenu.getItems().addAll(deleteItem, copyItem, pasteItem); // Aggiungi "Copia" al context menu
 
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -159,7 +166,34 @@ public class DrawingController {
             configureNumericTextFormatter(widthSpinner);
         }
         currentShapeFactory = null;
+        updatePasteControlsState();
         redrawCanvas(); // Prima ridisegnata
+    }
+
+    private void createContextMenu(){
+        shapeMenu = new ContextMenu();
+        // items da aggiungere nel context menu
+        MenuItem deleteItem = new MenuItem("Elimina");
+        MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
+
+        // setting delle azioni al click sull'item
+        deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
+        copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); // Associa l'handler
+
+        // img nel context menu e set dimensioni
+        ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
+        delimg.setFitHeight(16);
+        delimg.setFitWidth(16);
+        ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
+        copyimg.setFitHeight(15);
+        copyimg.setFitWidth(15);
+
+        // aggiunta immagini al context menu
+        deleteItem.setGraphic(delimg);
+        copyItem.setGraphic(copyimg);
+
+        // aggiiunta degli items al context menu
+        shapeMenu.getItems().addAll(deleteItem, copyItem); // Aggiungi "Copia" al context menu
     }
 
     private void configureNumericTextFormatter(Spinner<Double> spinner) {
@@ -217,6 +251,18 @@ public class DrawingController {
         // Scorciatoia per Copia (CTRL+C)
         if (KeyCombination.keyCombination("CTRL+C").match(event)) {
             handleCopyShape(new ActionEvent());
+            event.consume();
+        }
+        // Scorciatoia per Annulla (CTRL+Z)
+        if (KeyCombination.keyCombination("CTRL+Z").match(event)) {
+            handleUndo(new ActionEvent());
+            event.consume();
+        }
+
+        if (KeyCombination.keyCombination("CTRL+V").match(event)) {
+            if (clipboardManager.hasContent()) { // Only handle if there's something to paste
+                handlePasteShape(new ActionEvent());
+            }
             event.consume();
         }
     }
@@ -363,6 +409,32 @@ public class DrawingController {
         if (borderPicker != null) borderPicker.setDisable(!enableBorder);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
         if (copyButton != null) copyButton.setDisable(!enableCopy);
+        if (pasteButton != null) {pasteButton.setDisable(!clipboardManager.hasContent());}
+
+        boolean enablePaste = clipboardManager != null && clipboardManager.hasContent();
+        if (pasteButton != null) {
+            pasteButton.setDisable(!enablePaste);
+        }
+        // Update context menu item for paste as well
+        if (shapeMenu != null) {
+            shapeMenu.getItems().stream()
+                    .filter(item -> "Incolla".equals(item.getText()))
+                    .findFirst()
+                    .ifPresent(item -> item.setDisable(!enablePaste));
+        }
+    }
+
+    private void updatePasteControlsState() {
+        boolean hasContent = clipboardManager != null && clipboardManager.hasContent();
+        if (pasteButton != null) {
+            pasteButton.setDisable(!hasContent);
+        }
+        if (shapeMenu != null) {
+            shapeMenu.getItems().stream()
+                    .filter(item -> "Incolla".equals(item.getText()))
+                    .findFirst()
+                    .ifPresent(item -> item.setDisable(!hasContent));
+        }
     }
 
     /**
@@ -394,6 +466,35 @@ public class DrawingController {
             System.out.println("DEBUG: Figura copiata nella clipboard interna.");
             // La figura rimane selezionata dopo la copia. Non è necessario ridisegnare o aggiornare lo stato dei controlli
             // a meno che non si voglia dare un feedback visivo specifico per la copia.
+            updatePasteControlsState();
+        }
+    }
+
+    @FXML
+    public void handlePasteShape(ActionEvent event) {
+        if (model != null && commandManager != null && clipboardManager != null && clipboardManager.hasContent()) {
+
+            PasteShapeCommand pasteCmd = new PasteShapeCommand(model, clipboardManager);
+            commandManager.executeCommand(pasteCmd);
+
+            AbstractShape pastedShape = pasteCmd.getPastedShape();
+            if (pastedShape != null) {
+                setCurrentShape(pastedShape); // Select the newly pasted shape
+                updateControlState(pastedShape);
+                updateSpinners(pastedShape); // Update spinners to reflect the new shape's dimensions
+            }
+            redrawCanvas();
+            updatePasteControlsState(); // Update paste button/menu item state
+        }
+    }
+
+    @FXML
+    public void handleUndo(ActionEvent event) {
+        if (currentShape != null && model != null && commandManager != null) {
+            if(shapeMenu != null) shapeMenu.hide();
+            commandManager.undo();
+            updateControlState(null);
+            redrawCanvas();
         }
     }
 

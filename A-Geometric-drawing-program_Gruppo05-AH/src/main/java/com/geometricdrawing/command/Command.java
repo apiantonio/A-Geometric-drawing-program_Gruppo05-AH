@@ -9,5 +9,6 @@ public interface Command {
 
     void execute();
 
+    // metodo per l'annullamento delle operazioni effettuate
     void undo();
 }

@@ -24,8 +24,8 @@ public class AddShapeCommand implements Command {
 
     @Override
     public void undo() {
-        // Annulla l'azione del comando
-       // TODO
+        // L'azione effettiva del comando
+        model.removeShape(shape);
     }
 
 }

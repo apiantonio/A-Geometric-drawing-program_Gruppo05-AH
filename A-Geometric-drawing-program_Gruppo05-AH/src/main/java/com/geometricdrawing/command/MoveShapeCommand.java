@@ -32,7 +32,7 @@ public class MoveShapeCommand implements Command {
 
     @Override
     public void undo() {
-        //TODO
+         model.moveShapeTo(shape, oldX, oldY);
     }
 
 }

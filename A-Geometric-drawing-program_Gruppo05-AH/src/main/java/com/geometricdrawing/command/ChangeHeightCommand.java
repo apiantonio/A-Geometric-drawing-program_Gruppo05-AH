@@ -11,10 +11,12 @@ public class ChangeHeightCommand implements Command {
     private final DrawingModel model;
     private final AbstractShape shape;
     private final double newHeight;
+    private final double oldHeight; //per l'undo
 
     public ChangeHeightCommand(DrawingModel model, AbstractShape shape, double newHeight) {
         this.shape = shape;
         this.newHeight = newHeight;
+        this.oldHeight = shape.getHeight();
         this.model = model;
     }
 
@@ -24,9 +26,8 @@ public class ChangeHeightCommand implements Command {
         model.setShapeHeight(shape, newHeight);
     }
 
-    // TODO: Implementare il metodo undo() per annullare l'azione del comando
     @Override
     public void undo() {
-        // TOOD
+        model.setShapeHeight(shape, oldHeight);
     }
 }

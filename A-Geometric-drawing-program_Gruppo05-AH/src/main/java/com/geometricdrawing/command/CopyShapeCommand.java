@@ -23,7 +23,7 @@ public class CopyShapeCommand implements Command {
 
     @Override
     public void undo() {
-        // Non è necessario implementare undo per la copia
-        // La copia non modifica lo stato del modello, quindi non c'è nulla da annullare
+        // rimuovi la shape appena copiata dalla clipboard
+        clipboardManager.clearClipboard();
     }
 }

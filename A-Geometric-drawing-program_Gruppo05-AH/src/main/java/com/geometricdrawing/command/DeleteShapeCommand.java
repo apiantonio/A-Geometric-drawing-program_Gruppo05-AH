@@ -7,6 +7,7 @@ import com.geometricdrawing.model.AbstractShape;
  * Autore: Gruppo05
  * Scopo: Command di cancellazione di una figura
  */
+
 public class DeleteShapeCommand implements Command {
     private final DrawingModel model; // Il "receiver" del comando è sempre il model
     private final AbstractShape shape;   // La forma da rimuovere
@@ -23,9 +24,8 @@ public class DeleteShapeCommand implements Command {
     }
 
     @Override
-    public void undo() {
-        // L'undo del comando è di responsabilità del model
-        //TODO
+    public void undo(){
+        model.addShape(shape);
     }
 
 }
