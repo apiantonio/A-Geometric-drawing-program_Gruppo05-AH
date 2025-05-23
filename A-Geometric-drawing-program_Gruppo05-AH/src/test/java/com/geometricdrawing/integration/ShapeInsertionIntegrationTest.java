@@ -4,7 +4,7 @@ import com.geometricdrawing.DrawingController;
 import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.Command;
 import com.geometricdrawing.command.CommandManager;
-import com.geometricdrawing.command.ChangeWidthCommand;
+import com.geometricdrawing.command.ChangeWidthCommand; // Keep for stream().anyMatch if needed, but not for stack size
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Test di Integrazione per Inserimento Figure")
 public class ShapeInsertionIntegrationTest {
 
     private static volatile boolean fxInitialized = false;
@@ -111,8 +112,6 @@ public class ShapeInsertionIntegrationTest {
                 borderColorPicker = new ColorPicker(Color.ORANGE);
 
                 heightSpinner = new Spinner<>();
-                // **MODIFICA CRUCIALE per adattare il test al comportamento "Actual: 1" per Rettangolo/Ellisse**
-                // Si assume che DrawingController.initialize() imposti questi valori di default.
                 SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(
                         1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
                 heightSpinner.setValueFactory(heightFactory);
@@ -213,7 +212,6 @@ public class ShapeInsertionIntegrationTest {
             }
             MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, x, y, x, y, MouseButton.PRIMARY, 1,
                     false, false, false, false, true, false, false, true, false, false, null);
-            // Simula il click sul canvas usando il handler appropriato
             controller.getDrawingCanvas().fireEvent(clickEvent);
             currentShapeRef.set((AbstractShape) getPrivateFieldNonFailing(controller, "currentShape"));
         });
@@ -246,23 +244,23 @@ public class ShapeInsertionIntegrationTest {
         assertEquals(0, baseShape.getZ(), "Lo Z-order dovrebbe essere 0 per la prima forma.");
 
         Stack<Command> undoStack = getUndoStack(commandManager);
-        // **MODIFICA CRUCIALE: Adattamento al comportamento "Actual: 1"**
-        assertEquals(1, undoStack.size(), "Solo AddShapeCommand dovrebbe essere nello stack undo se gli spinner sono inizializzati con i valori di default della forma.");
+        assertEquals(1, undoStack.size(), "Solo AddShapeCommand dovrebbe essere nello stack undo perché le dimensioni di default della forma corrispondono a quelle iniziali degli spinner.");
         assertTrue(undoStack.get(0) instanceof AddShapeCommand, "Il comando dovrebbe essere AddShapeCommand.");
 
 
-        assertNull(getPrivateField(controller, "currentShapeFactory"), "currentShapeFactory dovrebbe essere resettata.");
-        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"));
+        assertNull(getPrivateField(controller, "currentShapeFactory"), "currentShapeFactory dovrebbe essere resettata dopo l'inserimento.");
+        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"), "La forma corrente nel controller non è corretta.");
 
         assertFalse(widthSpinner.isDisabled(), "Width spinner dovrebbe essere abilitato.");
         assertFalse(heightSpinner.isDisabled(), "Height spinner dovrebbe essere abilitato.");
         assertFalse(deleteButton.isDisabled(), "Delete button dovrebbe essere abilitato.");
+        assertFalse(copyButton.isDisabled(), "Copy button dovrebbe essere abilitato.");
 
-        assertTrue(fillColorPicker.isDisabled(),"Fill picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
-        assertTrue(borderColorPicker.isDisabled(),"Border picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
+        assertFalse(fillColorPicker.isDisabled(),"Fill picker dovrebbe essere ABILITATO quando un Rettangolo è selezionato.");
+        assertFalse(borderColorPicker.isDisabled(),"Border picker dovrebbe essere ABILITATO quando un Rettangolo è selezionato.");
 
-        assertEquals(baseShape.getWidth(), widthSpinner.getValueFactory().getValue());
-        assertEquals(baseShape.getHeight(), heightSpinner.getValueFactory().getValue());
+        assertEquals(baseShape.getWidth(), widthSpinner.getValueFactory().getValue(), "Spinner larghezza non aggiornato.");
+        assertEquals(baseShape.getHeight(), heightSpinner.getValueFactory().getValue(), "Spinner altezza non aggiornato.");
     }
 
     @Test
@@ -293,66 +291,67 @@ public class ShapeInsertionIntegrationTest {
         assertEquals(ShapeFactory.DEFAULT_HEIGHT, baseShape.getHeight());
         assertEquals(decoratedShape, getPrivateField(controller, "currentShape"));
 
-        assertTrue(fillColorPicker.isDisabled(),"Fill picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
-        assertTrue(borderColorPicker.isDisabled(),"Border picker dovrebbe essere DISABILITATO (logica 'MOMENTANEE').");
+        BorderColorDecorator bcd = (BorderColorDecorator) decoratedShape;
+        assertEquals(customBorder, bcd.getBorderColor());
+
+        FillColorDecorator fcd = (FillColorDecorator) shapeAfterBorder;
+        assertEquals(customFill, fcd.getFillColor());
+
+        assertFalse(fillColorPicker.isDisabled(),"Fill picker dovrebbe essere ABILITATO quando un'Ellisse è selezionata.");
+        assertFalse(borderColorPicker.isDisabled(),"Border picker dovrebbe essere ABILITATO quando un'Ellisse è selezionata.");
 
         Stack<Command> undoStack = getUndoStack(commandManager);
-        // **MODIFICA CRUCIALE: Adattamento al comportamento "Actual: 1"**
         assertEquals(1, undoStack.size(), "Solo AddShapeCommand dovrebbe essere nello stack undo per l'ellisse se gli spinner sono inizializzati con i default.");
         assertTrue(undoStack.get(0) instanceof AddShapeCommand, "Il comando dovrebbe essere AddShapeCommand per l'ellisse.");
     }
 
     @Test
-    @DisplayName("Inserimento Linea disabilita FillPicker, HeightSpinner e i ColorPicker")
-    void testInsertLineDisablesControls() throws Exception {
+    @DisplayName("Inserimento Linea disabilita FillPicker e HeightSpinner, e lo stato dei ColorPicker")
+    void testInsertLineDisablesControlsAndAppliesBorder() throws Exception {
         final double clickX = 200.0;
         final double clickY = 250.0;
+        final Color lineBorderColor = borderColorPicker.getValue();
 
         runOnFxThreadAndWait(() -> controller.handleSelectLinea(new ActionEvent()));
 
-        assertTrue(fillColorPicker.isDisabled(), "Fill picker dovrebbe essere disabilitato dopo aver selezionato Linea.");
-        assertFalse(borderColorPicker.isDisabled(), "Border picker dovrebbe essere abilitato dopo aver selezionato Linea (prima del click).");
+        assertTrue(fillColorPicker.isDisabled(), "Fill picker dovrebbe essere disabilitato DOPO aver selezionato Linea (prima del click).");
+        assertFalse(borderColorPicker.isDisabled(), "Border picker dovrebbe essere abilitato DOPO aver selezionato Linea (prima del click).");
 
         AbstractShape decoratedShape = insertAndGetSelectedShapeFromController("Line", clickX, clickY);
 
         assertEquals(1, model.getShapes().size());
-        assertTrue(decoratedShape instanceof BorderColorDecorator);
-        AbstractShape baseShape = getBaseShape(decoratedShape);
-        assertFalse(baseShape instanceof FillColorDecorator);
+        assertTrue(decoratedShape instanceof BorderColorDecorator, "La Linea dovrebbe essere decorata con BorderColorDecorator.");
+        BorderColorDecorator bcd = (BorderColorDecorator) decoratedShape;
+        assertEquals(lineBorderColor, bcd.getBorderColor(), "Colore bordo linea non corretto.");
 
-        assertTrue(baseShape instanceof Line);
-        assertEquals(clickX, baseShape.getX());
-        assertEquals(clickY, baseShape.getY());
-        assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, baseShape.getWidth());
+        AbstractShape baseShape = getBaseShape(decoratedShape);
+        assertFalse(baseShape instanceof FillColorDecorator, "La Linea base non dovrebbe avere FillColorDecorator.");
+
+        assertTrue(baseShape instanceof Line, "La forma base dovrebbe essere una Linea.");
+        assertEquals(clickX, baseShape.getX(), "X iniziale linea errato.");
+        assertEquals(clickY, baseShape.getY(), "Y iniziale linea errato.");
+        assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, baseShape.getWidth(), "Larghezza (lunghezza) linea errata.");
         assertEquals(0.0, baseShape.getHeight(), 0.001, "L'altezza di una linea orizzontale di default dovrebbe essere 0.0.");
 
-        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"));
+        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"), "Forma corrente nel controller errata.");
 
-        assertFalse(widthSpinner.isDisabled());
-        assertTrue(heightSpinner.isDisabled());
-        assertTrue(fillColorPicker.isDisabled());
-        assertTrue(borderColorPicker.isDisabled()); // Questo sarà disabilitato a causa della logica "MOMENTANEE"
-        assertFalse(deleteButton.isDisabled());
+        assertFalse(widthSpinner.isDisabled(), "Spinner larghezza abilitato per Linea.");
+        assertTrue(heightSpinner.isDisabled(), "Spinner altezza DISABILITATO per Linea.");
+        assertTrue(fillColorPicker.isDisabled(), "Fill picker DISABILITATO per Linea selezionata.");
+        assertFalse(borderColorPicker.isDisabled(), "Border picker ABILITATO per Linea selezionata.");
+        assertFalse(deleteButton.isDisabled(), "Delete button abilitato per Linea.");
 
-        // Il valore dello spinner della larghezza dovrebbe essere la lunghezza della linea.
-        assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, widthSpinner.getValueFactory().getValue());
-        // Il valore dello spinner dell'altezza dovrebbe essere 1.0 (minimo della factory)
-        assertEquals(1.0, heightSpinner.getValueFactory().getValue(), 0.001, "Lo spinner altezza per la linea dovrebbe mostrare 1.0 (minimo della factory).");
+        assertEquals(ShapeFactory.DEFAULT_LINE_LENGTH, widthSpinner.getValueFactory().getValue(), "Spinner larghezza per Linea errato.");
+        assertEquals(1.0, heightSpinner.getValueFactory().getValue(), 0.001, "Spinner altezza per Linea dovrebbe mostrare 1.0.");
 
 
         Stack<Command> undoStack = getUndoStack(commandManager);
-        // Aspettativa: AddShape e ChangeWidth (se DEFAULT_LINE_LENGTH != initial spinner width)
-        // Se setUp usa ShapeFactory.DEFAULT_WIDTH (150) per lo spinner e DEFAULT_LINE_LENGTH è 100, allora ci aspettiamo 2 comandi.
-        // Se DEFAULT_LINE_LENGTH fosse uguale a ShapeFactory.DEFAULT_WIDTH, allora ci aspetteremmo 1 comando.
-        // Assumendo ShapeFactory.DEFAULT_LINE_LENGTH (100) != ShapeFactory.DEFAULT_WIDTH (150)
-        if (ShapeFactory.DEFAULT_LINE_LENGTH == ShapeFactory.DEFAULT_WIDTH) {
-            assertEquals(1, undoStack.size(), "Solo AddShapeCommand se DEFAULT_LINE_LENGTH == DEFAULT_WIDTH (valore spinner).");
-            assertTrue(undoStack.stream().anyMatch(cmd -> cmd instanceof AddShapeCommand), "AddShapeCommand mancante per la linea.");
-        } else {
-            assertEquals(2, undoStack.size(), "Dovrebbero esserci AddShapeCommand e ChangeWidthCommand nello stack undo per la linea.");
-            assertTrue(undoStack.stream().anyMatch(cmd -> cmd instanceof AddShapeCommand), "AddShapeCommand mancante per la linea.");
-            assertTrue(undoStack.stream().anyMatch(cmd -> cmd instanceof ChangeWidthCommand), "ChangeWidthCommand mancante per la linea.");
-        }
+        // CORREZIONE: Solo AddShapeCommand è atteso, poiché updateSpinners non genera un ChangeWidthCommand
+        // se la larghezza della linea corrisponde già al valore che lo spinner sta per assumere.
+        assertEquals(1, undoStack.size(), "Solo AddShapeCommand atteso per la Linea.");
+        assertTrue(undoStack.stream().anyMatch(cmd -> cmd instanceof AddShapeCommand), "AddShapeCommand mancante per la linea.");
+        // Non ci aspettiamo più un ChangeWidthCommand qui in automatico.
+        assertFalse(undoStack.stream().anyMatch(cmd -> cmd instanceof ChangeWidthCommand), "ChangeWidthCommand NON dovrebbe essere presente dopo l'inserimento della Linea in questo scenario.");
     }
 
     @Test
@@ -360,17 +359,17 @@ public class ShapeInsertionIntegrationTest {
     void testZOrderOnConsecutiveInsertions() throws Exception {
         AbstractShape shape1Decorated = insertAndGetSelectedShapeFromController("Rectangle", 10, 10);
         AbstractShape shape1Base = getBaseShape(shape1Decorated);
-        assertEquals(0, shape1Base.getZ());
+        assertEquals(0, shape1Base.getZ(), "Z-order prima figura errato.");
 
         AbstractShape shape2Decorated = insertAndGetSelectedShapeFromController("Line", 20, 20);
-        assertEquals(2, model.getShapes().size());
+        assertEquals(2, model.getShapes().size(), "Numero forme errato.");
         AbstractShape shape2Base = getBaseShape(shape2Decorated);
-        assertEquals(1, shape2Base.getZ());
+        assertEquals(1, shape2Base.getZ(), "Z-order seconda figura errato.");
 
         AbstractShape shape3Decorated = insertAndGetSelectedShapeFromController("Ellipse", 30, 30);
-        assertEquals(3, model.getShapes().size());
+        assertEquals(3, model.getShapes().size(), "Numero forme errato.");
         AbstractShape shape3Base = getBaseShape(shape3Decorated);
-        assertEquals(2, shape3Base.getZ());
+        assertEquals(2, shape3Base.getZ(), "Z-order terza figura errato.");
     }
 
     private AbstractShape getBaseShape(AbstractShape decoratedShape) {
