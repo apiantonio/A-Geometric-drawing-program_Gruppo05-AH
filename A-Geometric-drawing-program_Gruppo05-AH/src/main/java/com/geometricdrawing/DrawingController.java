@@ -57,6 +57,7 @@ public class DrawingController {
 
     private static final double HANDLE_RADIUS = 3.0;         // raggio del cerchietto che compare alla selezione di una figura
     private static final double SELECTION_THRESHOLD = 5.0;   // threshold per la selezione
+    private static final double RESET_DRAG = -1;             // convenzione per indicare che non è stata draggata una figura
 
     private DrawingModel model;
     private GraphicsContext gc;
@@ -65,6 +66,8 @@ public class DrawingController {
     private CommandManager commandManager;
     private double dragOffsetX;
     private double dragOffsetY;
+    private double startDragX = RESET_DRAG;  // convenzione per indicare che non è stata draggata una figura
+    private double startDragY = RESET_DRAG;  // convenzione per indicare che non è stata draggata una figura
     private FileOperationContext fileOperationContext;
     private ClipboardManager clipboardManager; // Gestore per la clipboard
     private double lastContextMouseX;
@@ -94,32 +97,12 @@ public class DrawingController {
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
-            if (this.model == null) this.model = new DrawingModel(); //
-            if (this.commandManager == null) this.commandManager = new CommandManager(); //
-            if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager(); //
+            // Inizializza model, commandManager e clipboardManager se non sono già stati iniettati o creati
+            if (this.model == null) this.model = new DrawingModel();
+            if (this.commandManager == null) this.commandManager = new CommandManager();
+            if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager(); // Inizializza ClipboardManager
 
-            setModel(this.model);
-
-            this.fileOperationContext = new FileOperationContext(this); //
-
-            // --- Menu contestuale per le FORME (shapeMenu) ---
-            shapeMenu = new ContextMenu(); //
-            MenuItem deleteItem = new MenuItem("Elimina"); //
-            deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent())); //
-            MenuItem copyItem = new MenuItem("Copia"); //
-            copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); //
-            MenuItem pasteContextItemShape = new MenuItem("Incolla"); // Potrebbe essere "Incolla (con offset)"
-            pasteContextItemShape.setOnAction(e -> handlePasteShape(new ActionEvent())); // Chiama la versione con offset di default
-            shapeMenu.getItems().addAll(deleteItem, copyItem, pasteContextItemShape); //
-
-            // --- Menu contestuale per il CANVAS (canvasContextMenu) ---
-            canvasContextMenu = new ContextMenu();
-            MenuItem pasteContextItemCanvas = new MenuItem("Incolla qui");
-            pasteContextItemCanvas.setOnAction(e -> {
-                // Usa le coordinate memorizzate dall'ultimo clic destro sul canvas
-                handlePasteShape(new ActionEvent(), lastCanvasMouseX, lastCanvasMouseY);
-            });
-            canvasContextMenu.getItems().add(pasteContextItemCanvas);
+            setModel(this.model); // Imposta il modello e aggiungi listener
 
             // --- Gestori eventi del mouse ---
             // MouseClickedHandler per l'inserimento di nuove forme e selezione (come backup)
@@ -130,6 +113,8 @@ public class DrawingController {
             drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent); //
             drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent); //
 
+            createContextMenu();
+            canvasContextMenu = new ContextMenu();
             // Event handler aggiuntivo per MOUSE_CLICKED per gestire il menu contestuale del CANVAS
             drawingCanvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 if (event.getButton() == MouseButton.SECONDARY) {
@@ -151,7 +136,7 @@ public class DrawingController {
                             lastCanvasMouseX = event.getX();
                             lastCanvasMouseY = event.getY();
                             // Abilita la voce di menu prima di mostrarla
-                            pasteContextItemCanvas.setDisable(false);
+                            //pasteContextItemCanvas.setDisable(false);
                             canvasContextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
                             shapeMenu.hide(); // Nascondi l'altro menu se fosse visibile
                         }
@@ -167,23 +152,24 @@ public class DrawingController {
             });
 
 
-            // --- Impostazioni Iniziali UI ---
-            fillPicker.setValue(Color.LIGHTGREEN); //
-            borderPicker.setValue(Color.ORANGE); //
+            // colore di partenza dei colorPicker
+            fillPicker.setValue(Color.LIGHTGREEN);
+            borderPicker.setValue(Color.ORANGE);
 
-            updateControlState(null); // Stato iniziale dei controlli (incluso pasteButton)
+            updateControlState(null); // Stato iniziale dei controlli
 
-            rootPane.setFocusTraversable(true); //
-            rootPane.setOnKeyPressed(this::onRootKeyPressed); //
+            // affinché rootPane possa ricevere focus
+            rootPane.setFocusTraversable(true);
+            rootPane.setOnKeyPressed(this::onRootKeyPressed); // Assicura che onRootKeyPressed sia chiamato
 
             drawingCanvas.widthProperty().bind(canvasContainer.widthProperty()); //
             drawingCanvas.heightProperty().bind(canvasContainer.heightProperty()); //
 
-            drawingCanvas.widthProperty().addListener((obs, oldVal, newVal) -> redrawCanvas()); //
-            drawingCanvas.heightProperty().addListener((obs, oldVal, newVal) -> redrawCanvas()); //
-
+            // ogni volta che cambia altezza e larghezza, senza attendere un click nel canvas si aggiornano le figure
+            drawingCanvas.widthProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
+            drawingCanvas.heightProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
         } else {
-            System.err.println("Errore: drawingCanvas non è stato iniettato!"); //
+            System.err.println("Errore: drawingCanvas non è stato iniettato!");
         }
 
         // --- Inizializzazione Spinner ---
@@ -219,10 +205,12 @@ public class DrawingController {
         // items da aggiungere nel context menu
         MenuItem deleteItem = new MenuItem("Elimina");
         MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
+        MenuItem pasteItem = new MenuItem("Incolla"); // Voce di menu per Incolla
 
         // setting delle azioni al click sull'item
         deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
-        copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); // Associa l'handler
+        copyItem.setOnAction(e -> handleCopyShape(new ActionEvent()));
+        pasteItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
 
         // img nel context menu e set dimensioni
         ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
@@ -231,13 +219,20 @@ public class DrawingController {
         ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
         copyimg.setFitHeight(15);
         copyimg.setFitWidth(15);
+        ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png")));
+        pasteimg.setFitHeight(15);
+        pasteimg.setFitWidth(15);
+
 
         // aggiunta immagini al context menu
         deleteItem.setGraphic(delimg);
         copyItem.setGraphic(copyimg);
+        pasteItem.setGraphic(pasteimg);
 
-        // aggiiunta degli items al context menu
-        shapeMenu.getItems().addAll(deleteItem, copyItem); // Aggiungi "Copia" al context menu
+        pasteItem.setDisable(!clipboardManager.hasContent());
+
+        // aggiunta degli items al context menu
+        shapeMenu.getItems().addAll(deleteItem, copyItem, pasteItem); // Aggiungi "Copia" al context menu
     }
 
     private void configureNumericTextFormatter(Spinner<Double> spinner) {
@@ -716,6 +711,15 @@ public class DrawingController {
         }
     }
 
+    public void resetDrag() {
+        startDragX = RESET_DRAG;
+        startDragY = RESET_DRAG;
+    }
+
+    public boolean isDragging() {
+        return startDragX != RESET_DRAG && startDragY != RESET_DRAG;
+    }
+
     public void setCurrentShape(AbstractShape shape) { this.currentShape = shape; }
 
     public ContextMenu getShapeMenu() { return shapeMenu; }
@@ -727,6 +731,14 @@ public class DrawingController {
     public double getDragOffsetY() { return dragOffsetY; }
 
     public void setDragOffsetY(double dragOffsetY) { this.dragOffsetY = dragOffsetY; }
+
+    public double getStartDragX() { return startDragX; }
+
+    public void setStartDragX(double startDragX) { this.startDragX = startDragX; }
+
+    public double getStartDragY() { return startDragY; }
+
+    public void setStartDragY(double startDragY) { this.startDragY = startDragY; }
 
     public Canvas getDrawingCanvas() { return drawingCanvas; }
 

@@ -12,8 +12,8 @@ public class MoveShapeCommand implements Command {
     private final AbstractShape shape;
     private final double newX; // Nuova coordinata X
     private final double newY; // Nuova coordinata Y
-    private final double oldX;
-    private final double oldY;
+    private double oldX;
+    private double oldY;
 
     public MoveShapeCommand(DrawingModel model, AbstractShape shape, double newX, double newY) {
         this.shape = shape;
@@ -35,4 +35,11 @@ public class MoveShapeCommand implements Command {
          model.moveShapeTo(shape, oldX, oldY);
     }
 
+    public void setOldY(double oldY) {
+        this.oldY = oldY;
+    }
+
+    public void setOldX(double oldX) {
+        this.oldX = oldX;
+    }
 }
