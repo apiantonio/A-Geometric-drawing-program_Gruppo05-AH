@@ -39,7 +39,7 @@ import java.util.function.UnaryOperator;
 
 /**
  * @Autore: Gruppo05
- * @Scopo: Controller dell'applicazione, gestisce gli eventi e le interazioni con l'interfaccia utente.
+ * @Scopo: Controller principale, gestisce UI e interazioni.
  */
 public class DrawingController {
 
@@ -49,755 +49,908 @@ public class DrawingController {
 
     @FXML private Button deleteButton;
     @FXML private Button copyButton;
-    @FXML private Button pasteButton; // Bottone per l'Incolla
+    @FXML private Button pasteButton;
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
-    private ContextMenu shapeMenu;
 
-    private static final double HANDLE_RADIUS = 3.0;         // raggio del cerchietto che compare alla selezione di una figura
-    private static final double SELECTION_THRESHOLD = 5.0;   // threshold per la selezione
-    private static final double RESET_DRAG = -1;             // convenzione per indicare che non è stata draggata una figura
+    private ContextMenu shapeMenu; // Menu contestuale per le figure
+    private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
 
+    // Costanti per la selezione e l'evidenziazione
+    private static final double HANDLE_RADIUS = 3.0; // Raggio maniglie di selezione
+    private static final double SELECTION_THRESHOLD = 5.0; // Tolleranza per la selezione (in unità del mondo)
+    private static final double RESET_DRAG = -1; // Valore per indicare nessun trascinamento in corso
+
+    // Componenti principali del controller
     private DrawingModel model;
     private GraphicsContext gc;
-    private ShapeFactory currentShapeFactory;
-    private AbstractShape currentShape;
-    private CommandManager commandManager;
+    private ShapeFactory currentShapeFactory; // Factory per la creazione della prossima figura
+    private AbstractShape currentShape; // Figura attualmente selezionata
+    private CommandManager commandManager; // Gestore comandi per undo/redo
+    private ClipboardManager clipboardManager; // Gestore appunti per copia/incolla
+    private FileOperationContext fileOperationContext; // Contesto per operazioni su file (salva/carica)
+    private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
+
+    // Variabili per il trascinamento
     private double dragOffsetX;
     private double dragOffsetY;
-    private double startDragX = RESET_DRAG;  // convenzione per indicare che non è stata draggata una figura
-    private double startDragY = RESET_DRAG;  // convenzione per indicare che non è stata draggata una figura
-    private FileOperationContext fileOperationContext;
-    private ClipboardManager clipboardManager; // Gestore per la clipboard
-    private double lastContextMouseX;
-    private double lastContextMouseY;
-    private boolean pasteAtContextMousePosition = false;
-    private double lastCanvasMouseX; // Per memorizzare X del clic destro sul canvas
-    private double lastCanvasMouseY; // Per memorizzare Y del clic destro sul canvas
-    private ContextMenu canvasContextMenu; // Menu contestuale per il canvas
+    private double startDragX = RESET_DRAG;
+    private double startDragY = RESET_DRAG;
 
-    private ZoomHandler zoomHandler; // <-- NUOVO CAMPO
+    // Coordinate per "Incolla qui" (locali al canvas)
+    private double lastCanvasMouseX;
+    private double lastCanvasMouseY;
+
 
     public void setModel(DrawingModel model) {
         this.model = model;
+        // Listener per ridisegnare il canvas quando le figure nel modello cambiano
         if (this.model != null && this.model.getShapes() != null) {
             this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> redrawCanvas());
         }
-        // redrawCanvas(); // Ridisegna se il modello cambia
     }
 
-    //Metodo per iniezione del CommandManager
     public void setCommandManager(CommandManager commandManager) {
         this.commandManager = commandManager;
     }
 
-    // la creazione del ContextMenu al tasto destro dà problemi con sceneBuilder e quindi si procede a inserirla qui
-
+    /**
+     * Metodo chiamato dopo il caricamento del FXML.
+     * Inizializza i componenti e imposta i gestori di eventi.
+     */
     @FXML
     public void initialize() {
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
-            // Inizializza model, commandManager e clipboardManager se non sono già stati iniettati o creati
+            // Inizializza componenti mancanti
             if (this.model == null) this.model = new DrawingModel();
             if (this.commandManager == null) this.commandManager = new CommandManager();
             if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager();
 
-            setModel(this.model);
+            setModel(this.model); // Imposta il modello e aggiunge listener
 
             this.fileOperationContext = new FileOperationContext(this);
             this.zoomHandler = new ZoomHandler(this, drawingCanvas);
-            // --- Gestori eventi del mouse ---
-            // MouseClickedHandler per l'inserimento di nuove forme e selezione (come backup)
-            drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent); //
-            // MousePressedHandler per la selezione, l'inizio del drag e l'apertura del menu contestuale DELLE FORME
-            drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent); //
-            drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent); //
-            drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent); //
-            drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent); //
 
-            shapeMenu = new ContextMenu();
-            MenuItem deleteItem = new MenuItem("Elimina");
-            deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
-            MenuItem copyItem = new MenuItem("Copia");
-            copyItem.setOnAction(e -> handleCopyShape(new ActionEvent()));
-            shapeMenu.getItems().addAll(deleteItem, copyItem);
-            createContextMenu();
-            canvasContextMenu = new ContextMenu();
-            // Event handler aggiuntivo per MOUSE_CLICKED per gestire il menu contestuale del CANVAS
-            drawingCanvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                if (event.getButton() == MouseButton.SECONDARY) {
-                    // Controlla se il clic è su un'area vuota
-                    // (MousePressedHandler dovrebbe aver già gestito la selezione di una forma se il clic era su di essa)
-                    // Per essere sicuri, verifichiamo qui esplicitamente.
-                    AbstractShape clickedShape = null;
-                    // Iteriamo sulle forme per vedere se il clic è su una di esse
-                    // Questo duplica un po' la logica di selectShapeAt, ma è specifico per questo contesto
-                    for (AbstractShape shape : model.getShapesOrderedByZ()) { //
-                        if (shape.containsPoint(event.getX(), event.getY(), SELECTION_THRESHOLD)) { //
-                            clickedShape = shape;
-                            break;
-                        }
-                    }
-
+            // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent);
-                    if (clickedShape == null) { // Nessuna forma trovata nel punto del clic destro -> area vuota
-                        if (clipboardManager.hasContent()) { //
-                            lastCanvasMouseX = event.getX();
-                            lastCanvasMouseY = event.getY();
-                            // Abilita la voce di menu prima di mostrarla
-                            //pasteContextItemCanvas.setDisable(false);
-                            canvasContextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
-                            shapeMenu.hide(); // Nascondi l'altro menu se fosse visibile
+
+            createShapeContextMenu(); // Crea il menu contestuale per le figure
+            createCanvasContextMenu(); // Crea il menu contestuale per il canvas (es. "Incolla qui")
+
+            // Gestore per mostrare il menu contestuale del canvas (click destro su area vuota)
+            drawingCanvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                if (event.getButton() == MouseButton.SECONDARY) { // Click destro
+                    AbstractShape clickedShape = null;
+                    // Converte coordinate del click (locali al canvas) in coordinate del mondo
+                    Point2D worldClickedPoint = zoomHandler.screenToWorld(event.getX(), event.getY());
+
+                    // Verifica se il click è avvenuto su una figura esistente
+                    for (AbstractShape shape : model.getShapesOrderedByZ()) { // Itera dalle figure più in alto (Z maggiore)
+                        if (shape.containsPoint(worldClickedPoint.getX(), worldClickedPoint.getY(), SELECTION_THRESHOLD)) {
+                            clickedShape = shape;
+                            break;
                         }
-                    } else {
-                        // Se il clic destro è su una forma, lo shapeMenu dovrebbe essere mostrato
-                        // da MousePressedHandler. Nascondiamo il canvasContextMenu per sicurezza.
-                        canvasContextMenu.hide();
                     }
-                } else { // Se non è un clic destro, nascondi entrambi i menu contestuali
-                    shapeMenu.hide();
-                    canvasContextMenu.hide();
+
+                    if (clickedShape == null) { // Click su area vuota
+                        if (clipboardManager.hasContent()) { // Se c'è contenuto negli appunti
+                            lastCanvasMouseX = event.getX(); // Memorizza coordinate X (locali al canvas)
+                            lastCanvasMouseY = event.getY(); // Memorizza coordinate Y (locali al canvas)
+
+                            if (canvasContextMenu != null) {
+                                updatePasteControlsState(); // Assicura che la voce "Incolla qui" sia abilitata/disabilitata correttamente
+                                canvasContextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY()); // Mostra menu
+                            }
+                            if (shapeMenu != null) shapeMenu.hide(); // Nasconde l'altro menu se visibile
+                        }
+                    } else { // Click destro su una figura
+                        // MousePressedHandler è responsabile di mostrare shapeMenu.
+                        // Nasconde canvasContextMenu per sicurezza.
+                        if (canvasContextMenu != null) canvasContextMenu.hide();
+                    }
+                } else { // Click non secondario
+                    if (shapeMenu != null) shapeMenu.hide();
+                    if (canvasContextMenu != null) canvasContextMenu.hide();
                 }
             });
 
-
-            // colore di partenza dei colorPicker
+            // Colori iniziali per i color picker
             fillPicker.setValue(Color.LIGHTGREEN);
             borderPicker.setValue(Color.ORANGE);
 
-            updateControlState(null);
+            updateControlState(null); // Imposta stato iniziale controlli UI
 
+            // Gestione focus e scorciatoie da tastiera
             rootPane.setFocusTraversable(true);
             rootPane.setOnKeyPressed(this::onRootKeyPressed);
 
+            // Binding dimensioni canvas al contenitore
             drawingCanvas.widthProperty().bind(canvasContainer.widthProperty());
             drawingCanvas.heightProperty().bind(canvasContainer.heightProperty());
-            drawingCanvas.widthProperty().bind(canvasContainer.widthProperty()); //
-            drawingCanvas.heightProperty().bind(canvasContainer.heightProperty()); //
 
+            // Listener per ridisegnare se le dimensioni del canvas cambiano
             drawingCanvas.widthProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
             drawingCanvas.heightProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
         } else {
-            System.err.println("Errore: drawingCanvas non è stato iniettato!");
+            System.err.println("Errore: drawingCanvas non è stato iniettato da FXML!");
         }
 
-        // --- Inizializzazione Spinner ---
+        // Inizializzazione Spinner per altezza e larghezza
         if (heightSpinner != null) {
             SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
             heightSpinner.setValueFactory(heightFactory);
             heightSpinner.setEditable(true);
-            heightSpinner.setValueFactory(heightFactory); //
-            heightSpinner.setEditable(true); //
-            heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
-                if (newValue != null) handleDimensionChange(false, newValue); //
+            heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
+                if (newValue != null) handleDimensionChange(false, newValue); // false indica cambio altezza
             });
-            configureSpinnerFocusListener(heightSpinner); //
-            configureNumericTextFormatter(heightSpinner); //
+            configureSpinnerFocusListener(heightSpinner); // Gestisce commit del valore
+            configureNumericTextFormatter(heightSpinner); // Formattatore per input numerico
         }
 
         if (widthSpinner != null) {
             SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0);
             widthSpinner.setValueFactory(widthFactory);
             widthSpinner.setEditable(true);
-            widthSpinner.setValueFactory(widthFactory); //
-            widthSpinner.setEditable(true); //
-            widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
-                if (newValue != null) handleDimensionChange(true, newValue); //
+            widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
+                if (newValue != null) handleDimensionChange(true, newValue); // true indica cambio larghezza
             });
-            configureSpinnerFocusListener(widthSpinner); //
-            configureNumericTextFormatter(widthSpinner); //
+            configureSpinnerFocusListener(widthSpinner);
+            configureNumericTextFormatter(widthSpinner);
         }
 
-        currentShapeFactory = null; //
-        updatePasteControlsState(); // Assicura che lo stato dei controlli di incolla sia corretto all'avvio
-        redrawCanvas(); // Prima ridisegnata
-        currentShapeFactory = null;
-        redrawCanvas();
+        currentShapeFactory = null; // Nessuna factory attiva all'inizio
+        updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
+        redrawCanvas(); // Primo disegno del canvas
     }
 
-    private void createContextMenu(){
+    /**
+     * Crea il menu contestuale per le figure (Elimina, Copia, Incolla con offset).
+     */
+    private void createShapeContextMenu(){
         shapeMenu = new ContextMenu();
-        // items da aggiungere nel context menu
         MenuItem deleteItem = new MenuItem("Elimina");
-        MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
-        MenuItem pasteItem = new MenuItem("Incolla"); // Voce di menu per Incolla
+        MenuItem copyItem = new MenuItem("Copia");
+        MenuItem pasteOffsetItem = new MenuItem("Incolla"); // "Incolla" semplice implica con offset
 
-        // setting delle azioni al click sull'item
+        // Azioni per le voci di menu
         deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
         copyItem.setOnAction(e -> handleCopyShape(new ActionEvent()));
-        pasteItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
+        pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent())); // Chiama incolla con offset di default
 
-        // img nel context menu e set dimensioni
+        // Icone per le voci di menu
         ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
-        delimg.setFitHeight(16);
-        delimg.setFitWidth(16);
+        delimg.setFitHeight(16); delimg.setFitWidth(16);
         ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
-        copyimg.setFitHeight(15);
-        copyimg.setFitWidth(15);
+        copyimg.setFitHeight(15); copyimg.setFitWidth(15);
         ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png")));
-        pasteimg.setFitHeight(15);
-        pasteimg.setFitWidth(15);
+        pasteimg.setFitHeight(15); pasteimg.setFitWidth(15);
 
-
-        // aggiunta immagini al context menu
         deleteItem.setGraphic(delimg);
         copyItem.setGraphic(copyimg);
-        pasteItem.setGraphic(pasteimg);
+        pasteOffsetItem.setGraphic(pasteimg);
 
-        pasteItem.setDisable(!clipboardManager.hasContent());
-
-        // aggiunta degli items al context menu
-        shapeMenu.getItems().addAll(deleteItem, copyItem, pasteItem); // Aggiungi "Copia" al context menu
+        shapeMenu.getItems().addAll(deleteItem, copyItem, pasteOffsetItem);
     }
 
+    /**
+     * Crea il menu contestuale per il canvas (es. "Incolla qui").
+     */
+    private void createCanvasContextMenu() {
+        canvasContextMenu = new ContextMenu();
+        MenuItem pasteHereItem = new MenuItem("Incolla qui"); // Voce per incollare alle coordinate del click
+        ImageView pasteCanvasImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png"))); // Riutilizza icona
+        pasteCanvasImg.setFitHeight(15);
+        pasteCanvasImg.setFitWidth(15);
+        pasteHereItem.setGraphic(pasteCanvasImg);
+
+        pasteHereItem.setOnAction(e -> {
+            if (clipboardManager.hasContent()) {
+                // lastCanvasMouseX/Y sono coordinate locali al canvas, memorizzate dal click destro.
+                // handlePasteShape le userà per posizionare la figura.
+                handlePasteShape(new ActionEvent(), lastCanvasMouseX, lastCanvasMouseY);
+            }
+        });
+        canvasContextMenu.getItems().add(pasteHereItem);
+    }
+
+    /**
+     * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).
+     * @param spinner Lo Spinner da configurare.
+     */
     private void configureNumericTextFormatter(Spinner<Double> spinner) {
         UnaryOperator<TextFormatter.Change> filter = change -> {
             String newText = change.getControlNewText();
+            // Regex per double (opzionale negativo, opzionale parte decimale con . o ,)
             if (newText.matches("-?\\d*([.,]\\d*)?")) {
                 return change;
             }
-            return null;
+            return null; // Rifiuta la modifica se non valida
         };
         TextFormatter<String> textFormatter = new TextFormatter<>(filter);
         spinner.getEditor().setTextFormatter(textFormatter);
 
+        // Listener per aggiornare il valore dello Spinner quando il testo nel suo editor cambia
+        // (es. dopo input diretto dell'utente).
         textFormatter.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && !newVal.isEmpty()) {
                 try {
-                    double value = Double.parseDouble(newVal.replace(',', '.'));
+                    double value = Double.parseDouble(newVal.replace(',', '.')); // Sostituisce , con . per il parsing
+                    // Aggiorna il valore della factory solo se è diverso, per evitare cicli.
                     if (spinner.getValueFactory() != null && spinner.getValueFactory().getValue() != value) {
                         spinner.getValueFactory().setValue(value);
                     }
                 } catch (NumberFormatException e) {
-                    // Ignora
+                    // Ignora errore di parsing (l'utente potrebbe stare ancora digitando)
+                    // Il commit avverrà quando lo spinner perde il focus (vedi configureSpinnerFocusListener)
                 }
             }
         });
     }
 
-
+    /**
+     * Configura un listener per lo Spinner che committa il valore del testo
+     * quando l'editor dello Spinner perde il focus.
+     * @param spinner Lo Spinner da configurare.
+     */
     private void configureSpinnerFocusListener(Spinner<Double> spinner) {
         spinner.getEditor().focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-            if (!isFocused && spinner.getValueFactory() != null) {
+            if (!isFocused && spinner.getValueFactory() != null) { // Ha perso il focus
                 try {
                     String text = spinner.getEditor().getText().replace(',', '.');
                     double value = Double.parseDouble(text);
                     SpinnerValueFactory.DoubleSpinnerValueFactory factory = (SpinnerValueFactory.DoubleSpinnerValueFactory) spinner.getValueFactory();
+                    // Assicura che il valore sia nei limiti min/max della factory
                     if (value < factory.getMin()) value = factory.getMin();
                     if (value > factory.getMax()) value = factory.getMax();
-                    factory.setValue(value);
+                    factory.setValue(value); // Imposta il valore (triggera valueProperty dello spinner)
                 } catch (NumberFormatException e) {
+                    // Se il parsing fallisce (es. testo non valido), ripristina il testo dell'editor
+                    // al valore attuale valido dello spinner.
                     spinner.getEditor().setText(String.valueOf(spinner.getValue()).replace('.', ','));
                 }
             }
         });
     }
 
-
+    /**
+     * Gestisce la pressione di tasti a livello del rootPane (per scorciatoie).
+     */
     @FXML
     private void onRootKeyPressed(KeyEvent event) {
-        // la cancellazione da tastiera può avvenire con backspace o delete
+        // Cancella figura con DEL o BACKSPACE
         if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
-            // richiama il metodo per la cancellazione tramite bottone
             handleDeleteShape(new ActionEvent());
-            event.consume();
+            event.consume(); // Evento consumato
         }
-        // Scorciatoia per Copia (CTRL+C)
+        // Copia con CTRL+C
         if (KeyCombination.keyCombination("CTRL+C").match(event)) {
             handleCopyShape(new ActionEvent());
             event.consume();
         }
-        // Scorciatoia per Annulla (CTRL+Z)
+        // Annulla con CTRL+Z
         if (KeyCombination.keyCombination("CTRL+Z").match(event)) {
             handleUndo(new ActionEvent());
             event.consume();
         }
-
+        // Incolla con CTRL+V (incolla con offset di default)
         if (KeyCombination.keyCombination("CTRL+V").match(event)) {
-            if (clipboardManager.hasContent()) { // Only handle if there's something to paste
-                handlePasteShape(new ActionEvent());
+            if (clipboardManager.hasContent()) {
+                handlePasteShape(new ActionEvent()); // Chiama incolla con offset
             }
             event.consume();
         }
     }
 
-    // Metodo di utilità per inizializzare la selezione della figura
-    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
-        currentShape = null;
-        updateControlState(null);
-        redrawCanvas();
+    /**
+     * Prepara il controller per la creazione di una nuova figura.
+     * @param factory La factory per il tipo di figura da creare.
+     * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
+     * @param disableBorderPickerForFactory Se il border picker deve essere disabilitato per questa factory.
+     */
+    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPickerForFactory) {
+        currentShape = null; // Deseleziona figura corrente
+        updateControlState(null); // Aggiorna stato UI
+        redrawCanvas(); // Rimuove evidenziazione precedente
 
+        // Disabilita/Abilita picker in base al tipo di figura in creazione
         fillPicker.setDisable(disableFillPicker);
-        borderPicker.setDisable(disableBorderPicker);
-        currentShapeFactory = factory;
+        if (factory instanceof LineFactory) { // Per la Linea, il bordo è sempre possibile
+            borderPicker.setDisable(false);
+        } else if (factory instanceof RectangleFactory || factory instanceof EllipseFactory) { // Per Rettangolo/Ellisse, il bordo è possibile
+            borderPicker.setDisable(false);
+        }
+        // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
+
+        currentShapeFactory = factory; // Imposta la factory attiva
+        if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
     }
 
+    // Gestori per i bottoni di selezione tipo figura
     @FXML
     public void handleSelectLinea(ActionEvent event) {
-        initializeShapeSelection(new LineFactory(), true, false);
+        initializeShapeSelection(new LineFactory(), true, false); // Linea: no fill, sì border
     }
 
     @FXML
     public void handleSelectRettangolo(ActionEvent event) {
-        initializeShapeSelection(new RectangleFactory(), false, false);
+        initializeShapeSelection(new RectangleFactory(), false, false); // Rettangolo: sì fill, sì border
     }
 
     @FXML
     public void handleSelectEllisse(ActionEvent event) {
-        initializeShapeSelection(new EllipseFactory(), false, false);
+        initializeShapeSelection(new EllipseFactory(), false, false); // Ellisse: sì fill, sì border
     }
 
+    /**
+     * Controlla se la nuova figura, posizionata alle coordinate del mondo specificate,
+     * uscirebbe dai limiti del canvas.
+     * @param newShape La figura da controllare.
+     * @param worldX Coordinata X (del mondo) per il posizionamento.
+     * @param worldY Coordinata Y (del mondo) per il posizionamento.
+     * @return true se la figura è troppo vicina ai bordi o fuori, false altrimenti.
+     */
     public boolean isTooClose(AbstractShape newShape, double worldX, double worldY) {
-        // worldX, worldY sono le coordinate del mondo del punto di inserimento
         if (newShape == null || drawingCanvas == null || zoomHandler == null) return true;
 
         double shapeWidth = newShape.getWidth();
         double shapeHeight = newShape.getHeight();
 
+        // Dimensioni del canvas in coordinate del mondo
         double worldCanvasWidth = drawingCanvas.getWidth() / zoomHandler.getZoomFactor();
         double worldCanvasHeight = drawingCanvas.getHeight() / zoomHandler.getZoomFactor();
 
-        // Verifica se la figura, posizionata in worldX, worldY, uscirebbe dai limiti del mondo del canvas
-        return worldX + shapeWidth > worldCanvasWidth ||
-                worldY + shapeHeight > worldCanvasHeight ||
-                worldX < 0 || worldY < 0; // Aggiunto controllo per coordinate negative
+        // Controlla se una qualsiasi parte della figura cade fuori dai limiti
+        if (worldX < 0 || worldY < 0 ||
+                worldX + shapeWidth > worldCanvasWidth ||
+                worldY + shapeHeight > worldCanvasHeight) {
+            return true; // Fuori dai limiti
+        }
+        return false; // All'interno dei limiti
     }
 
-
+    /**
+     * Gestisce la modifica di dimensione (larghezza o altezza) di una figura tramite Spinner.
+     * @param isWidth true se si modifica la larghezza, false per l'altezza.
+     * @param newValue Il nuovo valore della dimensione.
+     */
     private void handleDimensionChange(boolean isWidth, Double newValue) {
         if (currentShape == null || newValue == null || model == null || commandManager == null) {
-            return;
+            return; // Nessuna figura selezionata o valore non valido
         }
+        // Impedisce dimensioni non positive
         if (newValue <= 0) {
+            // Ripristina il valore precedente nello spinner
             if (isWidth) {
                 widthSpinner.getValueFactory().setValue(currentShape.getWidth());
             } else {
                 heightSpinner.getValueFactory().setValue(currentShape.getHeight());
             }
-            return;
+            return; // Non esegue il comando
         }
+
+        Command cmd = null; // Comando da eseguire
         if (isWidth) {
-            ChangeWidthCommand cmd = new ChangeWidthCommand(model, currentShape, newValue);
-            commandManager.executeCommand(cmd);
-        } else {
-            if (!(getBaseShape(currentShape) instanceof Line)) {
-                ChangeHeightCommand cmd = new ChangeHeightCommand(model, currentShape, newValue);
-                commandManager.executeCommand(cmd);
+            // Crea comando solo se il valore è effettivamente cambiato (evita comandi doppi per piccole fluttuazioni)
+            if (Math.abs(currentShape.getWidth() - newValue) > 0.001) { // Tolleranza per double
+                cmd = new ChangeWidthCommand(model, currentShape, newValue);
+            }
+        } else { // Modifica altezza
+            if (!(getBaseShape(currentShape) instanceof Line)) { // L'altezza della linea non è modificabile direttamente
+                if (Math.abs(currentShape.getHeight() - newValue) > 0.001) {
+                    cmd = new ChangeHeightCommand(model, currentShape, newValue);
+                }
             }
         }
-        redrawCanvas();
-    }
-
-    public void handleChangeBorderColor(Color newColor) {
-        if (currentShape == null || newColor == null) return;
-
-        AbstractShape shape = currentShape;
-        // Trova il primo decoratore di colore del bordo
-        while (shape instanceof ShapeDecorator decorator) {
-            if (decorator instanceof BorderColorDecorator borderDecorator) {
-                ChangeBorderColorCommand cmd = new ChangeBorderColorCommand(model, borderDecorator, newColor);
-                commandManager.executeCommand(cmd);
-                break;
-            }
-            shape = ((ShapeDecorator) shape).getInnerShape();
-        }
-    }
-
-    public void handleChangeFillColor(Color newColor) {
-        if (currentShape == null || newColor == null) return;
-
-        AbstractShape shape = currentShape;
-        // Trova il primo decoratore di colore di riempimento
-        while (shape instanceof ShapeDecorator decorator) {
-            if (decorator instanceof FillColorDecorator fillDecorator) {
-                ChangeFillColorCommand cmd = new ChangeFillColorCommand(model, fillDecorator, newColor);
-                commandManager.executeCommand(cmd);
-                break;
-            }
-            shape = ((ShapeDecorator) shape).getInnerShape();
-        }
-    }
-
-    @FXML
-    public void onBorderColorPicked() {
-        handleChangeBorderColor(borderPicker.getValue());
-    }
-
-    @FXML
-    public void onFillColorPicked() {
-        handleChangeFillColor(fillPicker.getValue());
-    }
-
-    private AbstractShape getBaseShape(AbstractShape shape) {
-        AbstractShape base = shape;
-        while (base instanceof ShapeDecorator) {
-            base = ((ShapeDecorator) base).getInnerShape();
-        }
-        return base;
-    }
-
-    public void updateControlState(AbstractShape shape) {
-        boolean enableWidth = false;
-        boolean enableHeight = false;
-        boolean enableFill = false;
-        boolean enableBorder = false;
-        boolean enableDelete = false;
-        boolean enableCopy = false;
-
-        if (shape != null) {
-            AbstractShape baseShape = getBaseShape(shape);
-            enableWidth = true;
-            enableDelete = true;
-            enableCopy = true;  //abilita copia se é una forma selezionata
-            enableBorder = true;
-            enableCopy = true; // Abilita copia se una forma è selezionata
-            enableBorder = true;
-
-            if (!(baseShape instanceof Line)) {
-                enableHeight = true;
-                enableFill = true;
-            } else {
-                enableHeight = false;
-                enableFill = false;
-            }
-        }
-
-        if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
-        if (heightSpinner != null) heightSpinner.setDisable(!enableHeight);
-        if (fillPicker != null) fillPicker.setDisable(!enableFill);
-        if (borderPicker != null) borderPicker.setDisable(!enableBorder);
-        if (deleteButton != null) deleteButton.setDisable(!enableDelete);
-        if (copyButton != null) copyButton.setDisable(!enableCopy);
-        if (copyButton != null) copyButton.setDisable(!enableCopy);
-        if (pasteButton != null) {pasteButton.setDisable(!clipboardManager.hasContent());}
-
-        boolean enablePaste = clipboardManager != null && clipboardManager.hasContent();
-        if (pasteButton != null) {
-            pasteButton.setDisable(!enablePaste);
-        }
-        // Update context menu item for paste as well
-        if (shapeMenu != null) {
-            shapeMenu.getItems().stream()
-                    .filter(item -> "Incolla".equals(item.getText()))
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!enablePaste));
-        }
-    }
-
-    private void updatePasteControlsState() {
-        boolean hasContent = clipboardManager != null && clipboardManager.hasContent(); //
-        if (pasteButton != null) {
-            pasteButton.setDisable(!hasContent);
-        }
-        if (shapeMenu != null) { // Menu contestuale delle forme
-            shapeMenu.getItems().stream()
-                    .filter(item -> item.getText().startsWith("Incolla")) // Per coprire "Incolla (qui)"
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!hasContent));
-        }
-        if (canvasContextMenu != null) { // Menu contestuale del canvas
-            canvasContextMenu.getItems().stream()
-                    .filter(item -> item.getText().startsWith("Incolla qui"))
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!hasContent));
+        if (cmd != null) {
+            commandManager.executeCommand(cmd); // Esegue il comando
+            redrawCanvas(); // Ridisegna per mostrare la modifica
         }
     }
 
     /**
-     * Metodo per la gestione dell'eliminazione di una figura selezionata
+     * Gestisce il cambio di colore del bordo della figura selezionata.
+     * @param newColor Il nuovo colore del bordo.
      */
-    @FXML
-    public void handleDeleteShape(ActionEvent event) {
-        if (currentShape != null && model != null && commandManager != null) {
-            if(shapeMenu != null) shapeMenu.hide();
-            DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
-            commandManager.executeCommand(deleteCmd);
+    public void handleChangeBorderColor(Color newColor) {
+        if (currentShape == null || newColor == null) return;
 
-            // successivamente deseleziono la forma, ripristino i binding e aggiorno il canvas
-            currentShape = null;
-            updateControlState(null);
+        AbstractShape shapeNavigator = currentShape;
+        BorderColorDecorator bcd = null; // Riferimento al decoratore del bordo
+
+        // Cerca il BorderColorDecorator più esterno (o l'unico)
+        while (shapeNavigator instanceof ShapeDecorator) {
+            if (shapeNavigator instanceof BorderColorDecorator) {
+                bcd = (BorderColorDecorator) shapeNavigator;
+                break;
+            }
+            shapeNavigator = ((ShapeDecorator) shapeNavigator).getInnerShape(); // Scende al decoratore interno
+        }
+        // Caso in cui currentShape stesso è il BorderColorDecorator (non ulteriormente wrappato per il bordo)
+        if (bcd == null && currentShape instanceof BorderColorDecorator) {
+            bcd = (BorderColorDecorator) currentShape;
+        }
+
+        // Se trovato e il colore è diverso, crea ed esegue il comando
+        if (bcd != null && !bcd.getBorderColor().equals(newColor)) {
+            ChangeBorderColorCommand cmd = new ChangeBorderColorCommand(model, bcd, newColor);
+            commandManager.executeCommand(cmd);
             redrawCanvas();
         }
     }
 
     /**
-     * Gestisce l'azione di copia di una figura.
-     * @param event L'evento che ha scatenato l'azione.
+     * Gestisce il cambio di colore di riempimento della figura selezionata.
+     * @param newColor Il nuovo colore di riempimento.
+     */
+    public void handleChangeFillColor(Color newColor) {
+        if (currentShape == null || newColor == null) return;
+        if (getBaseShape(currentShape) instanceof Line) return; // Le linee non hanno riempimento
+
+        AbstractShape shapeNavigator = currentShape;
+        FillColorDecorator fcd = null; // Riferimento al decoratore di riempimento
+
+        // Cerca il FillColorDecorator
+        while (shapeNavigator instanceof ShapeDecorator) {
+            if (shapeNavigator instanceof FillColorDecorator) {
+                fcd = (FillColorDecorator) shapeNavigator;
+                break;
+            }
+            shapeNavigator = ((ShapeDecorator) shapeNavigator).getInnerShape();
+        }
+        if (fcd == null && currentShape instanceof FillColorDecorator) {
+            fcd = (FillColorDecorator) currentShape;
+        }
+
+        // Se trovato e il colore è diverso, crea ed esegue il comando
+        if (fcd != null && !fcd.getFillColor().equals(newColor)) {
+            ChangeFillColorCommand cmd = new ChangeFillColorCommand(model, fcd, newColor);
+            commandManager.executeCommand(cmd);
+            redrawCanvas();
+        }
+    }
+
+    /**
+     * Chiamato quando viene selezionato un colore dal ColorPicker del bordo.
+     */
+    @FXML
+    public void onBorderColorPicked() {
+        if (currentShape != null) { // Agisce solo se una figura è selezionata
+            handleChangeBorderColor(borderPicker.getValue());
+        }
+    }
+
+    /**
+     * Chiamato quando viene selezionato un colore dal ColorPicker del riempimento.
+     */
+    @FXML
+    public void onFillColorPicked() {
+        // Agisce solo se una figura è selezionata e non è una linea
+        if (currentShape != null && !(getBaseShape(currentShape) instanceof Line)) {
+            handleChangeFillColor(fillPicker.getValue());
+        }
+    }
+
+    /**
+     * Restituisce la forma base (non decorata) da una forma potenzialmente decorata.
+     */
+    private AbstractShape getBaseShape(AbstractShape shape) {
+        AbstractShape base = shape;
+        while (base instanceof ShapeDecorator) { // Scende attraverso i decoratori
+            base = ((ShapeDecorator) base).getInnerShape();
+        }
+        return base;
+    }
+
+    /**
+     * Aggiorna lo stato (abilitato/disabilitato) dei controlli UI in base alla figura selezionata.
+     * @param shape La figura attualmente selezionata, o null se nessuna.
+     */
+    public void updateControlState(AbstractShape shape) {
+        boolean enableWidth = false;
+        boolean enableHeight = false;
+        boolean enableFillPicker = false;
+        boolean enableBorderPicker = false;
+        boolean enableDelete = false;
+        boolean enableCopy = false;
+
+        currentShape = shape; // Aggiorna la figura corrente del controller
+
+        if (shape != null) { // Se una figura è selezionata
+            AbstractShape baseShape = getBaseShape(shape);
+            enableWidth = true;  // Larghezza sempre modificabile
+            enableDelete = true; // Cancellazione sempre possibile
+            enableCopy = true;   // Copia sempre possibile
+
+            enableBorderPicker = true; // Colore bordo sempre modificabile per figura selezionata
+
+            if (!(baseShape instanceof Line)) { // Se non è una linea (cioè Rettangolo o Ellisse)
+                enableHeight = true;       // Altezza modificabile
+                enableFillPicker = true;   // Riempimento possibile
+            } else { // È una Linea
+                enableHeight = false;      // Altezza non direttamente modificabile per linea
+                enableFillPicker = false;  // Nessun riempimento per linea
+            }
+        } else { // Nessuna figura selezionata
+            // Se una factory è attiva (si sta per creare una nuova figura)
+            if (currentShapeFactory != null) {
+                if (currentShapeFactory instanceof LineFactory) {
+                    enableFillPicker = false; // No fill per la nuova linea
+                    enableBorderPicker = true; // Sì border per la nuova linea
+                } else { // Factory per Rettangolo o Ellisse
+                    enableFillPicker = true;
+                    enableBorderPicker = true;
+                }
+                // Width/Height spinners per nuove figure sono disabilitati (usano default)
+                enableWidth = false;
+                enableHeight = false;
+            } else { // Nessuna figura selezionata e nessuna factory attiva
+                enableFillPicker = false;
+                enableBorderPicker = false;
+                enableWidth = false;
+                enableHeight = false;
+            }
+        }
+
+        // Applica stati ai controlli UI
+        if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
+        if (heightSpinner != null) heightSpinner.setDisable(!enableHeight);
+        if (fillPicker != null) fillPicker.setDisable(!enableFillPicker);
+        if (borderPicker != null) borderPicker.setDisable(!enableBorderPicker);
+        if (deleteButton != null) deleteButton.setDisable(!enableDelete);
+        if (copyButton != null) copyButton.setDisable(!enableCopy);
+
+        updatePasteControlsState(); // Aggiorna stato controlli Incolla
+    }
+
+    /**
+     * Aggiorna lo stato dei controlli di Incolla (bottone e voci di menu)
+     * in base al contenuto degli appunti.
+     */
+    private void updatePasteControlsState() {
+        boolean hasContent = clipboardManager != null && clipboardManager.hasContent();
+        // Bottone Incolla
+        if (pasteButton != null) {
+            pasteButton.setDisable(!hasContent);
+        }
+        // Voce "Incolla" (con offset) nel menu contestuale delle figure
+        if (shapeMenu != null) {
+            shapeMenu.getItems().stream()
+                    .filter(item -> "Incolla".equals(item.getText())) // Cerca "Incolla"
+                    .findFirst()
+                    .ifPresent(item -> item.setDisable(!hasContent));
+        }
+        // Voce "Incolla qui" nel menu contestuale del canvas
+        if (canvasContextMenu != null) {
+            canvasContextMenu.getItems().stream()
+                    .filter(item -> "Incolla qui".equals(item.getText())) // Cerca "Incolla qui"
+                    .findFirst()
+                    .ifPresent(item -> item.setDisable(!hasContent));
+        }
+    }
+
+    /**
+     * Gestisce l'azione di cancellazione della figura selezionata.
+     */
+    @FXML
+    public void handleDeleteShape(ActionEvent event) {
+        if (currentShape != null && model != null && commandManager != null) {
+            if(shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
+            DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
+            commandManager.executeCommand(deleteCmd);
+            setCurrentShape(null); // Deseleziona la figura
+            updateControlState(null); // Aggiorna UI
+            redrawCanvas();
+        }
+    }
+
+    /**
+     * Gestisce l'azione di copia della figura selezionata negli appunti.
      */
     @FXML
     public void handleCopyShape(ActionEvent event) {
         if (currentShape != null && commandManager != null && clipboardManager != null) {
             CopyShapeCommand copyCmd = new CopyShapeCommand(currentShape, clipboardManager);
             commandManager.executeCommand(copyCmd);
-            System.out.println("DEBUG: Figura copiata nella clipboard interna.");
-            // La figura rimane selezionata dopo la copia. Non è necessario ridisegnare o aggiornare lo stato dei controlli
-            // a meno che non si voglia dare un feedback visivo specifico per la copia.
-            updatePasteControlsState();
+            updatePasteControlsState(); // Aggiorna disponibilità Incolla
         }
     }
 
+    /**
+     * Gestisce l'azione di Incolla dal bottone (o scorciatoia CTRL+V),
+     * che incolla con un offset di default.
+     */
     @FXML
     public void handlePasteShape(ActionEvent event) {
-        handlePasteShape(event, -1, -1); // Usa valori sentinella per indicare offset di default
+        // Chiama la versione più specifica con coordinate target -1 per indicare offset di default.
+        handlePasteShape(event, -1, -1);
     }
 
-    // Versione che può accettare coordinate specifiche
-    public void handlePasteShape(ActionEvent event, double targetX, double targetY) {
-        if (model != null && commandManager != null && clipboardManager != null && clipboardManager.hasContent()) { //
+    /**
+     * Gestisce l'azione di Incolla, posizionando la figura.
+     * Se canvasLocalTargetX/Y sono -1, usa un offset di default.
+     * Altrimenti, usa canvasLocalTargetX/Y (coordinate locali al canvas) per posizionare la figura.
+     * @param event L'evento che ha scatenato l'azione.
+     * @param canvasLocalTargetX Coordinata X locale al canvas per "Incolla qui", o -1.
+     * @param canvasLocalTargetY Coordinata Y locale al canvas per "Incolla qui", o -1.
+     */
+    public void handlePasteShape(ActionEvent event, double canvasLocalTargetX, double canvasLocalTargetY) {
+        if (model != null && commandManager != null && clipboardManager != null && clipboardManager.hasContent()) {
             PasteShapeCommand pasteCmd;
-            AbstractShape shapeDetailsForPositioning = clipboardManager.getFromClipboard(); // Ottieni una copia per calcolare le dimensioni
-            if (shapeDetailsForPositioning == null) return;
+            // Ottiene una copia della figura dagli appunti per calcolarne le dimensioni per il centraggio.
+            AbstractShape shapeDetailsForPositioning = clipboardManager.getFromClipboard();
+            if (shapeDetailsForPositioning == null) return; // Nessuna figura valida da incollare
 
-            if (targetX != -1 && targetY != -1) { // Se sono state fornite coordinate valide
-                // Incolla alle coordinate specificate, centrando la figura (approssimativamente)
-                double finalX = targetX - (shapeDetailsForPositioning.getWidth() / 2.0);
-                double finalY = targetY - (shapeDetailsForPositioning.getHeight() / 2.0);
-                pasteCmd = new PasteShapeCommand(model, clipboardManager, finalX, finalY, true); // Usa costruttore per coordinate assolute
+            if (canvasLocalTargetX != -1 && canvasLocalTargetY != -1) { // Coordinate valide fornite (per "Incolla qui")
+                // Converte le coordinate del click (locali al canvas) in coordinate del mondo
+                Point2D worldPastedClickPoint = zoomHandler.screenToWorld(canvasLocalTargetX, canvasLocalTargetY);
+
+                // Calcola le coordinate del mondo per l'angolo alto-sinistra della figura
+                // in modo che sia centrata sul punto del click.
+                double finalWorldX = worldPastedClickPoint.getX() - (shapeDetailsForPositioning.getWidth() / 2.0);
+                double finalWorldY = worldPastedClickPoint.getY() - (shapeDetailsForPositioning.getHeight() / 2.0);
+                pasteCmd = new PasteShapeCommand(model, clipboardManager, finalWorldX, finalWorldY, true); // true per coordinate assolute
             } else {
-                // Incolla con offset di default rispetto alla posizione originale della forma copiata
-                pasteCmd = new PasteShapeCommand(model, clipboardManager); // Costruttore esistente con offset
+                // Incolla con offset di default (es. da bottone Incolla o menu figura)
+                pasteCmd = new PasteShapeCommand(model, clipboardManager);
             }
 
-            commandManager.executeCommand(pasteCmd); //
+            commandManager.executeCommand(pasteCmd); // Esegue il comando di Incolla
 
-            AbstractShape pastedShape = pasteCmd.getPastedShape();
+            AbstractShape pastedShape = pasteCmd.getPastedShape(); // Ottiene la figura effettivamente incollata
             if (pastedShape != null) {
-                setCurrentShape(pastedShape);
-                updateControlState(pastedShape); //
-                updateSpinners(pastedShape); //
+                setCurrentShape(pastedShape); // Seleziona la nuova figura incollata
+                updateControlState(pastedShape); // Aggiorna UI per la nuova selezione
+                updateSpinners(pastedShape); // Aggiorna valori spinner
             }
-            redrawCanvas(); //
-            updatePasteControlsState();
+            redrawCanvas(); // Ridisegna il canvas
+            updatePasteControlsState(); // Aggiorna stato controlli Incolla
         }
     }
 
+    /**
+     * Gestisce l'azione di Annulla (Undo).
+     */
     @FXML
     public void handleUndo(ActionEvent event) {
         if (model != null && commandManager != null) {
-            if(shapeMenu != null) shapeMenu.hide();
-            commandManager.undo();
-            //updateControlState(null);
+            if(shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
+            commandManager.undo(); // Esegue undo sull'ultimo comando
+            // Dopo l'undo, la figura selezionata potrebbe non esistere più o essere cambiata.
+            // È più sicuro deselezionare o rivalutare la selezione.
+            setCurrentShape(null); // Deseleziona
+            updateControlState(null);
+            updateSpinners(null); // Resetta spinner
             redrawCanvas();
         }
     }
 
-    public void setLastContextMousePosition(double x, double y) {
-        this.lastContextMouseX = x;
-        this.lastContextMouseY = y;
-        this.pasteAtContextMousePosition = true; // Indica che il prossimo paste potrebbe usare queste coordinate
-    }
-
+    /**
+     * Seleziona la figura alle coordinate del mondo specificate (worldX, worldY).
+     * @return La figura selezionata, o null se nessuna figura è trovata.
+     */
     public AbstractShape selectShapeAt(double worldX, double worldY) {
         if (model == null) return null;
-        double thresholdInWorld = AbstractMouseHandler.SELECTION_THRESHOLD;
-        if (zoomHandler != null && zoomHandler.getZoomFactor() != 0) {
-        }
-
-
+        // SELECTION_THRESHOLD è la tolleranza in unità del mondo.
+        AbstractShape selected = null;
+        // Itera sulle figure in ordine di Z decrescente (da quella più in alto a quella più in basso)
         for (AbstractShape shape : model.getShapesOrderedByZ()) {
-            if (shape.containsPoint(worldX, worldY, thresholdInWorld)) {
-                currentShape = shape;
-                updateSpinners(currentShape);
-                updateControlState(currentShape);
-
-                System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
-                return shape;
+            if (shape.containsPoint(worldX, worldY, SELECTION_THRESHOLD)) {
+                selected = shape; // Figura trovata
+                break;
             }
         }
-        currentShape = null;
-        updateSpinners(null);
-        updateControlState(null);
-        System.out.println("DEBUG: Nessuna figura selezionata.");
-        return null;
+
+        setCurrentShape(selected); // Imposta la figura corrente nel controller
+        updateSpinners(selected);    // Aggiorna gli spinner con le dimensioni della figura
+        updateControlState(selected); // Aggiorna lo stato generale dei controlli UI
+
+        // Output di debug (opzionale)
+        if (selected != null) {
+            System.out.println("DEBUG: Figura selezionata: " + selected + " z: " + selected.getZ());
+        } else {
+            System.out.println("DEBUG: Nessuna figura selezionata.");
+        }
+        return selected; // Restituisce la figura selezionata (o null)
     }
 
-    // Metodo aggiornare gli spinner quando la figura corrente cambia
+    /**
+     * Aggiorna i valori degli Spinner di larghezza e altezza in base alla figura selezionata.
+     * @param shape La figura selezionata, o null.
+     */
     public void updateSpinners(AbstractShape shape) {
         if (widthSpinner == null || heightSpinner == null || widthSpinner.getValueFactory() == null || heightSpinner.getValueFactory() == null) return;
 
-        if (shape != null) {
+        if (shape != null) { // Se una figura è selezionata
             AbstractShape baseShape = getBaseShape(shape);
-            if (baseShape instanceof Line line) {
-                widthSpinner.getValueFactory().setValue(line.getWidth());
-                heightSpinner.getValueFactory().setValue(line.getHeight());
-                heightSpinner.setDisable(true);
-            } else {
-                widthSpinner.getValueFactory().setValue(baseShape.getWidth());
-                heightSpinner.getValueFactory().setValue(baseShape.getHeight());
-                heightSpinner.setDisable(false);
+            widthSpinner.getValueFactory().setValue(baseShape.getWidth()); // Imposta larghezza
+            if (baseShape instanceof Line) {
+                // Per la Linea, l'altezza non è direttamente modificabile.
+                // Lo spinner altezza mostrerà un valore di default (es. il suo minimo)
+                // e sarà disabilitato da updateControlState.
+                heightSpinner.getValueFactory().setValue(Math.max(1.0, baseShape.getHeight())); // Mostra almeno 1.0 o altezza reale
+            } else { // Per Rettangolo o Ellisse
+                heightSpinner.getValueFactory().setValue(baseShape.getHeight()); // Imposta altezza
             }
-        } else {
+        } else { // Nessuna figura selezionata
+            // Resetta gli spinner ai valori di default della factory
             widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
             heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
-            heightSpinner.setDisable(true); // Disabilita se nessuna forma è selezionata
-            widthSpinner.setDisable(true);  // Disabilita se nessuna forma è selezionata
+            // Gli spinner saranno disabilitati da updateControlState se nessuna figura è selezionata.
         }
     }
 
+    /**
+     * Mostra il menu contestuale della figura (shapeMenu) alle coordinate dell'evento mouse.
+     * Viene chiamato da MousePressedHandler quando si fa click destro su una figura.
+     */
     public void showContextMenu(MouseEvent event) {
-        if (shapeMenu != null) {
+        // Mostra il menu solo se una figura è effettivamente selezionata
+        if (shapeMenu != null && currentShape != null) {
+            updatePasteControlsState(); // Assicura che la voce "Incolla" sia aggiornata
             shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
         }
     }
 
     /**
-     * Metodo per disegnare il canvas
-     * Cancella tutto ciò che è sul canvas e ridisegna le figure
+     * Ridisegna l'intero contenuto del canvas.
+     * Cancella il canvas e ridisegna tutte le figure nel modello.
+     * Applica la trasformazione di zoom.
+     * Evidenzia la figura correntemente selezionata.
      */
     public void redrawCanvas() {
         if (gc == null || drawingCanvas == null || model == null || zoomHandler == null) {
-            return;
+            return; // Componenti non pronti
         }
 
-        // Cancella tutto ciò che è sul canvas
+        // Pulisce il canvas
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
-        gc.save();
-        zoomHandler.applyZoomTransformation(gc); // Applica lo zoom
+
+        gc.save(); // Salva lo stato corrente del GraphicsContext (es. trasformazioni)
+        zoomHandler.applyZoomTransformation(gc); // Applica la scala per lo zoom
+
+        // Disegna tutte le figure nel modello (l'ordine di disegno influisce sulla sovrapposizione visiva)
+        // model.getShapes() di solito è in ordine di inserimento. Per un controllo Z-order più fine,
+        // si potrebbe usare model.getShapesOrderedByZ() se l'ordine di disegno deve seguire Z.
+        // Qui, si assume che l'ordine di model.getShapes() sia corretto per il disegno.
         for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
-                shape.draw(gc);
-                if (shape == currentShape) {
-                    drawHighlightBorder(shape);
+                shape.draw(gc); // Chiama il metodo draw() di ogni figura
+                if (shape == currentShape) { // Se la figura è quella selezionata
+                    drawHighlightBorder(shape); // Disegna il bordo di evidenziazione
                 }
             }
         }
-        gc.restore();
+        gc.restore(); // Ripristina lo stato del GraphicsContext precedente allo save()
     }
 
-    private void drawHandle(double worldX, double worldY) {
-        gc.setFill(Color.SKYBLUE);
-        gc.fillOval(worldX - HANDLE_RADIUS, worldY - HANDLE_RADIUS, HANDLE_RADIUS * 2, HANDLE_RADIUS * 2);
-    }
-
-    // Metodo per disegnare il bordo di selezione e i manici
+    /**
+     * Disegna il bordo di evidenziazione e le maniglie per la figura selezionata.
+     * @param shape La figura da evidenziare.
+     */
     private void drawHighlightBorder(AbstractShape shape) {
-        AbstractShape baseShape = getBaseShape(shape);
+        AbstractShape baseShape = getBaseShape(shape); // Ottiene la forma base (non decorata)
 
-        // Disegna il bordo di selezione
-        gc.setStroke(Color.SKYBLUE);
-        gc.setLineWidth(1.0 / zoomHandler.getZoomFactor()); // Per mantenere lo spessore della linea costante su schermo
-        gc.setLineDashes(5 / zoomHandler.getZoomFactor());
+        // Impostazioni per il bordo di selezione (tratteggiato, colore specifico)
+        double lineWidthOnScreen = 1.0; // Spessore desiderato per la linea di selezione sullo schermo
+        double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor(); // Spessore in coordinate del mondo
 
-        if (baseShape instanceof Line line) {
+        gc.setStroke(Color.SKYBLUE); // Colore del bordo di selezione
+        gc.setLineWidth(worldLineWidth); // Spessore linea (scalato per zoom)
+        gc.setLineDashes(5 * worldLineWidth); // Linea tratteggiata (tratteggio scalato)
+
+        if (baseShape instanceof Line line) { // Se è una linea, evidenzia la linea stessa e le sue estremità
             gc.strokeLine(line.getX(), line.getY(), line.getEndX(), line.getEndY());
-            drawHandle(line.getX(), line.getY());
-            drawHandle(line.getEndX(), line.getEndY());
-        } else {
+            drawHandle(line.getX(), line.getY()); // Maniglia all'inizio
+            drawHandle(line.getEndX(), line.getEndY()); // Maniglia alla fine
+        } else { // Se è un rettangolo o ellisse (o altra forma con bounding box)
+            // Disegna un rettangolo tratteggiato attorno al bounding box
             gc.strokeRect(baseShape.getX(), baseShape.getY(), baseShape.getWidth(), baseShape.getHeight());
-            drawHandle(baseShape.getX(), baseShape.getY());
-            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY());
-            drawHandle(baseShape.getX(), baseShape.getY() + baseShape.getHeight());
-            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY() + baseShape.getHeight());
+            // Disegna maniglie agli angoli del bounding box
+            drawHandle(baseShape.getX(), baseShape.getY()); // Alto-sinistra
+            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY()); // Alto-destra
+            drawHandle(baseShape.getX(), baseShape.getY() + baseShape.getHeight()); // Basso-sinistra
+            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY() + baseShape.getHeight()); // Basso-destra
+            // Opzionale: maniglie ai punti medi dei lati
         }
-        gc.setLineDashes(0);
-        gc.setLineWidth(1.0); // Ripristina lo spessore linea
+        gc.setLineDashes(0); // Ripristina linea continua per disegni successivi
+        // gc.setLineWidth(1.0); // Opzionale: ripristina spessore linea default (in unità del mondo)
     }
 
-    @FXML
-    public void handleSaveSerialized(ActionEvent event) {
-        if (fileOperationContext != null) fileOperationContext.executeSave(new SerializedSaveStrategy());
+    /**
+     * Disegna una maniglia di selezione (un piccolo cerchio) alle coordinate del mondo specificate.
+     * @param worldX Coordinata X (del mondo) del centro della maniglia.
+     * @param worldY Coordinata Y (del mondo) del centro della maniglia.
+     */
+    private void drawHandle(double worldX, double worldY) {
+        // HANDLE_RADIUS è il raggio desiderato sullo schermo. Converti in unità del mondo.
+        double handleRadiusWorld = HANDLE_RADIUS / zoomHandler.getZoomFactor();
+        gc.setFill(Color.SKYBLUE); // Colore della maniglia
+        // Disegna un cerchio (ovale con uguali raggioX e raggioY)
+        gc.fillOval(worldX - handleRadiusWorld, worldY - handleRadiusWorld,
+                handleRadiusWorld * 2, handleRadiusWorld * 2); // x, y, larghezza, altezza dell'ovale
     }
 
-    @FXML
-    public void handleLoadSerialized(ActionEvent event) {
-        if (fileOperationContext != null) fileOperationContext.executeLoad(new SerializedLoadStrategy());
-    }
+    // --- Gestori per i bottoni del menu File e Zoom ---
+    @FXML public void handleSaveSerialized(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new SerializedSaveStrategy()); }
+    @FXML public void handleLoadSerialized(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeLoad(new SerializedLoadStrategy()); }
+    @FXML public void handleSaveAsPng(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new PngSaveStrategy()); }
+    @FXML public void handleSaveAsPdf(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new PdfSaveStrategy()); }
 
-    @FXML
-    public void handleSaveAsPng(ActionEvent event) {
-        if (fileOperationContext != null) fileOperationContext.executeSave(new PngSaveStrategy());
-    }
-
-    @FXML
-    public void handleSaveAsPdf(ActionEvent event) {
-        if (fileOperationContext != null) fileOperationContext.executeSave(new PdfSaveStrategy());
-    }
-
-    // Metodi per i pulsanti di zoom
     @FXML private void handleZoom25() { if (zoomHandler != null) zoomHandler.setZoom25(); }
     @FXML private void handleZoom50() { if (zoomHandler != null) zoomHandler.setZoom50(); }
     @FXML private void handleZoom75() { if (zoomHandler != null) zoomHandler.setZoom75(); }
     @FXML private void handleZoom100() { if (zoomHandler != null) zoomHandler.setZoom100(); }
     @FXML private void handleZoom150() { if (zoomHandler != null) zoomHandler.setZoom150(); }
 
-
-    public Window getWindow() {
-        return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null;
-    }
+    // --- Metodi Getter e Setter usati principalmente dai gestori eventi o per test ---
+    public Window getWindow() { return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null; }
 
     public void showAlertDialog(Alert.AlertType alertType, String title, String content) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
-        alert.setHeaderText(null);
+        alert.setHeaderText(null); // Nessun header text
         alert.setContentText(content);
-        alert.showAndWait();
+        alert.showAndWait(); // Mostra e attende chiusura
     }
 
+    // Metodi di accesso e modifica per lo stato del controller
     public AbstractShape getCurrentShape() { return currentShape; }
 
-    public void setCurrentShape(Object o) {
-        if (o instanceof AbstractShape || o == null) {
-            this.currentShape = (AbstractShape) o;
-        } else {
-            throw new IllegalArgumentException("Tentativo di impostare currentShape con un tipo non valido: " + o.getClass().getName());
+    /** Imposta la figura corrente e gestisce la factory e il cursore. */
+    public void setCurrentShape(AbstractShape shape) {
+        this.currentShape = shape;
+        // Se una figura viene selezionata (o deselezionata), e non si è in fase di creazione,
+        // la factory attiva per creare nuove figure va resettata.
+        if (shape != null) { // Se si seleziona una figura esistente
+            this.currentShapeFactory = null; // Resetta la factory per nuove forme
+            if(drawingCanvas != null) drawingCanvas.setCursor(Cursor.DEFAULT); // Cursore di default
         }
+        // L'aggiornamento dello stato dei controlli (updateControlState)
+        // sarà chiamato da chi invoca setCurrentShape (es. selectShapeAt, handleDeleteShape).
     }
 
-    public void resetDrag() {
-        startDragX = RESET_DRAG;
-        startDragY = RESET_DRAG;
-    }
+    public void resetDrag() { startDragX = RESET_DRAG; startDragY = RESET_DRAG; } // Resetta stato trascinamento
+    public boolean isDragging() { return startDragX != RESET_DRAG && startDragY != RESET_DRAG; } // Verifica se in trascinamento
 
-    public boolean isDragging() {
-        return startDragX != RESET_DRAG && startDragY != RESET_DRAG;
-    }
-
-    public void setCurrentShape(AbstractShape shape) { this.currentShape = shape; }
-
-    public ContextMenu getShapeMenu() { return shapeMenu; }
+    public ContextMenu getShapeMenu() { return shapeMenu; } // Per MousePressedHandler
 
     public double getDragOffsetX() { return dragOffsetX; }
-
     public void setDragOffsetX(double dragOffsetX) { this.dragOffsetX = dragOffsetX; }
-
     public double getDragOffsetY() { return dragOffsetY; }
-
     public void setDragOffsetY(double dragOffsetY) { this.dragOffsetY = dragOffsetY; }
 
     public double getStartDragX() { return startDragX; }
-
     public void setStartDragX(double startDragX) { this.startDragX = startDragX; }
-
     public double getStartDragY() { return startDragY; }
-
     public void setStartDragY(double startDragY) { this.startDragY = startDragY; }
 
     public Canvas getDrawingCanvas() { return drawingCanvas; }
-
     public DrawingModel getModel() { return model; }
-
-    public AnchorPane getRootPane() { return rootPane; }
-
+    public AnchorPane getRootPane() { return rootPane; } // Per MousePressedHandler (richiesta focus)
     public CommandManager getCommandManager() { return commandManager; }
 
+    // Getter per i controlli UI (usati dai gestori eventi del mouse e dai test)
     public ColorPicker getBorderPicker() { return borderPicker; }
-
     public ColorPicker getFillPicker() { return fillPicker; }
-
     public Spinner<Double> getHeightSpinner() { return heightSpinner; }
-
     public Spinner<Double> getWidthSpinner() { return widthSpinner; }
 
     public ShapeFactory getCurrentShapeFactory() { return currentShapeFactory; }
-
+    /** Imposta la factory per la creazione di nuove figure e aggiorna il cursore. */
     public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
         this.currentShapeFactory = currentShapeFactory;
+        if (this.currentShapeFactory == null && drawingCanvas != null) {
+            drawingCanvas.setCursor(Cursor.DEFAULT); // Cursore default se nessuna factory
+        } else if (this.currentShapeFactory != null && drawingCanvas != null) {
+            drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cursore a croce se factory attiva
+        }
     }
-    public ZoomHandler getZoomHandler() { return zoomHandler; } // <-- NUOVO GETTER
+    public ZoomHandler getZoomHandler() { return zoomHandler; }
 }

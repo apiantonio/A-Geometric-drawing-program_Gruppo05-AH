@@ -56,8 +56,8 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                 Math.min(newWorldY, worldCanvasHeight - shapeHeight * AbstractMouseHandler.HIDDEN_SHAPE_PORTION )
         );
         //crea ed esegue il comando di spostamento
-        MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentShape, newWorldX, newWorldY);
-        controller.getCommandManager().executeCommand(moveCmd);
+        //MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentShape, newWorldX, newWorldY);
+        //controller.getCommandManager().executeCommand(moveCmd);
         // se il drag è appena cominciato imposta le variabili del controller
         if (!controller.isDragging()) {
             controller.setStartDragX(event.getX());
