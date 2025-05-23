@@ -20,4 +20,10 @@ public class CopyShapeCommand implements Command {
             clipboardManager.copyToClipboard(shapeToCopy);
         }
     }
+
+    @Override
+    public void undo() {
+        // rimuovi la shape appena copiata dalla clipboard
+        clipboardManager.clearClipboard();
+    }
 }

@@ -8,5 +8,7 @@ package com.geometricdrawing.command;
 public interface Command {
 
     void execute();
-    //TODO undo();
+
+    // metodo per l'annullamento delle operazioni effettuate
+    void undo();
 }

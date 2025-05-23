@@ -18,6 +18,8 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCombination;
@@ -94,12 +96,7 @@ public class DrawingController {
 
             this.fileOperationContext = new FileOperationContext(this);
 
-            shapeMenu = new ContextMenu();
-            MenuItem deleteItem = new MenuItem("Elimina");
-            deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
-            MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
-            copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); // Associa l'handler
-            shapeMenu.getItems().addAll(deleteItem, copyItem); // Aggiungi "Copia" al context menu
+            createContextMenu();
 
             drawingCanvas.setOnMouseClicked(this::handleCanvasClick);
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -150,6 +147,32 @@ public class DrawingController {
         }
         currentShapeFactory = null;
         redrawCanvas(); // Prima ridisegnata
+    }
+
+    private void createContextMenu(){
+        shapeMenu = new ContextMenu();
+        // items da aggiungere nel context menu
+        MenuItem deleteItem = new MenuItem("Elimina");
+        MenuItem copyItem = new MenuItem("Copia"); // Voce di menu per Copia
+
+        // setting delle azioni al click sull'item
+        deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
+        copyItem.setOnAction(e -> handleCopyShape(new ActionEvent())); // Associa l'handler
+
+        // img nel context menu e set dimensioni
+        ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
+        delimg.setFitHeight(16);
+        delimg.setFitWidth(16);
+        ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
+        copyimg.setFitHeight(15);
+        copyimg.setFitWidth(15);
+
+        // aggiunta immagini al context menu
+        deleteItem.setGraphic(delimg);
+        copyItem.setGraphic(copyimg);
+
+        // aggiiunta degli items al context menu
+        shapeMenu.getItems().addAll(deleteItem, copyItem); // Aggiungi "Copia" al context menu
     }
 
     private void configureNumericTextFormatter(Spinner<Double> spinner) {
@@ -205,6 +228,11 @@ public class DrawingController {
         // Scorciatoia per Copia (CTRL+C)
         if (KeyCombination.keyCombination("CTRL+C").match(event)) {
             handleCopyShape(new ActionEvent());
+            event.consume();
+        }
+        // Scorciatoia per Annulla (CTRL+Z)
+        if (KeyCombination.keyCombination("CTRL+Z").match(event)) {
+            handleUndo(new ActionEvent());
             event.consume();
         }
     }
@@ -381,6 +409,16 @@ public class DrawingController {
             System.out.println("DEBUG: Figura copiata nella clipboard interna.");
             // La figura rimane selezionata dopo la copia. Non è necessario ridisegnare o aggiornare lo stato dei controlli
             // a meno che non si voglia dare un feedback visivo specifico per la copia.
+        }
+    }
+
+    @FXML
+    public void handleUndo(ActionEvent event) {
+        if (currentShape != null && model != null && commandManager != null) {
+            if(shapeMenu != null) shapeMenu.hide();
+            commandManager.undo();
+            updateControlState(null);
+            redrawCanvas();
         }
     }
 

@@ -18,5 +18,15 @@ public class CommandManager {
 
     }
 
-    // TODO implementare undo
+    // back all'operazione precedente
+    public void undo() {
+        // finchè ci sono operazioni su cui si può richiamare l'undo nello stack
+        if(! undoStack.isEmpty()) {
+            Command cmd = undoStack.pop();
+            // richiama l'undo specifica per l'ultimo comando (es: se era aggiungi immagine la rimuove ecc...)
+            cmd.undo();
+        }else{
+            System.out.println("Stack dei comandi vuoto");
+        }
+    }
 }

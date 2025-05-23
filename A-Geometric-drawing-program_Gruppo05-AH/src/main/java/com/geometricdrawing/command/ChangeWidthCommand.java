@@ -10,11 +10,13 @@ import com.geometricdrawing.model.DrawingModel;
 public class ChangeWidthCommand implements Command {
     private final DrawingModel model;
     private final AbstractShape shape;
+    private final double oldWidth;
     private final double newWidth;
 
     public ChangeWidthCommand(DrawingModel model, AbstractShape shape, double newWidth) {
         this.shape = shape;
         this.newWidth = newWidth;
+        this.oldWidth = shape.getWidth();
         this.model = model;
     }
 
@@ -24,5 +26,8 @@ public class ChangeWidthCommand implements Command {
         model.setShapeWidth(shape, newWidth);
     }
 
-    // TODO: Implementare il metodo undo() per annullare l'azione del comando
+    @Override
+    public void undo() {
+        model.setShapeWidth(shape, oldWidth);
+    }
 }
