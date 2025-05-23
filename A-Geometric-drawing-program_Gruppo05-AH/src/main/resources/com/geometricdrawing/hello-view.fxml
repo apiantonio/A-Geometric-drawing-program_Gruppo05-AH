@@ -94,7 +94,7 @@
                                                 </Button>
                                                 <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0">
                                                    <children>
-                                                      <Button fx:id="copyButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Copia">
+                                                      <Button fx:id="copyButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Copia" onAction="#handleCopyShape">
                                                          <graphic>
                                                             <ImageView fitHeight="26.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
@@ -118,7 +118,7 @@
                                                 </VBox>
                                                 <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0">
                                                    <children>
-                                                      <Button mnemonicParsing="false" stylesheets="@../../style.css" text="Incolla">
+                                                      <Button mnemonicParsing="false" stylesheets="@../../style.css" text="Incolla" onAction="#handlePasteShape">
                                                          <VBox.margin>
                                                             <Insets bottom="10.0" />
                                                          </VBox.margin>
