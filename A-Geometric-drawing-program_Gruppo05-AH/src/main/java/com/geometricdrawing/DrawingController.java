@@ -48,6 +48,7 @@ public class DrawingController {
 
     @FXML private Button deleteButton;
     @FXML private Button copyButton; // Bottone per la Copia
+    @FXML private Button pasteButton; // Bottone per l'Incolla
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
