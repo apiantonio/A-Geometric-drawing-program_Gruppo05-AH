@@ -135,7 +135,7 @@ public class DrawingController {
                             lastCanvasMouseX = event.getX();
                             lastCanvasMouseY = event.getY();
                             // Abilita la voce di menu prima di mostrarla
-                            pasteContextItemCanvas.setDisable(false);
+                            //pasteContextItemCanvas.setDisable(false);
                             canvasContextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
                             shapeMenu.hide(); // Nascondi l'altro menu se fosse visibile
                         }
