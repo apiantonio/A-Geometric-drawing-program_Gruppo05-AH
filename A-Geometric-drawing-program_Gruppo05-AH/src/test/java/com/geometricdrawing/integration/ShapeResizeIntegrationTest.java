@@ -51,6 +51,7 @@ public class ShapeResizeIntegrationTest {
     private static final double CANVAS_HEIGHT_FOR_TEST = 600;
 
 
+    @BeforeAll
     public static void initFX() throws InterruptedException {
         if (Platform.isFxApplicationThread()) {
             fxInitialized = true;
@@ -118,7 +119,7 @@ public class ShapeResizeIntegrationTest {
                 widthSpinner = new Spinner<>();
                 // Initialize spinner with ShapeFactory defaults, like in DrawingController
                 SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(
-                        1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0); // Use factory default
+                        1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0); //
                 widthSpinner.setValueFactory(widthFactory);
                 widthSpinner.setEditable(true);
 
@@ -134,11 +135,11 @@ public class ShapeResizeIntegrationTest {
                 setPrivateField(controller, "heightSpinner", heightSpinner);
                 setPrivateField(controller, "widthSpinner", widthSpinner);
                 setPrivateField(controller, "deleteButton", deleteButton);
-                setPrivateField(controller, "copyButton", copyButton); // Set copyButton if it's used by controller.initialize() or updateControlState
+                setPrivateField(controller, "copyButton", copyButton);
 
                 controller.setModel(model);
                 controller.setCommandManager(commandManager);
-                controller.initialize(); // This will also set up listeners and initial states
+                controller.initialize(); //
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -178,7 +179,7 @@ public class ShapeResizeIntegrationTest {
     @SuppressWarnings("unchecked")
     private Stack<Command> getUndoStack(CommandManager cm)
             throws NoSuchFieldException, IllegalAccessException {
-        Field stackField = CommandManager.class.getDeclaredField("undoStack");
+        Field stackField = CommandManager.class.getDeclaredField("undoStack"); //
         stackField.setAccessible(true);
         return (Stack<Command>) stackField.get(cm);
     }
@@ -330,16 +331,16 @@ public class ShapeResizeIntegrationTest {
 
 
         // Inserisci un Rettangolo (viene selezionato automaticamente)
-        insertAndGetSelectedShapeFromController("Rectangle", 100, 100); // This calls updateControlState(currentShape)
+        // This calls updateControlState(currentShape) via MouseClickedHandler -> postProcess -> updateControlState
+        insertAndGetSelectedShapeFromController("Rectangle", 100, 100);
 
         assertFalse(widthSpinner.isDisabled(), "Spinner larghezza dovrebbe essere abilitato per Rettangolo.");
         assertFalse(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere abilitato per Rettangolo.");
         assertFalse(deleteButton.isDisabled(), "Delete button dovrebbe essere abilitato per Rettangolo.");
         assertFalse(copyButton.isDisabled(), "Copy button dovrebbe essere abilitato per Rettangolo.");
 
-        // Pickers disabilitati a causa della logica "MOMENTANEE" in updateControlState quando una forma è selezionata
-        assertFalse(fillColorPicker.isDisabled(), "Fill picker abilitato per Rettangolo.");
-        assertFalse(borderColorPicker.isDisabled(), "Border picker abilitato per Rettangolo.");
+        assertFalse(fillColorPicker.isDisabled(), "Fill picker ABILITATO per Rettangolo (logica UI)."); //
+        assertFalse(borderColorPicker.isDisabled(), "Border picker ABILITATO per Rettangolo (logica UI)."); //
 
 
         // Deseleziona la forma cliccando su un'area vuota del canvas
