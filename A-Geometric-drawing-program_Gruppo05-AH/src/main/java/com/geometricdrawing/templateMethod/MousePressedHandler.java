@@ -23,6 +23,7 @@ public class MousePressedHandler extends AbstractMouseHandler {
 
         controller.getShapeMenu().hide();
 
+        currentShape = controller.getCurrentShape();
         if (currentShape == null || !currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
             currentShape = controller.selectShapeAt(x, y);
         }

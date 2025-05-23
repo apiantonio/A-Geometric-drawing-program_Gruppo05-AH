@@ -54,17 +54,29 @@ public class ShapeInsertionIntegrationTest {
 
     @BeforeAll
     public static void initFX() throws InterruptedException {
+        if (Platform.isFxApplicationThread()) {
+            fxInitialized = true;
+            return;
+        }
+
         if (fxInitialized) {
             return;
         }
-        final CountDownLatch latch = new CountDownLatch(1);
-        Platform.startup(() -> {
+
+        try {
+            final CountDownLatch latch = new CountDownLatch(1);
+            Platform.startup(() -> {
+                fxInitialized = true;
+                latch.countDown();
+            });
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new InterruptedException("Timeout: JavaFX Toolkit non inizializzato.");
+            }
+        } catch (IllegalStateException e) {
+            // Se il toolkit è già inizializzato imposto il flag
             fxInitialized = true;
-            latch.countDown();
-        });
-        if (!latch.await(5, TimeUnit.SECONDS)) {
-            throw new InterruptedException("Timeout: JavaFX Toolkit non inizializzato.");
         }
+
     }
 
     @AfterAll
@@ -201,7 +213,8 @@ public class ShapeInsertionIntegrationTest {
             }
             MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, x, y, x, y, MouseButton.PRIMARY, 1,
                     false, false, false, false, true, false, false, true, false, false, null);
-            controller.handleCanvasClick(clickEvent);
+            // Simula il click sul canvas usando il handler appropriato
+            controller.getDrawingCanvas().fireEvent(clickEvent);
             currentShapeRef.set((AbstractShape) getPrivateFieldNonFailing(controller, "currentShape"));
         });
         assertNotNull(currentShapeRef.get(), "Nessuna forma corrente selezionata dopo l'inserimento (letto da controller).");

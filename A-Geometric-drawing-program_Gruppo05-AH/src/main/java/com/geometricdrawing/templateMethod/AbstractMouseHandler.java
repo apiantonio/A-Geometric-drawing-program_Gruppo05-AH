@@ -8,10 +8,10 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
 
 public abstract class AbstractMouseHandler {
-    protected static final double SELECTION_THRESHOLD = 5.0;
-    protected static final double BORDER_MARGIN = 5.0;
-    protected static final double VISIBLE_SHAPE_PORTION = 0.1;
-    protected static final double HIDDEN_SHAPE_PORTION = 0.9;
+    protected static final double SELECTION_THRESHOLD = 5.0;   // distanza per selezionare una figura
+    protected static final double BORDER_MARGIN = 5.0;         // margine per il bordo del canvas
+    protected static final double VISIBLE_SHAPE_PORTION = 0.1; // porzione visibile della figura quando viene darggata agli estremi
+    protected static final double HIDDEN_SHAPE_PORTION = 0.9;  // porzione nascosta della figura quando viene darggata agli estremi
 
     protected final Canvas canvas;
     protected AbstractShape currentShape;
@@ -33,9 +33,7 @@ public abstract class AbstractMouseHandler {
     }
 
     // Hook methods
-    protected void preProcess(MouseEvent event) {
-        // Implementazione di default vuota
-    }
+    protected abstract void preProcess(MouseEvent event);
 
     // Metodo astratto che le sottoclassi devono implementare
     protected abstract void processEvent(MouseEvent event);

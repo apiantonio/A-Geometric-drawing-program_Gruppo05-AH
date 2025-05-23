@@ -4,6 +4,7 @@ import com.geometricdrawing.command.CommandManager;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Rectangle;
+import com.geometricdrawing.templateMethod.MousePressedHandler;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Button;
@@ -38,21 +39,32 @@ class DrawingControllerTest {
     private Spinner<Double> widthSpinner;
     private Button deleteButton;
     private Canvas canvas;
+
     @BeforeAll
-    static void initFX() throws InterruptedException {
+    public static void initFX() throws InterruptedException {
+        if (Platform.isFxApplicationThread()) {
+            fxInitialized = true;
+            return;
+        }
+
         if (fxInitialized) {
             return;
         }
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Platform.startup(() -> {
+        try {
+            final CountDownLatch latch = new CountDownLatch(1);
+            Platform.startup(() -> {
+                fxInitialized = true;
+                latch.countDown();
+            });
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new InterruptedException("Timeout: JavaFX Toolkit non inizializzato.");
+            }
+        } catch (IllegalStateException e) {
+            // Se il toolkit è già inizializzato imposto il flag
             fxInitialized = true;
-            latch.countDown();
-        });
-
-        if (!latch.await(5, TimeUnit.SECONDS)) {
-            throw new InterruptedException("Timeout: JavaFX Toolkit non inizializzato.");
         }
+
     }
 
     private Object getPrivateField(DrawingController controller, String currentShape) {
@@ -139,17 +151,12 @@ class DrawingControllerTest {
                 true, false, false, false, false,
                 true, null);
 
+        MousePressedHandler handler = new MousePressedHandler(controller.getDrawingCanvas(), controller);
         // simulo mousePressed sulla figura usando il metodo privato handleMousePressed
         CountDownLatch pressedLatch = new CountDownLatch(1);
         Platform.runLater(() -> {
-           try {
-               java.lang.reflect.Method method = DrawingController.class.getDeclaredMethod("handleMousePressed", MouseEvent.class);
-               method.setAccessible(true);
-               method.invoke(controller, clickEvent);
-           } catch (Exception e) {
-               e.printStackTrace();
-           }
-           pressedLatch.countDown();
+            handler.handleMouseEvent(clickEvent);
+            pressedLatch.countDown();
         });
         pressedLatch.await(5, TimeUnit.SECONDS);
 
