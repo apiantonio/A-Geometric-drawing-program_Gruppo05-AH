@@ -33,6 +33,14 @@ public class FillColorDecorator extends ShapeDecorator {
         out.defaultWriteObject();
     }
 
+    public Color getFillColor() {
+        return fillColor;
+    }
+
+    public void setFillColor(Color fillColor) {
+        this.fillColor = fillColor;
+    }
+
     @Serial
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();

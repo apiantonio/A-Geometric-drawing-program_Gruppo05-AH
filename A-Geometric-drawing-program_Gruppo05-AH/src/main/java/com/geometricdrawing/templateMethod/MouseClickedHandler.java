@@ -53,9 +53,6 @@ public class MouseClickedHandler extends AbstractMouseHandler {
             // e aggiorna la figura corrente
             currentShape = controller.selectShapeAt(event.getX(), event.getY());
             return;
-        } else {
-            // se la figura può essere inserita, resetta la factory
-            currentShapeFactory = null;
         }
 
         AbstractShape styledShape = newShape;
@@ -69,7 +66,10 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         }
 
         // aggiorna la shape corrente con la nuova creata
-        currentShape = styledShape;
+        controller.setCurrentShape(styledShape);
+        // Aggiorna l'interfaccia
+        controller.updateSpinners(styledShape);
+        controller.updateControlState(styledShape);
 
         // Crea ed esegui il comando per aggiungere la figura
         AddShapeCommand addCmd = new AddShapeCommand(controller.getModel(), styledShape);
@@ -78,18 +78,8 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
     @Override
     protected void postProcess(MouseEvent event) {
-        // Aggiorna lo stato del controller
-        controller.setCurrentShape(currentShape); // Aggiorna la figura corrente
-        controller.setCurrentShapeFactory(currentShapeFactory); // Resetta la factory corrente se necessario
-
-        // Aggiorna l'interfaccia
-        controller.updateControlState(currentShape);
-
-        controller.updateSpinners(currentShape);
-        // TODO: MOMENTANEE PER LA PRIMA SPRINT (da rimuovere poi quando si fa la modifica)
-        controller.getFillPicker().setDisable(true);
-        controller.getBorderPicker().setDisable(true);
-
+        // Resetta la factory dopo aver creato la figura
+        controller.setCurrentShapeFactory(null);
         // Aggiorna il canvas
         super.postProcess(event);
     }

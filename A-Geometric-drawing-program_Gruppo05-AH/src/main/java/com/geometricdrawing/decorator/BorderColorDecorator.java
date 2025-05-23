@@ -6,9 +6,9 @@ import javafx.scene.paint.Color;
 
 import java.io.*;
 
-/*
-    La classe decoratore per il colore del bordo implementa Serializable
-    per consentire l'esportazione e importazione
+/**
+ * La classe decoratore per il colore del bordo implementa Serializable
+ * per consentire l'esportazione e importazione
  */
 public class BorderColorDecorator extends ShapeDecorator {
     private transient Color borderColor;
@@ -40,4 +40,11 @@ public class BorderColorDecorator extends ShapeDecorator {
         this.borderColor = new Color(red, green, blue, alpha);
     }
 
+    public Color getBorderColor() {
+        return borderColor;
+    }
+
+    public void setBorderColor(Color borderColor) {
+        this.borderColor = borderColor;
+    }
 }

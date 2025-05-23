@@ -223,7 +223,7 @@
                                                             <Insets />
                                                          </VBox.margin>
                                                       </Label>
-                                                      <ColorPicker fx:id="fillPicker" stylesheets="@../../style.css">
+                                                      <ColorPicker fx:id="fillPicker" onAction="#onFillColorPicked" stylesheets="@../../style.css">
                                                          <VBox.margin>
                                                             <Insets bottom="3.0" top="2.0" />
                                                          </VBox.margin>
@@ -233,7 +233,7 @@
                                                             <Insets />
                                                          </VBox.margin>
                                                       </Label>
-                                                      <ColorPicker fx:id="borderPicker" layoutX="10.0" layoutY="27.0" prefHeight="25.0" prefWidth="129.0" stylesheets="@../../style.css">
+                                                      <ColorPicker fx:id="borderPicker" layoutX="10.0" layoutY="27.0" onAction="#onBorderColorPicked" prefHeight="25.0" prefWidth="129.0" stylesheets="@../../style.css">
                                                          <VBox.margin>
                                                             <Insets bottom="3.0" top="2.0" />
                                                          </VBox.margin>

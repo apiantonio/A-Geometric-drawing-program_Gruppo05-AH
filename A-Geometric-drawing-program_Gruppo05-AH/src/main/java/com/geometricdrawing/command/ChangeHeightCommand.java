@@ -26,7 +26,6 @@ public class ChangeHeightCommand implements Command {
         model.setShapeHeight(shape, newHeight);
     }
 
-    // TODO: Implementare il metodo undo() per annullare l'azione del comando
     @Override
     public void undo() {
         model.setShapeHeight(shape, oldHeight);

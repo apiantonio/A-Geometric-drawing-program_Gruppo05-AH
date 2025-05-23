@@ -47,8 +47,8 @@ public class DrawingController {
     @FXML private Pane canvasContainer;
 
     @FXML private Button deleteButton;
-    @FXML private Button copyButton;
-    @FXML private Button pasteButton;
+    @FXML private Button copyButton; // Bottone per la Copia
+    @FXML private Button pasteButton; // Bottone per l'Incolla
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
@@ -332,6 +332,46 @@ public class DrawingController {
         redrawCanvas();
     }
 
+    public void handleChangeBorderColor(Color newColor) {
+        if (currentShape == null || newColor == null) return;
+
+        AbstractShape shape = currentShape;
+        // Trova il primo decoratore di colore del bordo
+        while (shape instanceof ShapeDecorator decorator) {
+            if (decorator instanceof BorderColorDecorator borderDecorator) {
+                ChangeBorderColorCommand cmd = new ChangeBorderColorCommand(model, borderDecorator, newColor);
+                commandManager.executeCommand(cmd);
+                break;
+            }
+            shape = ((ShapeDecorator) shape).getInnerShape();
+        }
+    }
+
+    public void handleChangeFillColor(Color newColor) {
+        if (currentShape == null || newColor == null) return;
+
+        AbstractShape shape = currentShape;
+        // Trova il primo decoratore di colore di riempimento
+        while (shape instanceof ShapeDecorator decorator) {
+            if (decorator instanceof FillColorDecorator fillDecorator) {
+                ChangeFillColorCommand cmd = new ChangeFillColorCommand(model, fillDecorator, newColor);
+                commandManager.executeCommand(cmd);
+                break;
+            }
+            shape = ((ShapeDecorator) shape).getInnerShape();
+        }
+    }
+
+    @FXML
+    public void onBorderColorPicked() {
+        handleChangeBorderColor(borderPicker.getValue());
+    }
+
+    @FXML
+    public void onFillColorPicked() {
+        handleChangeFillColor(fillPicker.getValue());
+    }
+
     private AbstractShape getBaseShape(AbstractShape shape) {
         AbstractShape base = shape;
         while (base instanceof ShapeDecorator) {
@@ -353,20 +393,15 @@ public class DrawingController {
             enableWidth = true;
             enableDelete = true;
             enableCopy = true; // Abilita copia se una forma è selezionata
+            enableBorder = true;
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
-                enableFill = false;
-                enableBorder = false;
+                enableFill = true;
             } else {
                 enableHeight = false;
                 enableFill = false;
-                enableBorder = false;
             }
-
-            enableWidth = true;
-            enableBorder = true;
-            enableDelete = true;
         }
 
         if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
@@ -420,6 +455,10 @@ public class DrawingController {
         }
     }
 
+    /**
+     * Gestisce l'azione di copia di una figura.
+     * @param event L'evento che ha scatenato l'azione.
+     */
     @FXML
     public void handleCopyShape(ActionEvent event) {
         if (currentShape != null && commandManager != null && clipboardManager != null) {
@@ -473,10 +512,6 @@ public class DrawingController {
                 currentShape = shape;
                 updateSpinners(currentShape);
                 updateControlState(currentShape);
-
-                // Logica "MOMENTANEE PER LA PRIMA SPRINT"
-                if (fillPicker != null) fillPicker.setDisable(true);
-                if (borderPicker != null) borderPicker.setDisable(true);
 
                 System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
                 return shape;
