@@ -32,12 +32,13 @@ public class MouseClickedHandler extends AbstractMouseHandler {
             System.err.println("Errore: Componenti non inizializzati (model, commandManager, spinners o zoomHandler).");
             this.worldX = event.getX();
             this.worldY = event.getY();
-        } else {
-            ZoomHandler zoomHandler = controller.getZoomHandler();
-            Point2D worldCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
-            this.worldX = worldCoords.getX();
-            this.worldY = worldCoords.getY();
+            return;
         }
+
+        ZoomHandler zoomHandler = controller.getZoomHandler();
+        Point2D worldCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
+        this.worldX = worldCoords.getX();
+        this.worldY = worldCoords.getY();
 
         currentShapeFactory = controller.getCurrentShapeFactory();
         border = controller.getBorderPicker().getValue();
@@ -70,31 +71,26 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         }
 
         // aggiorna la shape corrente con la nuova creata
-        controller.setCurrentShape(styledShape);
-        // Aggiorna l'interfaccia
-        controller.updateSpinners(styledShape);
-        controller.updateControlState(styledShape);
-
         currentShape = styledShape; // La nuova forma creata è ora quella corrente
 
         AddShapeCommand addCmd = new AddShapeCommand(controller.getModel(), styledShape);
         controller.getCommandManager().executeCommand(addCmd);
-
-        // Resetta la factory solo dopo che la forma è stata aggiunta con successo
-        controller.setCurrentShapeFactory(null);
     }
 
     @Override
     protected void postProcess(MouseEvent event) {
         controller.setCurrentShape(currentShape);
 
+        // Aggiorna l'interfaccia
         controller.updateControlState(currentShape);
         controller.updateSpinners(currentShape);
 
-        super.postProcess(event); // Questo chiama redrawCanvas
-        // Resetta la factory dopo aver creato la figura
-        controller.setCurrentShapeFactory(null);
-        // Aggiorna il canvas
-        super.postProcess(event);
+        // Reset della factory solo se la figura è stata effettivamente creata
+        if (currentShape != null && currentShapeFactory != null) {
+            controller.setCurrentShapeFactory(null);
+        }
+
+        super.postProcess(event); // Aggiorna il canvas
+
     }
 }

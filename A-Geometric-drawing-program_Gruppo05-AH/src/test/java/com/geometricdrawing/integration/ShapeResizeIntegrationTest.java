@@ -338,8 +338,8 @@ public class ShapeResizeIntegrationTest {
         assertFalse(copyButton.isDisabled(), "Copy button dovrebbe essere abilitato per Rettangolo.");
 
         // Pickers disabilitati a causa della logica "MOMENTANEE" in updateControlState quando una forma è selezionata
-        assertTrue(fillColorPicker.isDisabled(), "Fill picker DISABILITATO per Rettangolo (logica MOMENTANEE).");
-        assertTrue(borderColorPicker.isDisabled(), "Border picker DISABILITATO per Rettangolo (logica MOMENTANEE).");
+        assertFalse(fillColorPicker.isDisabled(), "Fill picker abilitato per Rettangolo.");
+        assertFalse(borderColorPicker.isDisabled(), "Border picker abilitato per Rettangolo.");
 
 
         // Deseleziona la forma cliccando su un'area vuota del canvas

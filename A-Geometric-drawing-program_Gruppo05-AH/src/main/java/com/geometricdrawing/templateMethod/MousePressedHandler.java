@@ -12,9 +12,6 @@ public class MousePressedHandler extends AbstractMouseHandler {
     private double worldX;
     private double worldY;
 
-    private double lastContextMouseX;
-    private double lastContextMouseY;
-
     public MousePressedHandler(Canvas canvas, DrawingController controller) {
         super(canvas, controller);
     }
@@ -34,6 +31,12 @@ public class MousePressedHandler extends AbstractMouseHandler {
 
         controller.getShapeMenu().hide();
 
+        // Verifica se siamo in modalità creazione
+        if (controller.getCurrentShapeFactory() != null) {
+            // Non selezionare figure esistenti se stiamo creando una nuova figura
+            return;
+        }
+
         currentShape = controller.getCurrentShape();
         if (currentShape == null || !currentShape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD)) {
             currentShape = controller.selectShapeAt(this.worldX, this.worldY);
@@ -47,38 +50,38 @@ public class MousePressedHandler extends AbstractMouseHandler {
         // che è stata impostata in preProcess.
         if (currentShape != null && currentShape.containsPoint(worldX, worldY, SELECTION_THRESHOLD)) { //
             // Il clic è su una forma esistente (o quella appena selezionata in preProcess)
-        // currentShape è già stato determinato in preProcess e trasformato in coordinate del mondo
-        if (currentShape != null && currentShape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD)) {
-            dragOffsetX = this.worldX - currentShape.getX();
-            controller.setDragOffsetX(dragOffsetX);
-            dragOffsetY = this.worldY - currentShape.getY();
-            controller.setDragOffsetY(dragOffsetY);
-            canvas.setCursor(Cursor.CLOSED_HAND);
+            // currentShape è già stato determinato in preProcess e trasformato in coordinate del mondo
+            if (currentShape != null && currentShape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD)) {
+                dragOffsetX = this.worldX - currentShape.getX();
+                controller.setDragOffsetX(dragOffsetX);
+                dragOffsetY = this.worldY - currentShape.getY();
+                controller.setDragOffsetY(dragOffsetY);
+                canvas.setCursor(Cursor.CLOSED_HAND);
 
-            // Calcola l'offset per il trascinamento
-            dragOffsetX = worldX - currentShape.getX(); //
-            controller.setDragOffsetX(dragOffsetX); //
-            dragOffsetY = worldY - currentShape.getY(); //
-            controller.setDragOffsetY(dragOffsetY); //
-            canvas.setCursor(Cursor.CLOSED_HAND); //
+                // Calcola l'offset per il trascinamento
+                dragOffsetX = worldX - currentShape.getX(); //
+                controller.setDragOffsetX(dragOffsetX); //
+                dragOffsetY = worldY - currentShape.getY(); //
+                controller.setDragOffsetY(dragOffsetY); //
+                canvas.setCursor(Cursor.CLOSED_HAND); //
 
-            controller.getRootPane().requestFocus(); //
+                controller.getRootPane().requestFocus(); //
 
-            // Se è un clic con il pulsante secondario, mostra il menu contestuale della forma
-            if (event.getButton() == MouseButton.SECONDARY) { //
-                // Memorizza le coordinate del clic destro, potrebbero servire per "Incolla qui" dal menu della forma
-                // controller.setLastContextMousePosition(x, y); // Se vuoi usare questo per il menu delle forme
-                controller.showContextMenu(event); //
+                // Se è un clic con il pulsante secondario, mostra il menu contestuale della forma
+                if (event.getButton() == MouseButton.SECONDARY) { //
+                    // Memorizza le coordinate del clic destro, potrebbero servire per "Incolla qui" dal menu della forma
+                    // controller.setLastContextMousePosition(x, y); // Se vuoi usare questo per il menu delle forme
+                    controller.showContextMenu(event); //
+                }
+            } else {
+                // Deseleziona la forma corrente nel controller
+                currentShape = null; // Aggiorna la copia locale
+                controller.setCurrentShape(null);
+                // updateSpinners e updateControlState verranno chiamati in postProcess
+                // Aggiorna la forma corrente nel controller con quella identificata
+                controller.setCurrentShape(currentShape);
+
             }
-        } else {
-            // Deseleziona la forma corrente nel controller
-            currentShape = null; // Aggiorna la copia locale
-            controller.setCurrentShape(null);
-            // updateSpinners e updateControlState verranno chiamati in postProcess
-            // Aggiorna la forma corrente nel controller con quella identificata
-            controller.setCurrentShape(currentShape);
-
-        }
         }
     }
 
