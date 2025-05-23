@@ -114,6 +114,7 @@ public class DrawingController {
             drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent); //
 
             createContextMenu();
+            canvasContextMenu = new ContextMenu();
             // Event handler aggiuntivo per MOUSE_CLICKED per gestire il menu contestuale del CANVAS
             drawingCanvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 if (event.getButton() == MouseButton.SECONDARY) {
