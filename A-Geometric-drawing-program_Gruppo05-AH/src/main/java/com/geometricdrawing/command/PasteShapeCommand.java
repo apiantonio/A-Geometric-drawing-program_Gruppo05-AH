@@ -3,49 +3,59 @@ package com.geometricdrawing.command;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 
-/**
- * Scopo: Command per incollare una figura dalla clipboard nel modello.
- */
 public class PasteShapeCommand implements Command {
     private final DrawingModel model;
     private final ClipboardManager clipboardManager;
-    private AbstractShape pastedShape; // To store the shape for undo
-    private final double offsetX; // Offset X for pasting
-    private final double offsetY; // Offset Y for pasting
+    private AbstractShape pastedShape;
+    private double targetX; // Usato solo se useAbsoluteCoordinates è true
+    private double targetY; // Usato solo se useAbsoluteCoordinates è true
+    private boolean useAbsoluteCoordinates;
 
     private static final double DEFAULT_OFFSET = 10.0;
 
-    public PasteShapeCommand(DrawingModel model, ClipboardManager clipboardManager, double offsetX, double offsetY) {
+    // Costruttore per incollare con offset di default
+    public PasteShapeCommand(DrawingModel model, ClipboardManager clipboardManager) {
         this.model = model;
         this.clipboardManager = clipboardManager;
-        this.offsetX = offsetX;
-        this.offsetY = offsetY;
+        this.useAbsoluteCoordinates = false;
     }
 
-    public PasteShapeCommand(DrawingModel model, ClipboardManager clipboardManager) {
-        this(model, clipboardManager, DEFAULT_OFFSET, DEFAULT_OFFSET);
+    // Costruttore per incollare a coordinate assolute
+    public PasteShapeCommand(DrawingModel model, ClipboardManager clipboardManager, double targetX, double targetY, boolean useAbsoluteCoordinates) {
+        this.model = model;
+        this.clipboardManager = clipboardManager;
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.useAbsoluteCoordinates = useAbsoluteCoordinates;
     }
 
     @Override
     public void execute() {
-        if (clipboardManager.hasContent()) {
-            this.pastedShape = clipboardManager.getFromClipboard();
+        if (clipboardManager.hasContent()) { //
+            this.pastedShape = clipboardManager.getFromClipboard(); // Già un clone profondo
             if (this.pastedShape != null) {
-                // Applicare offset alla figura rispetto alle coordinate iniziali
-                this.pastedShape.moveTo(this.pastedShape.getX() + offsetX, this.pastedShape.getY() + offsetY);
-                model.addShape(this.pastedShape);
+                if (useAbsoluteCoordinates) {
+                    this.pastedShape.moveTo(targetX, targetY);
+                } else {
+                    // Applica offset di default alla posizione originale della forma incollata
+                    this.pastedShape.moveTo(this.pastedShape.getX() + DEFAULT_OFFSET, this.pastedShape.getY() + DEFAULT_OFFSET);
+                }
+                model.addShape(this.pastedShape); //
             }
         } else {
             this.pastedShape = null;
         }
     }
 
-    // Getter utile per il controller
     public AbstractShape getPastedShape() {
         return pastedShape;
     }
 
-    @Override
-    public void undo() {}
 
+    @Override
+    public void undo() {
+         if (pastedShape != null && model != null) {
+             model.removeShape(pastedShape);
+         }
+     }
 }
