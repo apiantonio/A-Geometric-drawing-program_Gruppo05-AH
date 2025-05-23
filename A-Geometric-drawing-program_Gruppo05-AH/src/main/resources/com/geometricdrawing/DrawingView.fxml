@@ -314,7 +314,7 @@
                                        </children>
                                     </VBox>
                                     <Separator layoutX="398.0" layoutY="10.0" orientation="VERTICAL" prefHeight="145.0" prefWidth="0.0" />
-                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="205.0">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="182.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="213.0">
                                              <VBox.margin>
@@ -328,7 +328,7 @@
                                                             <Insets bottom="10.0" />
                                                          </VBox.margin>
                                                          <graphic>
-                                                            <ImageView fitHeight="35.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
+                                                            <ImageView fitHeight="33.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
                                                                   <Image url="@../../icons/foreground.png" />
                                                                </image>
@@ -337,7 +337,7 @@
                                                       </Button>
                                                       <Button fx:id="backgroundButton" mnemonicParsing="false" onAction="#handleBackgroundShape" stylesheets="@../../style.css" text="Porta in secondo piano">
                                                          <graphic>
-                                                            <ImageView fitHeight="35.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
+                                                            <ImageView fitHeight="33.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
                                                                   <Image url="@../../icons/background.png" />
                                                                </image>

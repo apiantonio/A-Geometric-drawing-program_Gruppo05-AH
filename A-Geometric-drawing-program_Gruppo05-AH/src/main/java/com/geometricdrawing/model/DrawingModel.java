@@ -68,6 +68,23 @@ public class DrawingModel {
         }
     }
 
+    /**
+     * Metodo del model che permette di portare una figura in primo piano
+     * @param shape è la figura selezionata
+     */
+    public void bringToForeground(AbstractShape shape) {
+        if (shape != null && shapes.contains(shape)) {
+            shapes.remove(shape);
+            shapes.add(shape);
+
+            // Tutti gli Z-order vanno scalati in relazione alla figura spostata in primo piano
+            for (int i = 0; i < shapes.size(); i++) {
+                shapes.get(i).setZ(shapes.size() - 1 - i);
+            }
+        }
+    }
+
+
     public ObservableList<AbstractShape> getShapes() {
         return this.shapes;
     }
