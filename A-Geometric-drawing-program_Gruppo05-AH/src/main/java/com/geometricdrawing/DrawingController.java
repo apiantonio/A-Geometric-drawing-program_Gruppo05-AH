@@ -391,10 +391,10 @@ public class DrawingController {
 
     @FXML
     public void handleUndo(ActionEvent event) {
-        if (currentShape != null && model != null && commandManager != null) {
+        if (model != null && commandManager != null) {
             if(shapeMenu != null) shapeMenu.hide();
             commandManager.undo();
-            updateControlState(null);
+            //updateControlState(null);
             redrawCanvas();
         }
     }
