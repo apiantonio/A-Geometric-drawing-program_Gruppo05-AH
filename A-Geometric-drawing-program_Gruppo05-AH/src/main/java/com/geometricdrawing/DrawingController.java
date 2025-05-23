@@ -50,6 +50,10 @@ public class DrawingController {
     @FXML private Button deleteButton;
     @FXML private Button copyButton;
     @FXML private Button pasteButton;
+    @FXML private Button undoButton;
+    @FXML private Button cutButton;
+    @FXML private Button foregroundButton;
+    @FXML private Button backgroundButton;
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
@@ -558,55 +562,70 @@ public class DrawingController {
         boolean enableFillPicker = false;
         boolean enableBorderPicker = false;
         boolean enableDelete = false;
+        boolean enablePaste = false;
         boolean enableCopy = false;
+        boolean enableCut = false;
+        boolean enableForeground = false;
+        boolean enableBackground = false;
 
-        currentShape = shape; // Aggiorna la figura corrente del controller
+        currentShape = shape;
 
-        if (shape != null) { // Se una figura è selezionata
-            AbstractShape baseShape = getBaseShape(shape);
-            enableWidth = true;  // Larghezza sempre modificabile
-            enableDelete = true; // Cancellazione sempre possibile
-            enableCopy = true;   // Copia sempre possibile
-
-            enableBorderPicker = true; // Colore bordo sempre modificabile per figura selezionata
-
-            if (!(baseShape instanceof Line)) { // Se non è una linea (cioè Rettangolo o Ellisse)
-                enableHeight = true;       // Altezza modificabile
-                enableFillPicker = true;   // Riempimento possibile
-            } else { // È una Linea
-                enableHeight = false;      // Altezza non direttamente modificabile per linea
-                enableFillPicker = false;  // Nessun riempimento per linea
+        // Per gestire il comando di annullamento (undo)
+        if (commandManager != null) {
+            // Verifico se ci sono comandi nello stack
+            boolean hasUndoableCommands = !commandManager.getCommandStack().isEmpty();
+            if (undoButton != null) {
+                undoButton.setDisable(!hasUndoableCommands);
             }
-        } else { // Nessuna figura selezionata
-            // Se una factory è attiva (si sta per creare una nuova figura)
+        }
+
+        // Controllo contenuto appunti per Incolla
+        if (clipboardManager != null) {
+            enablePaste = clipboardManager.hasContent();
+        }
+
+        // se c'è una figura selezionata
+        if (shape != null) {
+            // capisci il tipo di figura SENZA decorator per gestire riempimento e altezza (che dovrebbero essere disabilitati)
+            AbstractShape baseShape = getBaseShape(shape);
+            enableWidth = true;
+            enableDelete = true;
+            enableCopy = true;
+            enableCut = true;
+            enableBackground = true;
+            enableForeground = true;
+            enableBorderPicker = true;
+
+            if (!(baseShape instanceof Line)) {
+                enableHeight = true;
+                enableFillPicker = true;
+            }
+        } else {
+            // La figura non è selezionata, ma stai procedendo alla creazione di una nuova figura
             if (currentShapeFactory != null) {
                 if (currentShapeFactory instanceof LineFactory) {
-                    enableFillPicker = false; // No fill per la nuova linea
-                    enableBorderPicker = true; // Sì border per la nuova linea
-                } else { // Factory per Rettangolo o Ellisse
+                    enableFillPicker = false;
+                    enableBorderPicker = true;
+                } else {
                     enableFillPicker = true;
                     enableBorderPicker = true;
                 }
-                // Width/Height spinners per nuove figure sono disabilitati (usano default)
-                enableWidth = false;
-                enableHeight = false;
-            } else { // Nessuna figura selezionata e nessuna factory attiva
-                enableFillPicker = false;
-                enableBorderPicker = false;
                 enableWidth = false;
                 enableHeight = false;
             }
         }
 
-        // Applica stati ai controlli UI
+        // Imposta lo stato dei controlli
         if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
         if (heightSpinner != null) heightSpinner.setDisable(!enableHeight);
         if (fillPicker != null) fillPicker.setDisable(!enableFillPicker);
         if (borderPicker != null) borderPicker.setDisable(!enableBorderPicker);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
         if (copyButton != null) copyButton.setDisable(!enableCopy);
-
-        updatePasteControlsState(); // Aggiorna stato controlli Incolla
+        if (cutButton != null) cutButton.setDisable(!enableCut);
+        if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
+        if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
+        if (pasteButton != null) pasteButton.setDisable(!enablePaste);
     }
 
     /**
