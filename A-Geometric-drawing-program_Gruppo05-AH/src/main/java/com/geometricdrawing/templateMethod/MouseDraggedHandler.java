@@ -2,12 +2,12 @@ package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
 import com.geometricdrawing.command.MoveShapeCommand;
+import com.geometricdrawing.ZoomHandler;
+import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
 
 public class MouseDraggedHandler extends AbstractMouseHandler {
-    private double canvasWidth;
-    private double canvasHeight;
     private double shapeWidth;
     private double shapeHeight;
 
@@ -23,34 +23,37 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             return;
         }
 
-        // Calcola le dimensioni del canvas e della forma
-        canvasWidth = canvas.getWidth();
-        canvasHeight = canvas.getHeight();
         shapeWidth = currentShape.getWidth();
         shapeHeight = currentShape.getHeight();
-
-        // Imposta il cursore a mano chiusa
-//        canvas.setCursor(javafx.scene.Cursor.CLOSED_HAND);
     }
 
     @Override
     protected void processEvent(MouseEvent event) {
-        if (currentShape == null) {
+        if (currentShape == null || controller.getZoomHandler() == null) {
             return;
         }
 
-        // Calcola le nuove coordinate considerando l'offset di trascinamento
-        double newX = event.getX() - controller.getDragOffsetX();
-        double newY = event.getY() - controller.getDragOffsetY();
+        ZoomHandler zoomHandler = controller.getZoomHandler();
+        Point2D worldMouseCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
 
-        // Limita le coordinate per mantenere la figura all'interno del canvas
-        newX = Math.max(BORDER_MARGIN - shapeWidth * VISIBLE_SHAPE_PORTION,
-                Math.min(newX, canvasWidth - shapeWidth * HIDDEN_SHAPE_PORTION));
-        newY = Math.max(BORDER_MARGIN - shapeHeight * VISIBLE_SHAPE_PORTION,
-                Math.min(newY, canvasHeight - shapeHeight * HIDDEN_SHAPE_PORTION));
+        //calcola le nuove coordinate del mondo
+        double newWorldX = worldMouseCoords.getX() - controller.getDragOffsetX();
+        double newWorldY = worldMouseCoords.getY() - controller.getDragOffsetY();
 
-        // Crea ed esegui il comando di spostamento
-        MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentShape, newX, newY);
+        double worldCanvasWidth = canvas.getWidth() / zoomHandler.getZoomFactor();
+        double worldCanvasHeight = canvas.getHeight() / zoomHandler.getZoomFactor();
+
+        newWorldX = Math.max(
+                AbstractMouseHandler.BORDER_MARGIN - shapeWidth * AbstractMouseHandler.VISIBLE_SHAPE_PORTION,
+                Math.min(newWorldX, worldCanvasWidth - shapeWidth * AbstractMouseHandler.HIDDEN_SHAPE_PORTION)
+        );
+
+        newWorldY = Math.max(
+                AbstractMouseHandler.BORDER_MARGIN - shapeHeight * AbstractMouseHandler.VISIBLE_SHAPE_PORTION,
+                Math.min(newWorldY, worldCanvasHeight - shapeHeight * AbstractMouseHandler.HIDDEN_SHAPE_PORTION )
+        );
+        //crea ed esegue il comando di spostamento
+        MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentShape, newWorldX, newWorldY);
         controller.getCommandManager().executeCommand(moveCmd);
     }
 }
