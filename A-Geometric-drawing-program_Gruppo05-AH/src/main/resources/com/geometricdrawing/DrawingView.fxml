@@ -108,9 +108,9 @@
                                                       </Button>
                                                       <Button fx:id="cutButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Taglia">
                                                          <graphic>
-                                                            <ImageView fitHeight="26.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+                                                            <ImageView fitHeight="24.0" fitWidth="29.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
-                                                                  <Image url="@../../icons/taglia.png" />
+                                                                  <Image url="@../../icons/taglia1.png" />
                                                                </image>
                                                             </ImageView>
                                                          </graphic></Button>
@@ -323,7 +323,7 @@
                                              <children>
                                                 <VBox alignment="CENTER" prefHeight="98.0" prefWidth="211.0">
                                                    <children>
-                                                      <Button fx:id="foregroundButton" mnemonicParsing="false" prefHeight="35.0" prefWidth="167.0" stylesheets="@../../style.css" text="Porta in primo piano">
+                                                      <Button fx:id="foregroundButton" mnemonicParsing="false" onAction="#handleForegroundShape" prefHeight="35.0" prefWidth="167.0" stylesheets="@../../style.css" text="Porta in primo piano">
                                                          <VBox.margin>
                                                             <Insets bottom="10.0" />
                                                          </VBox.margin>
@@ -335,7 +335,7 @@
                                                             </ImageView>
                                                          </graphic>
                                                       </Button>
-                                                      <Button fx:id="backgroundButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Porta in secondo piano">
+                                                      <Button fx:id="backgroundButton" mnemonicParsing="false" onAction="#handleBackgroundShape" stylesheets="@../../style.css" text="Porta in secondo piano">
                                                          <graphic>
                                                             <ImageView fitHeight="35.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>

@@ -219,28 +219,38 @@ public class DrawingController {
      */
     private void createShapeContextMenu(){
         shapeMenu = new ContextMenu();
-        MenuItem deleteItem = new MenuItem("Elimina");
         MenuItem copyItem = new MenuItem("Copia");
-        MenuItem pasteOffsetItem = new MenuItem("Incolla"); // "Incolla" semplice implica con offset
+        MenuItem pasteOffsetItem = new MenuItem("Incolla"); // Incolla con offset
+        MenuItem deleteItem = new MenuItem("Elimina");
+        MenuItem foregroundItem = new MenuItem("Porta in primo piano");
+        MenuItem backgroundItem = new MenuItem("Porta in secondo piano");
 
         // Azioni per le voci di menu
         deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
         copyItem.setOnAction(e -> handleCopyShape(new ActionEvent()));
-        pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent())); // Chiama incolla con offset di default
+        pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
+        foregroundItem.setOnAction(e -> handleForegroundShape(new ActionEvent()));
+        backgroundItem.setOnAction(e -> handleBackgroundShape(new ActionEvent()));
 
         // Icone per le voci di menu
         ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
-        delimg.setFitHeight(16); delimg.setFitWidth(16);
+        delimg.setFitHeight(20); delimg.setFitWidth(20);
         ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
-        copyimg.setFitHeight(15); copyimg.setFitWidth(15);
-        ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png")));
-        pasteimg.setFitHeight(15); pasteimg.setFitWidth(15);
+        copyimg.setFitHeight(18); copyimg.setFitWidth(18);
+        ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/pasteCxtMenu.png")));
+        pasteimg.setFitHeight(22); pasteimg.setFitWidth(22);
+        ImageView forgrndimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/foreground.png")));
+        forgrndimg.setFitHeight(20); forgrndimg.setFitWidth(20);
+        ImageView backgrndimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/background.png")));
+        backgrndimg.setFitHeight(20); backgrndimg.setFitWidth(20);
 
         deleteItem.setGraphic(delimg);
         copyItem.setGraphic(copyimg);
         pasteOffsetItem.setGraphic(pasteimg);
+        foregroundItem.setGraphic(forgrndimg);
+        backgroundItem.setGraphic(backgrndimg);
 
-        shapeMenu.getItems().addAll(deleteItem, copyItem, pasteOffsetItem);
+        shapeMenu.getItems().addAll(copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem);
     }
 
     /**
@@ -249,9 +259,9 @@ public class DrawingController {
     private void createCanvasContextMenu() {
         canvasContextMenu = new ContextMenu();
         MenuItem pasteHereItem = new MenuItem("Incolla qui"); // Voce per incollare alle coordinate del click
-        ImageView pasteCanvasImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png"))); // Riutilizza icona
-        pasteCanvasImg.setFitHeight(15);
-        pasteCanvasImg.setFitWidth(15);
+        ImageView pasteCanvasImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/pasteCxtMenu.png"))); // Riutilizza icona
+        pasteCanvasImg.setFitHeight(20);
+        pasteCanvasImg.setFitWidth(20);
         pasteHereItem.setGraphic(pasteCanvasImg);
 
         pasteHereItem.setOnAction(e -> {
@@ -667,6 +677,14 @@ public class DrawingController {
             updateControlState(null); // Aggiorna UI
             redrawCanvas();
         }
+    }
+
+    @FXML
+    public void handleForegroundShape(ActionEvent event) {
+    }
+
+    @FXML
+    public void handleBackgroundShape(ActionEvent event) {
     }
 
     /**
