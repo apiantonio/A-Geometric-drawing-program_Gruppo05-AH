@@ -25,4 +25,8 @@ public class ChangeHeightCommand implements Command {
     }
 
     // TODO: Implementare il metodo undo() per annullare l'azione del comando
+    @Override
+    public void undo() {
+        // TOOD
+    }
 }

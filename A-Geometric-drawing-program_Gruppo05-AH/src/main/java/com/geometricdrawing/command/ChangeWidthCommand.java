@@ -25,4 +25,8 @@ public class ChangeWidthCommand implements Command {
     }
 
     // TODO: Implementare il metodo undo() per annullare l'azione del comando
+    @Override
+    public void undo() {
+        // TODO
+    }
 }

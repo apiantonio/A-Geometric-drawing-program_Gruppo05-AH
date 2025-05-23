@@ -1,8 +1,12 @@
 package com.geometricdrawing.model;
 
+import com.geometricdrawing.decorator.BorderColorDecorator;
+import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.paint.Color;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +53,18 @@ public class DrawingModel {
     public void moveShapeTo(AbstractShape shape, double newX, double newY) {
         if (shape != null) {
             shape.moveTo(newX, newY);
+        }
+    }
+
+    public void setBorderColor(BorderColorDecorator decorator, Color color) {
+        if (decorator != null) {
+            decorator.setBorderColor(color);
+        }
+    }
+
+    public void setFillColor(FillColorDecorator decorator, Color color) {
+        if (decorator != null) {
+            decorator.setFillColor(color);
         }
     }
 

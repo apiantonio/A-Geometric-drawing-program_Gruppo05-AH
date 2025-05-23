@@ -30,9 +30,9 @@ public class MoveShapeCommand implements Command {
         model.moveShapeTo(shape, newX, newY);
     }
 
-//    @Override
-//    public void undo() {
-//        model.moveShapeTo(shape, oldX, oldY);
-//    }
+    @Override
+    public void undo() {
+        //TODO
+    }
 
 }

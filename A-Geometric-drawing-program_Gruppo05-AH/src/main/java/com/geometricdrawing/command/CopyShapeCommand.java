@@ -20,4 +20,10 @@ public class CopyShapeCommand implements Command {
             clipboardManager.copyToClipboard(shapeToCopy);
         }
     }
+
+    @Override
+    public void undo() {
+        // Non è necessario implementare undo per la copia
+        // La copia non modifica lo stato del modello, quindi non c'è nulla da annullare
+    }
 }

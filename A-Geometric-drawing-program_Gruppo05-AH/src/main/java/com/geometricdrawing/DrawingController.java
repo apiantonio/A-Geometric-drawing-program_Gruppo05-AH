@@ -285,6 +285,46 @@ public class DrawingController {
         redrawCanvas();
     }
 
+    public void handleChangeBorderColor(Color newColor) {
+        if (currentShape == null || newColor == null) return;
+
+        AbstractShape shape = currentShape;
+        // Trova il primo decoratore di colore del bordo
+        while (shape instanceof ShapeDecorator decorator) {
+            if (decorator instanceof BorderColorDecorator borderDecorator) {
+                ChangeBorderColorCommand cmd = new ChangeBorderColorCommand(model, borderDecorator, newColor);
+                commandManager.executeCommand(cmd);
+                break;
+            }
+            shape = ((ShapeDecorator) shape).getInnerShape();
+        }
+    }
+
+    public void handleChangeFillColor(Color newColor) {
+        if (currentShape == null || newColor == null) return;
+
+        AbstractShape shape = currentShape;
+        // Trova il primo decoratore di colore di riempimento
+        while (shape instanceof ShapeDecorator decorator) {
+            if (decorator instanceof FillColorDecorator fillDecorator) {
+                ChangeFillColorCommand cmd = new ChangeFillColorCommand(model, fillDecorator, newColor);
+                commandManager.executeCommand(cmd);
+                break;
+            }
+            shape = ((ShapeDecorator) shape).getInnerShape();
+        }
+    }
+
+    @FXML
+    public void onBorderColorPicked() {
+        handleChangeBorderColor(borderPicker.getValue());
+    }
+
+    @FXML
+    public void onFillColorPicked() {
+        handleChangeFillColor(fillPicker.getValue());
+    }
+
     private AbstractShape getBaseShape(AbstractShape shape) {
         AbstractShape base = shape;
         while (base instanceof ShapeDecorator) {
@@ -306,20 +346,15 @@ public class DrawingController {
             enableWidth = true;
             enableDelete = true;
             enableCopy = true; // Abilita copia se una forma è selezionata
+            enableBorder = true;
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
-                enableFill = false;
-                enableBorder = false;
+                enableFill = true;
             } else {
                 enableHeight = false;
                 enableFill = false;
-                enableBorder = false;
             }
-
-            enableWidth = true;
-            enableBorder = true;
-            enableDelete = true;
         }
 
         if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
@@ -327,7 +362,7 @@ public class DrawingController {
         if (fillPicker != null) fillPicker.setDisable(!enableFill);
         if (borderPicker != null) borderPicker.setDisable(!enableBorder);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
-        if (copyButton != null) copyButton.setDisable(!enableCopy); // Aggiorna stato bottone Copia
+        if (copyButton != null) copyButton.setDisable(!enableCopy);
     }
 
     /**
@@ -375,10 +410,6 @@ public class DrawingController {
                 currentShape = shape;
                 updateSpinners(currentShape);
                 updateControlState(currentShape);
-
-                // Logica "MOMENTANEE PER LA PRIMA SPRINT"
-                if (fillPicker != null) fillPicker.setDisable(true);
-                if (borderPicker != null) borderPicker.setDisable(true);
 
                 System.out.println("DEBUG: Figura selezionata: " + currentShape + " z: " + currentShape.getZ());
                 return shape;

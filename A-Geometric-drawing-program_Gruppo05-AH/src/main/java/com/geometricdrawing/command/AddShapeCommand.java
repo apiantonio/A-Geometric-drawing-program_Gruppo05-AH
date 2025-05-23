@@ -22,4 +22,10 @@ public class AddShapeCommand implements Command {
         model.addShape(shape);
     }
 
+    @Override
+    public void undo() {
+        // Annulla l'azione del comando
+       // TODO
+    }
+
 }
