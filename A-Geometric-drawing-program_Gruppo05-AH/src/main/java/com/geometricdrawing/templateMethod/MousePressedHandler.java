@@ -12,6 +12,9 @@ public class MousePressedHandler extends AbstractMouseHandler {
     private double x;
     private double y;
 
+    private double lastContextMouseX;
+    private double lastContextMouseY;
+
     public MousePressedHandler(Canvas canvas, DrawingController controller) {
         super(canvas, controller);
     }
@@ -31,23 +34,42 @@ public class MousePressedHandler extends AbstractMouseHandler {
 
     @Override
     protected void processEvent(MouseEvent event) {
-        if (currentShape != null && currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) {
-            // Calcola l'offset usando direttamente il punto cliccato (x, y)
-            dragOffsetX = x - currentShape.getX();
-            controller.setDragOffsetX(dragOffsetX);
-            dragOffsetY = y - currentShape.getY();
-            controller.setDragOffsetY(dragOffsetY);
-            canvas.setCursor(Cursor.CLOSED_HAND);
+        // currentShape qui si riferisce alla variabile di istanza di MousePressedHandler,
+        // che è stata impostata in preProcess.
+        if (currentShape != null && currentShape.containsPoint(x, y, SELECTION_THRESHOLD)) { //
+            // Il clic è su una forma esistente (o quella appena selezionata in preProcess)
 
-            controller.getRootPane().requestFocus();
+            // Calcola l'offset per il trascinamento
+            dragOffsetX = x - currentShape.getX(); //
+            controller.setDragOffsetX(dragOffsetX); //
+            dragOffsetY = y - currentShape.getY(); //
+            controller.setDragOffsetY(dragOffsetY); //
+            canvas.setCursor(Cursor.CLOSED_HAND); //
 
-            if (event.getButton() == MouseButton.SECONDARY) {
-                controller.showContextMenu(event);
+            controller.getRootPane().requestFocus(); //
+
+            // Se è un clic con il pulsante secondario, mostra il menu contestuale della forma
+            if (event.getButton() == MouseButton.SECONDARY) { //
+                // Memorizza le coordinate del clic destro, potrebbero servire per "Incolla qui" dal menu della forma
+                // controller.setLastContextMousePosition(x, y); // Se vuoi usare questo per il menu delle forme
+                controller.showContextMenu(event); //
             }
-        } else {
-            currentShape = null;
+            // Aggiorna la forma corrente nel controller con quella identificata
             controller.setCurrentShape(currentShape);
-            controller.updateSpinners(currentShape);
+
+        } else {
+            // Il clic NON è su una forma esistente (o nessuna forma è stata identificata in preProcess).
+            // Potrebbe essere un clic su un'area vuota.
+            // Deseleziona la figura corrente nel controller SOLO SE non siamo in modalità
+            // di creazione di una nuova forma (cioè, se currentShapeFactory nel controller è null).
+            // Se una factory è attiva, il MouseClickedHandler gestirà la creazione e la selezione.
+            if (controller.getCurrentShapeFactory() == null) {
+                currentShape = null; // Imposta la currentShape locale del handler a null
+                controller.setCurrentShape(null); // Aggiorna il controller deselezionando la figura
+                // controller.updateSpinners(null); // updateSpinners sarà chiamato da postProcess o da updateControlState
+            }
+            // Se una factory è attiva, non facciamo nulla qui riguardo la currentShape,
+            // perché MouseClickedHandler la imposterà alla nuova forma creata.
         }
     }
 
