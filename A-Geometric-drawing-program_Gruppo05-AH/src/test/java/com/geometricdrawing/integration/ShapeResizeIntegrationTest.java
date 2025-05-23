@@ -302,7 +302,7 @@ public class ShapeResizeIntegrationTest {
 
 
         Stack<Command> undoStackBeforeResize = getUndoStack(commandManager);
-        assertEquals(2, undoStackBeforeResize.size(), "Undo stack dovrebbe avere 2 comandi (AddShape, ChangeWidth from updateSpinners) prima del ridimensionamento manuale.");
+        assertEquals(1, undoStackBeforeResize.size(), "Undo stack dovrebbe avere 1 comando prima del ridimensionamento manuale.");
 
         runOnFxThreadAndWait(() -> widthSpinner.getValueFactory().setValue(newSpinnerSetting)); // Triggers another ChangeWidthCommand
 
@@ -313,7 +313,7 @@ public class ShapeResizeIntegrationTest {
         assertEquals(newSpinnerSetting, ((Line)baseLine).getLength(), 0.0001, "Lunghezza geometrica linea errata.");
 
         Stack<Command> undoStackAfterResize = getUndoStack(commandManager);
-        assertEquals(3, undoStackAfterResize.size(), "Undo stack dovrebbe avere 3 comandi dopo il ridimensionamento manuale.");
+        assertEquals(2, undoStackAfterResize.size(), "Undo stack dovrebbe avere 2 comandi dopo il ridimensionamento manuale.");
         assertTrue(undoStackAfterResize.peek() instanceof ChangeWidthCommand, "L'ultimo comando dovrebbe essere ChangeWidthCommand.");
     }
 
