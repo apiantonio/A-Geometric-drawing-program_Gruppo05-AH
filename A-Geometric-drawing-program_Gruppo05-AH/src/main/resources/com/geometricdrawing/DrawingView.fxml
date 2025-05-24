@@ -11,6 +11,7 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
@@ -37,6 +38,9 @@
                <menus>
                   <Menu mnemonicParsing="false" text="File">
                      <items>
+                        <MenuItem mnemonicParsing="false" text="Nuovo" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica" />
+                        <SeparatorMenuItem mnemonicParsing="false" />
                         <MenuItem mnemonicParsing="false" onAction="#handleSaveSerialized" text="Salva" />
                         <Menu mnemonicParsing="false" text="Salva come">
                            <items>
@@ -44,7 +48,8 @@
                               <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPdf" text="PDF" />
                            </items>
                         </Menu>
-                        <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica" />
+                        <SeparatorMenuItem mnemonicParsing="false" />
+                        <MenuItem mnemonicParsing="false" text="Chiudi" />
                      </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Visualizza">
