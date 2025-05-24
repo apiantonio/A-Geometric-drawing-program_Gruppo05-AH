@@ -136,6 +136,13 @@ public class DrawingModel {
     }
 
     /**
+     * Metodo che ripulisce tutta la lista di figure presenti nell'area di disegno
+     */
+    public void clear() {
+        this.shapes.clear();
+    }
+
+    /**
      * Metodo che restituisce le figure in ordine decrescente di z
      */
     public ObservableList<AbstractShape> getShapesOrderedByZ() {
