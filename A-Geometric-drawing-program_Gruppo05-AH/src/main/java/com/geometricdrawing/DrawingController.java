@@ -732,6 +732,63 @@ public class DrawingController {
     }
 
     /**
+     * gestisce l'azione di creazione di una nuova area di lavoro quando si clicca sul menu File -> Nuovo
+     */
+    @FXML
+    public void handleNewWorkspace(ActionEvent event) {
+        // Verifica se ci sono figure nel modello corrente
+        if (model != null && !model.getShapes().isEmpty()) {
+            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmAlert.setTitle("Nuova Area di Lavoro");
+            confirmAlert.setHeaderText(null);
+            confirmAlert.setContentText("Vuoi salvare il lavoro corrente prima di creare una nuova area?");
+
+            ButtonType buttonTypeSave = new ButtonType("Salva");
+            ButtonType buttonTypeNoSave = new ButtonType("Non salvare");
+            ButtonType buttonTypeCancel = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            confirmAlert.getButtonTypes().setAll(buttonTypeSave, buttonTypeNoSave, buttonTypeCancel);
+
+            confirmAlert.showAndWait().ifPresent(result -> {
+                if (result == buttonTypeSave) {
+                    // Salva il lavoro corrente come serializzato
+                    fileOperationContext.executeSave(new SerializedSaveStrategy());
+                    // Procede con la creazione della nuova area solo se il salvataggio è andato a buon fine
+                    createNewWorkspace();
+                } else if (result == buttonTypeNoSave) {
+                    // Procede direttamente con la creazione della nuova area
+                    createNewWorkspace();
+                }
+                // Se l'utente preme Annulla, non fa nulla
+            });
+        } else {
+            // Se non ci sono figure, crea direttamente una nuova area di lavoro
+            createNewWorkspace();
+        }
+    }
+
+    /**
+     * Crea una nuova area di lavoro vuota
+     */
+    private void createNewWorkspace() {
+        // Resetta il modello
+        model.clear();
+
+        // Resetta lo stato del controller
+        setCurrentShape(null);
+        setCurrentShapeFactory(null);
+
+        // Aggiorna l'interfaccia
+        updateControlState(null);
+        updateSpinners(null);
+        redrawCanvas();
+
+        // Mostra messaggio di conferma
+        showAlertDialog(Alert.AlertType.INFORMATION, "Nuova Area di Lavoro",
+                "Nuova area di lavoro creata correttamente.");
+    }
+
+    /**
      * Seleziona la figura alle coordinate del mondo specificate (worldX, worldY).
      * @return La figura selezionata, o null se nessuna figura è trovata.
      */

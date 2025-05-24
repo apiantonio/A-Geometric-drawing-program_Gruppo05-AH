@@ -4,14 +4,13 @@ import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 
 public class PasteShapeCommand implements Command {
+    private static final double DEFAULT_OFFSET = 10.0;
     private final DrawingModel model;
     private final ClipboardManager clipboardManager;
     private AbstractShape pastedShape;
     private double targetX; // Usato solo se useAbsoluteCoordinates è true
     private double targetY; // Usato solo se useAbsoluteCoordinates è true
-    private boolean useAbsoluteCoordinates;
-
-    private static final double DEFAULT_OFFSET = 10.0;
+    private final boolean useAbsoluteCoordinates;
 
     // Costruttore per incollare con offset di default
     public PasteShapeCommand(DrawingModel model, ClipboardManager clipboardManager) {
@@ -35,10 +34,10 @@ public class PasteShapeCommand implements Command {
             this.pastedShape = clipboardManager.getFromClipboard(); // Già un clone profondo
             if (this.pastedShape != null) {
                 if (useAbsoluteCoordinates) {
-                    this.pastedShape.moveTo(targetX, targetY);
+                    model.moveShapeTo(pastedShape, targetX, targetY);
                 } else {
                     // Applica offset di default alla posizione originale della forma incollata
-                    this.pastedShape.moveTo(this.pastedShape.getX() + DEFAULT_OFFSET, this.pastedShape.getY() + DEFAULT_OFFSET);
+                    model.moveShapeTo(this.pastedShape, this.pastedShape.getX() + DEFAULT_OFFSET, this.pastedShape.getY() + DEFAULT_OFFSET);
                 }
                 model.addShape(this.pastedShape); //
             }
@@ -54,8 +53,8 @@ public class PasteShapeCommand implements Command {
 
     @Override
     public void undo() {
-         if (pastedShape != null && model != null) {
-             model.removeShape(pastedShape);
-         }
-     }
+        if (pastedShape != null && model != null) {
+            model.removeShape(pastedShape);
+        }
+    }
 }
