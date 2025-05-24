@@ -219,6 +219,7 @@ public class DrawingController {
      */
     private void createShapeContextMenu(){
         shapeMenu = new ContextMenu();
+        MenuItem cutItem = new MenuItem("Taglia");
         MenuItem copyItem = new MenuItem("Copia");
         MenuItem pasteOffsetItem = new MenuItem("Incolla"); // Incolla con offset
         MenuItem deleteItem = new MenuItem("Elimina");
@@ -227,6 +228,7 @@ public class DrawingController {
 
         // Azioni per le voci di menu
         deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
+        cutItem.setOnAction(e -> handleCutShape(new ActionEvent()));
         copyItem.setOnAction(e -> handleCopyShape(new ActionEvent()));
         pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
         foregroundItem.setOnAction(e -> handleForegroundShape(new ActionEvent()));
@@ -235,6 +237,8 @@ public class DrawingController {
         // Icone per le voci di menu
         ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
         delimg.setFitHeight(20); delimg.setFitWidth(20);
+        ImageView cutimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/taglia1.png"))); // ## ICONA PER TAGLIA (DA AGGIUNGERE) ##
+        cutimg.setFitHeight(18); cutimg.setFitWidth(18);
         ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
         copyimg.setFitHeight(18); copyimg.setFitWidth(18);
         ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/pasteCxtMenu.png")));
@@ -245,12 +249,13 @@ public class DrawingController {
         backgrndimg.setFitHeight(20); backgrndimg.setFitWidth(20);
 
         deleteItem.setGraphic(delimg);
+        cutItem.setGraphic(cutimg);
         copyItem.setGraphic(copyimg);
         pasteOffsetItem.setGraphic(pasteimg);
         foregroundItem.setGraphic(forgrndimg);
         backgroundItem.setGraphic(backgrndimg);
 
-        shapeMenu.getItems().addAll(copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem);
+        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem);
     }
 
     /**
@@ -342,6 +347,11 @@ public class DrawingController {
         if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
             handleDeleteShape(new ActionEvent());
             event.consume(); // Evento consumato
+        }
+        // Taglia con CTRL+X
+        if (KeyCombination.keyCombination("CTRL+X").match(event)) {
+            handleCutShape(new ActionEvent());
+            event.consume();
         }
         // Copia con CTRL+C
         if (KeyCombination.keyCombination("CTRL+C").match(event)) {
@@ -572,6 +582,7 @@ public class DrawingController {
         boolean enableFillPicker = false;
         boolean enableBorderPicker = false;
         boolean enableDelete = false;
+        boolean enableCutUi;
         boolean enablePaste = false;
         boolean enableCopy = false;
         boolean enableCut = false;
@@ -600,6 +611,7 @@ public class DrawingController {
             AbstractShape baseShape = getBaseShape(shape);
             enableWidth = true;
             enableDelete = true;
+            enableCutUi = true;
             enableCopy = true;
             enableCut = true;
             enableBackground = true;
@@ -611,6 +623,7 @@ public class DrawingController {
                 enableFillPicker = true;
             }
         } else {
+            enableCutUi = false;
             // La figura non è selezionata, ma stai procedendo alla creazione di una nuova figura
             if (currentShapeFactory != null) {
                 if (currentShapeFactory instanceof LineFactory) {
@@ -631,11 +644,19 @@ public class DrawingController {
         if (fillPicker != null) fillPicker.setDisable(!enableFillPicker);
         if (borderPicker != null) borderPicker.setDisable(!enableBorderPicker);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
+        if (cutButton != null) cutButton.setDisable(!enableCutUi);
         if (copyButton != null) copyButton.setDisable(!enableCopy);
         if (cutButton != null) cutButton.setDisable(!enableCut);
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
         if (pasteButton != null) pasteButton.setDisable(!enablePaste);
+
+        if (shapeMenu != null) {
+            shapeMenu.getItems().stream()
+                    .filter(item -> "Taglia".equals(item.getText()))
+                    .findFirst()
+                    .ifPresent(item -> item.setDisable(!enableCutUi));
+        }
     }
 
     /**
@@ -675,6 +696,21 @@ public class DrawingController {
             commandManager.executeCommand(deleteCmd);
             setCurrentShape(null); // Deseleziona la figura
             updateControlState(null); // Aggiorna UI
+            redrawCanvas();
+        }
+    }
+
+    @FXML
+    public void handleCutShape(ActionEvent event) {
+        if (currentShape != null && model != null && commandManager != null && clipboardManager != null) {
+            if (shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
+
+            CutShapeCommand cutCmd = new CutShapeCommand(model, currentShape, clipboardManager);
+            commandManager.executeCommand(cutCmd);
+
+            setCurrentShape(null);      // Deseleziona la figura
+            updateControlState(null);   // Aggiorna UI
+            updatePasteControlsState(); // Aggiorna disponibilità Incolla
             redrawCanvas();
         }
     }
@@ -898,6 +934,13 @@ public class DrawingController {
         // Mostra il menu solo se una figura è effettivamente selezionata
         if (shapeMenu != null && currentShape != null) {
             updatePasteControlsState(); // Assicura che la voce "Incolla" sia aggiornata
+
+            boolean enableCutUi = currentShape != null;
+            shapeMenu.getItems().stream()
+                    .filter(item -> "Taglia".equals(item.getText()))
+                    .findFirst()
+                    .ifPresent(item -> item.setDisable(!enableCutUi));
+
             shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
         }
     }

@@ -56,15 +56,15 @@
                      <items>
                         <Menu mnemonicParsing="false" text="Zoom">
                            <items>
-                              <RadioMenuItem mnemonicParsing="false" text="25%">
+                              <RadioMenuItem mnemonicParsing="false" text="25%" onAction="#handleZoom25">
                                  <toggleGroup>
                                     <ToggleGroup fx:id="zoomGroup" />
                                  </toggleGroup>
                               </RadioMenuItem>
-                              <RadioMenuItem mnemonicParsing="false" text="50%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" selected="true" text="75%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" text="100%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" text="150%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" text="50%" toggleGroup="$zoomGroup" onAction="#handleZoom50"/>
+                              <RadioMenuItem mnemonicParsing="false" selected="true" text="75%" toggleGroup="$zoomGroup" onAction="#handleZoom75"/>
+                              <RadioMenuItem mnemonicParsing="false" text="100%" toggleGroup="$zoomGroup" onAction="#handleZoom100"/>
+                              <RadioMenuItem mnemonicParsing="false" text="150%" toggleGroup="$zoomGroup" onAction="#handleZoom150"/>
                            </items>
                         </Menu>
                      </items>
@@ -111,7 +111,7 @@
                                                             <Insets bottom="10.0" />
                                                          </VBox.margin>
                                                       </Button>
-                                                      <Button fx:id="cutButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Taglia">
+                                                      <Button fx:id="cutButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Taglia" onAction="#handleCutShape">
                                                          <graphic>
                                                             <ImageView fitHeight="24.0" fitWidth="29.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
