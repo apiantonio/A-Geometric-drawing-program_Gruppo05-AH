@@ -88,6 +88,24 @@ public class DrawingModel {
         }
     }
 
+    public void bringToBackground(AbstractShape shape) {
+        if (shape != null && shapes.contains(shape)) {
+            int oldZ = shape.getZ(); // leggiamo il vecchio Z della figura
+
+            // Tutti gli Z delle figure sotto si devono scalare di 1
+            for (AbstractShape s : shapes) {
+                if (s.getZ() < oldZ) {
+                    s.setZ(s.getZ() + 1);
+                }
+            }
+
+            // rimuovo la figura e la reinserisco in testa
+            removeShape(shape);
+            shapes.addFirst(shape);
+            shape.setZ(0); // La figura portata in secondo piano ha lo Z più basso
+        }
+    }
+
 
     public ObservableList<AbstractShape> getShapes() {
         return this.shapes;

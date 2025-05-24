@@ -692,6 +692,13 @@ public class DrawingController {
 
     @FXML
     public void handleBackgroundShape(ActionEvent event) {
+        if (currentShape != null && model != null && commandManager != null) {
+            if(shapeMenu != null) shapeMenu.hide(); // Nasconde il menu contestuale se risulta aperto
+
+            BringToBackgroundCommand cmd = new BringToBackgroundCommand(model, currentShape);
+            commandManager.executeCommand(cmd);
+            redrawCanvas();
+        }
     }
 
     /**
