@@ -833,10 +833,6 @@ public class DrawingController {
         updateControlState(null);
         updateSpinners(null);
         redrawCanvas();
-
-        // Mostra messaggio di conferma
-        showAlertDialog(Alert.AlertType.INFORMATION, "Nuova Area di Lavoro",
-                "Nuova area di lavoro creata correttamente.");
     }
 
     /**
