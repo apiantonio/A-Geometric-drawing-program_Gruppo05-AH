@@ -21,11 +21,16 @@ public class BringToForegroundCommand implements Command {
     @Override
     public void execute() {
         if (shape != null) {
-            model.bringToForeground(shape);
+            model.changeZOrder(shape, model.getShapes().size() - 1);
         }
     }
 
     @Override
     public void undo() {
+        if(shape != null) {
+            // ripristina l'ordine di disposizione originale
+            model.changeZOrder(shape, oldZ);
+        }
     }
+
 }

@@ -21,11 +21,15 @@ public class BringToBackgroundCommand implements Command{
     @Override
     public void execute() {
         if (shape != null) {
-            model.bringToBackground(shape);
+            model.changeZOrder(shape, 0);
         }
     }
 
     @Override
     public void undo() {
+        if (shape != null) {
+            // ripristina l'ordine di disposizione originale
+            model.changeZOrder(shape, oldZ);
+        }
     }
 }
