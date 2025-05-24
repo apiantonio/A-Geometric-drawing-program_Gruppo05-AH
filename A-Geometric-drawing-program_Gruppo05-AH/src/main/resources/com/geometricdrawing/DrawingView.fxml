@@ -26,11 +26,36 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
 <AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <Pane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
+         <Label fx:id="cutCopyLabel" layoutX="429.0" layoutY="362.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 5;" text="Elemento copiato negli appunti!" visible="false">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="32.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/check.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+         </Label>
+         <Label fx:id="emptyClipboardLabel" layoutX="466.0" layoutY="364.0" prefHeight="29.0" prefWidth="217.0" style="-fx-background-radius: 5; -fx-background-color: #fff1d6;" text="Sezione appunti svuotata" visible="false">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="29.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/empty.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+         </Label>
       </Pane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
@@ -111,7 +136,7 @@
                                                             <Insets bottom="10.0" />
                                                          </VBox.margin>
                                                       </Button>
-                                                      <Button fx:id="cutButton" mnemonicParsing="false" stylesheets="@../../style.css" text="Taglia" onAction="#handleCutShape">
+                                                      <Button fx:id="cutButton" mnemonicParsing="false" onAction="#handleCutShape" stylesheets="@../../style.css" text="Taglia">
                                                          <graphic>
                                                             <ImageView fitHeight="24.0" fitWidth="29.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
@@ -333,7 +358,7 @@
                                                             <Insets bottom="10.0" />
                                                          </VBox.margin>
                                                          <graphic>
-                                                            <ImageView fitHeight="33.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
+                                                            <ImageView fitHeight="27.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
                                                                   <Image url="@../../icons/foreground.png" />
                                                                </image>
@@ -342,7 +367,7 @@
                                                       </Button>
                                                       <Button fx:id="backgroundButton" mnemonicParsing="false" onAction="#handleBackgroundShape" stylesheets="@../../style.css" text="Porta in secondo piano">
                                                          <graphic>
-                                                            <ImageView fitHeight="33.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
+                                                            <ImageView fitHeight="28.0" fitWidth="26.0" pickOnBounds="true" preserveRatio="true">
                                                                <image>
                                                                   <Image url="@../../icons/background.png" />
                                                                </image>
