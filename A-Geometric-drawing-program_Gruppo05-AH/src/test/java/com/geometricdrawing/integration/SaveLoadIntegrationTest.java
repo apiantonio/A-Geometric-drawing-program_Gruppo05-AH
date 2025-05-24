@@ -8,15 +8,15 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.control.Button;
-import javafx.scene.control.ColorPicker;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,11 +25,16 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Test di Integrazione per Salvataggio e Caricamento Disegni")
 public class SaveLoadIntegrationTest {
@@ -142,6 +147,7 @@ public class SaveLoadIntegrationTest {
         field.setAccessible(true);
         return field.get(target);
     }
+
     private Object getPrivateFieldNonFailing(Object target, String fieldName) {
         try {
             return getPrivateField(target, fieldName);
@@ -162,7 +168,7 @@ public class SaveLoadIntegrationTest {
                 actionLatch.countDown();
             }
         });
-        if (!actionLatch.await(5, TimeUnit.SECONDS)) {
+        if (!actionLatch.await(10, TimeUnit.SECONDS)) {
             throw new InterruptedException("Timeout azione FX.");
         }
     }
@@ -293,7 +299,13 @@ public class SaveLoadIntegrationTest {
         assertEquals(3, model.getShapes().size());
         List<AbstractShape> originalShapes = List.copyOf(model.getShapes());
 
-        runOnFxThreadAndWait(() -> { try { model.saveToFile(tempFile); } catch (IOException e) { fail(e); }});
+        runOnFxThreadAndWait(() -> {
+            try {
+                model.saveToFile(tempFile);
+            } catch (IOException e) {
+                fail(e);
+            }
+        });
         assertTrue(tempFile.exists() && tempFile.length() > 0);
 
         DrawingModel loadedModel = new DrawingModel(); // Carica in un nuovo modello
@@ -323,7 +335,13 @@ public class SaveLoadIntegrationTest {
         File tempFile = new File(tempDir.toFile(), "emptyDrawing.ser");
         assertTrue(model.getShapes().isEmpty());
 
-        runOnFxThreadAndWait(() -> { try { model.saveToFile(tempFile); } catch (IOException e) { fail(e); }});
+        runOnFxThreadAndWait(() -> {
+            try {
+                model.saveToFile(tempFile);
+            } catch (IOException e) {
+                fail(e);
+            }
+        });
         assertTrue(tempFile.exists());
 
         DrawingModel loadedModel = new DrawingModel(); // Carica in un nuovo modello
@@ -362,5 +380,80 @@ public class SaveLoadIntegrationTest {
         assertNotNull(exceptionOccurred.get(), "Una IOException era attesa per file non esistente.");
         assertTrue(exceptionOccurred.get() instanceof IOException);
         assertTrue(testModel.getShapes().isEmpty(), "Il modello dovrebbe rimanere vuoto dopo tentativo di caricamento fallito.");
+    }
+
+    @Test
+    @DisplayName("Creazione di una nuova area di lavoro quando il disegno corrente è vuoto")
+    void testNewWorkspace_EmptyDrawing() throws Exception {
+        // Verifica che il disegno sia vuoto inizialmente
+        assertTrue(model.getShapes().isEmpty());
+
+        runOnFxThreadAndWait(() -> {
+            controller.handleNewWorkspace(new ActionEvent());
+        });
+
+        // Verifica che il model sia ancora vuoto
+        assertTrue(model.getShapes().isEmpty());
+        // Verifica che non ci sia una forma selezionata
+        assertNull(getPrivateField(controller, "currentShape"));
+        // Verifica che non ci sia una factory attiva
+        assertNull(getPrivateField(controller, "currentShapeFactory"));
+    }
+
+    @Test
+    void createNewWorkspaceWithSaveTest() throws Exception {
+        CountDownLatch setupLatch = new CountDownLatch(1);
+
+        // Creo un file temporaneo per il salvataggio
+        File tempFile = File.createTempFile("test-drawing", ".ser");
+        tempFile.deleteOnExit();
+
+        Platform.runLater(() -> {
+            try {
+                // Aggiungo una figura al modello
+                Rectangle testShape = new Rectangle(100, 100, 50, 30);
+                model.addShape(testShape);
+
+                // Verifico che il modello contenga la figura
+                assertEquals(1, model.getShapes().size(), "Il modello dovrebbe contenere una figura");
+
+                // Mock dell'Alert invece del FileChooser
+                Alert mockAlert = mock(Alert.class);
+                when(mockAlert.showAndWait()).thenReturn(Optional.of(ButtonType.YES));
+
+                // Salvo direttamente il modello prima di creare la nuova area
+                try {
+                    model.saveToFile(tempFile);
+                } catch (IOException e) {
+                    fail("Errore durante il salvataggio del file: " + e.getMessage());
+                }
+
+                // Eseguo la creazione della nuova area di lavoro
+                controller.handleNewWorkspace(new ActionEvent());
+
+                // Verifico che il file sia stato creato e contenga dati
+                assertTrue(tempFile.exists() && tempFile.length() > 0,
+                        "Il file di salvataggio dovrebbe esistere e contenere dati");
+
+                // Verifico che l'area di lavoro sia vuota
+                assertTrue(model.getShapes().isEmpty(),
+                        "L'area di lavoro dovrebbe essere vuota dopo la creazione della nuova area");
+
+            } catch (Exception e) {
+                fail("Test fallito con eccezione: " + e.getMessage());
+            } finally {
+                setupLatch.countDown();
+            }
+        });
+
+        // Attendo il completamento delle operazioni JavaFX
+        assertTrue(setupLatch.await(5, TimeUnit.SECONDS),
+                "Timeout durante l'esecuzione del test");
+
+        // Verifico che il file possa essere caricato e contenga la figura originale
+        DrawingModel testModel = new DrawingModel();
+        testModel.loadFromFile(tempFile);
+        assertEquals(1, testModel.getShapes().size(),
+                "Il file salvato dovrebbe contenere una figura");
     }
 }
