@@ -19,19 +19,16 @@ public class ZoomHandler {
 
     private double currentZoomFactor = ZOOM_100;
     private final DrawingController drawingController;
-    private final Canvas canvas;
 
     /**
      * Costruttore per ZoomHandler.
      * @param controller Il DrawingController principale dell'applicazione.
-     * @param canvas Il Canvas su cui verrà applicato lo zoom.
      */
-    public ZoomHandler(DrawingController controller, Canvas canvas) {
-        if (controller == null || canvas == null) {
+    public ZoomHandler(DrawingController controller) {
+        if (controller == null) {
             throw new IllegalArgumentException("DrawingController e Canvas non possono essere nulli.");
         }
         this.drawingController = controller;
-        this.canvas = canvas;
     }
 
     /**

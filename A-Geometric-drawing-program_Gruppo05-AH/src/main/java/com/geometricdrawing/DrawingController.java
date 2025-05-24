@@ -122,7 +122,7 @@ public class DrawingController {
             setModel(this.model); // Imposta il modello e aggiunge listener
 
             this.fileOperationContext = new FileOperationContext(this);
-            this.zoomHandler = new ZoomHandler(this, drawingCanvas);
+            this.zoomHandler = new ZoomHandler(this);
 
             // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -778,9 +778,7 @@ public class DrawingController {
 
         // Nasconde la label dopo 2 secondi (o quanto preferisci)
         PauseTransition delay = new PauseTransition(Duration.seconds(1));
-        delay.setOnFinished(event -> {
-            cutCopyLabel.setVisible(false);
-        });
+        delay.setOnFinished(event -> cutCopyLabel.setVisible(false));
         delay.play();
     }
 
@@ -893,7 +891,6 @@ public class DrawingController {
                     // Procede direttamente con la creazione della nuova area
                     createNewWorkspace();
                 }
-                // Se l'utente preme Annulla, non fa nulla
             });
         } else {
             // Se non ci sono figure, crea direttamente una nuova area di lavoro

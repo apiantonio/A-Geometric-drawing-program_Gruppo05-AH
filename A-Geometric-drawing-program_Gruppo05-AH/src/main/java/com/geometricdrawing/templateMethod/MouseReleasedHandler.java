@@ -17,15 +17,16 @@ public class MouseReleasedHandler extends AbstractMouseHandler {
     @Override
     protected void preProcess(MouseEvent event) {
         currentShape = controller.getCurrentShape();
+        if (currentShape != null && controller.isDragging()) {
+            // Usa le coordinate attuali della figura come posizione finale
+            x = currentShape.getX();
+            y = currentShape.getY();
+        }
     }
 
     @Override
     protected void processEvent(MouseEvent event) {
         if (currentShape != null && controller.isDragging()) {
-            // Usa le coordinate attuali della figura come posizione finale
-            x = currentShape.getX();
-            y = currentShape.getY();
-
             // Crea il comando usando la posizione iniziale del drag e la posizione finale della figura
             MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentShape, x, y);
 
@@ -36,7 +37,7 @@ public class MouseReleasedHandler extends AbstractMouseHandler {
         }
     }
 
-        @Override
+    @Override
     protected void postProcess(MouseEvent event) {
         controller.resetDrag(); // resetta il dragging
         canvas.setCursor(Cursor.DEFAULT);
