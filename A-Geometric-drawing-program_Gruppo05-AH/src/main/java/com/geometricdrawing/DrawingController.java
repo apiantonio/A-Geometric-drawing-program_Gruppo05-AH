@@ -10,6 +10,7 @@ import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
+import javafx.animation.PauseTransition;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -34,6 +35,7 @@ import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
 
 import javafx.stage.Window;
+import javafx.util.Duration;
 
 import java.util.function.UnaryOperator;
 
@@ -58,9 +60,13 @@ public class DrawingController {
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
     @FXML private Spinner<Double> widthSpinner;
+    // aggiunte per la gestione degli appunti e migliorare la user experience
+    @FXML private Label cutCopyLabel;
+    @FXML private Label emptyClipboardLabel;
 
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
+    private boolean firstTime = true;   // per gestire la non comparsa della label appunti svuotati all'avvio
 
     // Costanti per la selezione e l'evidenziazione
     private static final double HANDLE_RADIUS = 3.0; // Raggio maniglie di selezione
@@ -170,6 +176,7 @@ public class DrawingController {
             borderPicker.setValue(Color.ORANGE);
 
             updateControlState(null); // Imposta stato iniziale controlli UI
+            firstTime = false; // Dopo il primo avvio la label Appunti svuotati deve essere visibile quando Incolla viene disabilitato
 
             // Gestione focus e scorciatoie da tastiera
             rootPane.setFocusTraversable(true);
@@ -649,7 +656,19 @@ public class DrawingController {
         if (cutButton != null) cutButton.setDisable(!enableCut);
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
-        if (pasteButton != null) pasteButton.setDisable(!enablePaste);
+
+        // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
+        if (pasteButton != null) {
+            boolean wasEnabled = !pasteButton.isDisabled(); // com'era prima
+            pasteButton.setDisable(!enablePaste);           // aggiorna stato
+
+            // Se prima era abilitato e ora è disabilitato, mostra label
+            if (!firstTime && wasEnabled && !enablePaste) {
+                showClipboardEmptyLabel();
+            }
+        }
+
+
 
         if (shapeMenu != null) {
             shapeMenu.getItems().stream()
@@ -745,8 +764,36 @@ public class DrawingController {
         if (currentShape != null && commandManager != null && clipboardManager != null) {
             CopyShapeCommand copyCmd = new CopyShapeCommand(currentShape, clipboardManager);
             commandManager.executeCommand(copyCmd);
+            showCutCopyLabel();
             updatePasteControlsState(); // Aggiorna disponibilità Incolla
         }
+    }
+
+    /**
+     * Mostra una label temporanea (1 sec)
+     * per indicare la corretta esecuzione delle operazioni di Taglia/Copia.
+     */
+    public void showCutCopyLabel() {
+        cutCopyLabel.setVisible(true);
+
+        // Nasconde la label dopo 2 secondi (o quanto preferisci)
+        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        delay.setOnFinished(event -> {
+            cutCopyLabel.setVisible(false);
+        });
+        delay.play();
+    }
+
+    /**
+     * Mostra una label temporanea (1 sec)
+     * per indicare che la sezione appunti è stata svuotata post undo
+     */
+    private void showClipboardEmptyLabel() {
+        emptyClipboardLabel.setVisible(true);
+
+        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        delay.setOnFinished(event -> emptyClipboardLabel.setVisible(false));
+        delay.play();
     }
 
     /**
