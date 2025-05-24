@@ -22,19 +22,19 @@ public class DrawingModel {
         this.shapes = FXCollections.observableArrayList();
     }
 
-    public void addShape(AbstractShape s) {
-        if (s != null) {
-            s.setZ(shapes.size()); // La nuova figura ha lo Z più alto
-            this.shapes.add(s);
+    public void addShape(AbstractShape shape) {
+        if (shape != null) {
+            shape.setZ(shapes.size()); // La nuova figura ha lo Z più alto
+            this.shapes.add(shape);
         }
     }
 
     /**
      * @param s rimuove una figura dalla lista delle figure del modello
      */
-    public void removeShape(AbstractShape s) {
-        if (s != null) {
-            this.shapes.remove(s);
+    public void removeShape(AbstractShape shape) {
+        if (shape != null) {
+            this.shapes.remove(shape);
         }
     }
 
@@ -74,13 +74,17 @@ public class DrawingModel {
      */
     public void bringToForeground(AbstractShape shape) {
         if (shape != null && shapes.contains(shape)) {
-            shapes.remove(shape);
-            shapes.add(shape);
+            int oldZ = shape.getZ(); // leggiamo il vecchio Z della figura
 
-            // Tutti gli Z-order vanno scalati in relazione alla figura spostata in primo piano
-            for (int i = 0; i < shapes.size(); i++) {
-                shapes.get(i).setZ(shapes.size() - 1 - i);
+            // Tutti gli Z delle figure sopra si devono scalare di 1
+            for (AbstractShape s : shapes) {
+                if (s.getZ() > oldZ) {
+                    s.setZ(s.getZ() - 1);
+                }
             }
+
+            removeShape(shape);
+            addShape(shape);    // così lo Z della figura viene automaticamente aggiornato a quello più alto
         }
     }
 
