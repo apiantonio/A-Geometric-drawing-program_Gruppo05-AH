@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -362,5 +363,56 @@ public class SaveLoadIntegrationTest {
         assertNotNull(exceptionOccurred.get(), "Una IOException era attesa per file non esistente.");
         assertTrue(exceptionOccurred.get() instanceof IOException);
         assertTrue(testModel.getShapes().isEmpty(), "Il modello dovrebbe rimanere vuoto dopo tentativo di caricamento fallito.");
+    }
+
+    @Test
+    @DisplayName("Creazione di una nuova area di lavoro quando il disegno corrente è vuoto")
+    void testNewWorkspace_EmptyDrawing() throws Exception {
+        // Verifica che il disegno sia vuoto inizialmente
+        assertTrue(model.getShapes().isEmpty());
+
+        runOnFxThreadAndWait(() -> {
+            controller.handleNewWorkspace(new ActionEvent());
+        });
+
+        // Verifica che il model sia ancora vuoto
+        assertTrue(model.getShapes().isEmpty());
+        // Verifica che non ci sia una forma selezionata
+        assertNull(getPrivateField(controller, "currentShape"));
+        // Verifica che non ci sia una factory attiva
+        assertNull(getPrivateField(controller, "currentShapeFactory"));
+    }
+
+    @Test
+    @DisplayName("Creazione di una nuova area di lavoro con disegno esistente senza salvare")
+    void testNewWorkspace_ExistingDrawingNoSave() throws Exception {
+        // Crea alcune forme nel disegno
+        insertAndGetSelectedShapeFromController("Rectangle", 50, 50, Color.RED, Color.BLACK);
+        insertAndGetSelectedShapeFromController("Ellipse", 150, 150, Color.BLUE, Color.GREEN);
+
+        assertEquals(2, model.getShapes().size(), "Il disegno dovrebbe contenere 2 forme");
+
+        // Simula la scelta "Non salvare" nella dialog
+        Platform.runLater(() -> {
+            // Ottiene tutti gli Alert aperti
+            for (javafx.stage.Window window : javafx.stage.Window.getWindows()) {
+                if (window instanceof javafx.stage.Stage && ((javafx.stage.Stage) window).getScene() != null &&
+                    ((javafx.stage.Stage) window).getScene().getRoot() instanceof javafx.scene.control.DialogPane) {
+                    javafx.scene.control.Dialog<javafx.scene.control.ButtonType> dialog = (javafx.scene.control.Dialog<javafx.scene.control.ButtonType>) ((javafx.stage.Stage) window).getScene().getRoot().getProperties().get("dialog");
+                    // Simula click su "Non salvare"
+                    dialog.setResult(javafx.scene.control.ButtonType.NO);
+                }
+            }
+        });
+
+        runOnFxThreadAndWait(() -> {
+            controller.handleNewWorkspace(new ActionEvent());
+        });
+
+        // Verifica che il modello sia stato svuotato
+        assertTrue(model.getShapes().isEmpty(), "Il model dovrebbe essere vuoto dopo la creazione di una nuova area");
+        // Verifica reset stato controller
+        assertNull(getPrivateField(controller, "currentShape"), "Non dovrebbe esserci una forma selezionata");
+        assertNull(getPrivateField(controller, "currentShapeFactory"), "Non dovrebbe esserci una factory attiva");
     }
 }
