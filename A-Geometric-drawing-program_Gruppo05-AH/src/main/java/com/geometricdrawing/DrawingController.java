@@ -50,6 +50,10 @@ public class DrawingController {
     @FXML private Button deleteButton;
     @FXML private Button copyButton;
     @FXML private Button pasteButton;
+    @FXML private Button undoButton;
+    @FXML private Button cutButton;
+    @FXML private Button foregroundButton;
+    @FXML private Button backgroundButton;
     @FXML private ColorPicker fillPicker;
     @FXML private ColorPicker borderPicker;
     @FXML private Spinner<Double> heightSpinner;
@@ -215,28 +219,38 @@ public class DrawingController {
      */
     private void createShapeContextMenu(){
         shapeMenu = new ContextMenu();
-        MenuItem deleteItem = new MenuItem("Elimina");
         MenuItem copyItem = new MenuItem("Copia");
-        MenuItem pasteOffsetItem = new MenuItem("Incolla"); // "Incolla" semplice implica con offset
+        MenuItem pasteOffsetItem = new MenuItem("Incolla"); // Incolla con offset
+        MenuItem deleteItem = new MenuItem("Elimina");
+        MenuItem foregroundItem = new MenuItem("Porta in primo piano");
+        MenuItem backgroundItem = new MenuItem("Porta in secondo piano");
 
         // Azioni per le voci di menu
         deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
         copyItem.setOnAction(e -> handleCopyShape(new ActionEvent()));
-        pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent())); // Chiama incolla con offset di default
+        pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
+        foregroundItem.setOnAction(e -> handleForegroundShape(new ActionEvent()));
+        backgroundItem.setOnAction(e -> handleBackgroundShape(new ActionEvent()));
 
         // Icone per le voci di menu
         ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
-        delimg.setFitHeight(16); delimg.setFitWidth(16);
+        delimg.setFitHeight(20); delimg.setFitWidth(20);
         ImageView copyimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/copyCtxMenu.png")));
-        copyimg.setFitHeight(15); copyimg.setFitWidth(15);
-        ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png")));
-        pasteimg.setFitHeight(15); pasteimg.setFitWidth(15);
+        copyimg.setFitHeight(18); copyimg.setFitWidth(18);
+        ImageView pasteimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/pasteCxtMenu.png")));
+        pasteimg.setFitHeight(22); pasteimg.setFitWidth(22);
+        ImageView forgrndimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/foreground.png")));
+        forgrndimg.setFitHeight(20); forgrndimg.setFitWidth(20);
+        ImageView backgrndimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/background.png")));
+        backgrndimg.setFitHeight(20); backgrndimg.setFitWidth(20);
 
         deleteItem.setGraphic(delimg);
         copyItem.setGraphic(copyimg);
         pasteOffsetItem.setGraphic(pasteimg);
+        foregroundItem.setGraphic(forgrndimg);
+        backgroundItem.setGraphic(backgrndimg);
 
-        shapeMenu.getItems().addAll(deleteItem, copyItem, pasteOffsetItem);
+        shapeMenu.getItems().addAll(copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem);
     }
 
     /**
@@ -245,9 +259,9 @@ public class DrawingController {
     private void createCanvasContextMenu() {
         canvasContextMenu = new ContextMenu();
         MenuItem pasteHereItem = new MenuItem("Incolla qui"); // Voce per incollare alle coordinate del click
-        ImageView pasteCanvasImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/incolla.png"))); // Riutilizza icona
-        pasteCanvasImg.setFitHeight(15);
-        pasteCanvasImg.setFitWidth(15);
+        ImageView pasteCanvasImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/pasteCxtMenu.png"))); // Riutilizza icona
+        pasteCanvasImg.setFitHeight(20);
+        pasteCanvasImg.setFitWidth(20);
         pasteHereItem.setGraphic(pasteCanvasImg);
 
         pasteHereItem.setOnAction(e -> {
@@ -558,55 +572,70 @@ public class DrawingController {
         boolean enableFillPicker = false;
         boolean enableBorderPicker = false;
         boolean enableDelete = false;
+        boolean enablePaste = false;
         boolean enableCopy = false;
+        boolean enableCut = false;
+        boolean enableForeground = false;
+        boolean enableBackground = false;
 
-        currentShape = shape; // Aggiorna la figura corrente del controller
+        currentShape = shape;
 
-        if (shape != null) { // Se una figura è selezionata
-            AbstractShape baseShape = getBaseShape(shape);
-            enableWidth = true;  // Larghezza sempre modificabile
-            enableDelete = true; // Cancellazione sempre possibile
-            enableCopy = true;   // Copia sempre possibile
-
-            enableBorderPicker = true; // Colore bordo sempre modificabile per figura selezionata
-
-            if (!(baseShape instanceof Line)) { // Se non è una linea (cioè Rettangolo o Ellisse)
-                enableHeight = true;       // Altezza modificabile
-                enableFillPicker = true;   // Riempimento possibile
-            } else { // È una Linea
-                enableHeight = false;      // Altezza non direttamente modificabile per linea
-                enableFillPicker = false;  // Nessun riempimento per linea
+        // Per gestire il comando di annullamento (undo)
+        if (commandManager != null) {
+            // Verifico se ci sono comandi nello stack
+            boolean hasUndoableCommands = !commandManager.getCommandStack().isEmpty();
+            if (undoButton != null) {
+                undoButton.setDisable(!hasUndoableCommands);
             }
-        } else { // Nessuna figura selezionata
-            // Se una factory è attiva (si sta per creare una nuova figura)
+        }
+
+        // Controllo contenuto appunti per Incolla
+        if (clipboardManager != null) {
+            enablePaste = clipboardManager.hasContent();
+        }
+
+        // se c'è una figura selezionata
+        if (shape != null) {
+            // capisci il tipo di figura SENZA decorator per gestire riempimento e altezza (che dovrebbero essere disabilitati)
+            AbstractShape baseShape = getBaseShape(shape);
+            enableWidth = true;
+            enableDelete = true;
+            enableCopy = true;
+            enableCut = true;
+            enableBackground = true;
+            enableForeground = true;
+            enableBorderPicker = true;
+
+            if (!(baseShape instanceof Line)) {
+                enableHeight = true;
+                enableFillPicker = true;
+            }
+        } else {
+            // La figura non è selezionata, ma stai procedendo alla creazione di una nuova figura
             if (currentShapeFactory != null) {
                 if (currentShapeFactory instanceof LineFactory) {
-                    enableFillPicker = false; // No fill per la nuova linea
-                    enableBorderPicker = true; // Sì border per la nuova linea
-                } else { // Factory per Rettangolo o Ellisse
+                    enableFillPicker = false;
+                    enableBorderPicker = true;
+                } else {
                     enableFillPicker = true;
                     enableBorderPicker = true;
                 }
-                // Width/Height spinners per nuove figure sono disabilitati (usano default)
-                enableWidth = false;
-                enableHeight = false;
-            } else { // Nessuna figura selezionata e nessuna factory attiva
-                enableFillPicker = false;
-                enableBorderPicker = false;
                 enableWidth = false;
                 enableHeight = false;
             }
         }
 
-        // Applica stati ai controlli UI
+        // Imposta lo stato dei controlli
         if (widthSpinner != null) widthSpinner.setDisable(!enableWidth);
         if (heightSpinner != null) heightSpinner.setDisable(!enableHeight);
         if (fillPicker != null) fillPicker.setDisable(!enableFillPicker);
         if (borderPicker != null) borderPicker.setDisable(!enableBorderPicker);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
         if (copyButton != null) copyButton.setDisable(!enableCopy);
-
-        updatePasteControlsState(); // Aggiorna stato controlli Incolla
+        if (cutButton != null) cutButton.setDisable(!enableCut);
+        if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
+        if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
+        if (pasteButton != null) pasteButton.setDisable(!enablePaste);
     }
 
     /**
@@ -648,6 +677,21 @@ public class DrawingController {
             updateControlState(null); // Aggiorna UI
             redrawCanvas();
         }
+    }
+
+    @FXML
+    public void handleForegroundShape(ActionEvent event) {
+        if (currentShape != null && model != null && commandManager != null) {
+            if(shapeMenu != null) shapeMenu.hide(); // Nasconde il menu contestuale se risulta aperto
+
+            BringToForegroundCommand cmd = new BringToForegroundCommand(model, currentShape);
+            commandManager.executeCommand(cmd);
+            redrawCanvas();
+        }
+    }
+
+    @FXML
+    public void handleBackgroundShape(ActionEvent event) {
     }
 
     /**
