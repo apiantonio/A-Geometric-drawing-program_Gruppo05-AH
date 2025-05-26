@@ -1082,7 +1082,6 @@ public class DrawingController {
         exit.exit();
     }
 
-
     // --- Metodi Getter e Setter usati principalmente dai gestori eventi o per test ---
     public Window getWindow() { return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null; }
 

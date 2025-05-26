@@ -13,17 +13,21 @@ public class ChangeBorderColorCommand implements Command {
     public ChangeBorderColorCommand(DrawingModel model, BorderColorDecorator decorator, Color newColor) {
         this.model = model;
         this.decorator = decorator;
-        this.oldColor = decorator.getBorderColor();
+        this.oldColor = decorator != null ? decorator.getBorderColor() : null;
         this.newColor = newColor;
     }
 
     @Override
     public void execute() {
-        model.setBorderColor(decorator, newColor);
+        if (model != null) {
+            model.setBorderColor(decorator, newColor);
+        }
     }
 
     @Override
     public void undo() {
-        model.setBorderColor(decorator, oldColor);
+        if (model != null) {
+            model.setBorderColor(decorator, oldColor);
+        }
     }
 }

@@ -13,17 +13,21 @@ public class ChangeFillColorCommand implements Command {
     public ChangeFillColorCommand(DrawingModel model, FillColorDecorator decorator, Color newColor) {
         this.model = model;
         this.decorator = decorator;
-        this.oldColor = decorator.getFillColor();
+        this.oldColor = decorator != null ? decorator.getFillColor() : null;
         this.newColor = newColor;
     }
 
     @Override
     public void execute() {
-        model.setFillColor(decorator, newColor);
+        if (model != null) {
+            model.setFillColor(decorator, newColor);
+        }
     }
 
     @Override
     public void undo() {
-        model.setFillColor(decorator, oldColor);
+        if (model != null) {
+            model.setFillColor(decorator, oldColor);
+        }
     }
 }

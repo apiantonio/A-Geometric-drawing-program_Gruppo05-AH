@@ -64,7 +64,7 @@ public class NewWorkspace {
     /**
      * Crea una nuova area di lavoro vuota
      */
-    private void createNewWorkspace() {
+    protected void createNewWorkspace() {
         // Resetta il modello
         controller.getModel().clear();
 
@@ -76,5 +76,9 @@ public class NewWorkspace {
         controller.updateControlState(null);
         controller.updateSpinners(null);
         controller.redrawCanvas();
+    }
+
+    public DrawingController getDrawingController() {
+        return controller;
     }
 }

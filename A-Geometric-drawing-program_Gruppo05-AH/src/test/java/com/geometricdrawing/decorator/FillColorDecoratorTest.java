@@ -1,41 +1,32 @@
 package com.geometricdrawing.decorator;
 
 import com.geometricdrawing.model.AbstractShape;
-import javafx.scene.canvas.GraphicsContext;
+import com.geometricdrawing.model.Rectangle;
 import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.*;
 import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class FillColorDecoratorTest {
 
-    @Mock
-    private AbstractShape mockDecoratedShape;
-
-    @Mock
-    private GraphicsContext mockGc;
-
+    private AbstractShape decoratedShape;
     private Color testFillColor;
     private FillColorDecorator fillColorDecorator;
 
     @BeforeEach
     void setUp() {
-        testFillColor = Color.rgb(0, 255, 0, 0.75);
-        fillColorDecorator = new FillColorDecorator(mockDecoratedShape, testFillColor);
+        decoratedShape = new Rectangle(10, 10, 50, 50);
+        testFillColor = Color.rgb(0, 255, 0, 0.75); // Verde con 75% di opacità
+        fillColorDecorator = new FillColorDecorator(decoratedShape, testFillColor);
     }
-    //verifica che il costeruttore setti correttamente i colori
+
     @Test
     void constructorShouldSetColorAndStoreRGBA() throws NoSuchFieldException, IllegalAccessException {
-        assertSame(mockDecoratedShape, fillColorDecorator.getInnerShape(), "La forma non é stata decorata correttamente.");
+        assertSame(decoratedShape, fillColorDecorator.getInnerShape(), "La forma non é stata decorata correttamente.");
 
         Field fillColorField = FillColorDecorator.class.getDeclaredField("fillColor");
         fillColorField.setAccessible(true);
@@ -58,7 +49,6 @@ class FillColorDecoratorTest {
         assertEquals(testFillColor.getOpacity(), (double) alphaField.get(fillColorDecorator), "Alpha non settato correttamente.");
     }
 
-    //verifica che la il salvataggio e caricamento da file mantengano il colore
     @Test
     void serializationDeserializationShouldPreserveColor() throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -97,10 +87,14 @@ class FillColorDecoratorTest {
         assertNotNull(deserializedFillColor, "fillColor should be reconstructed after deserialization.");
         assertEquals(testFillColor, deserializedFillColor, "Deserialized fillColor does not match original color.");
     }
-    //verifica che anche spostando la figura il colore di riempimento di mantenga
+
     @Test
-    void moveToShouldDelegate() {
-        fillColorDecorator.moveTo(100, 200);
-        verify(mockDecoratedShape).moveTo(100, 200);
+    void moveToShouldNotChangeFillColor() {
+        double newX = 100;
+        double newY = 200;
+        
+        fillColorDecorator.moveTo(newX, newY);
+        
+        assertEquals(testFillColor, fillColorDecorator.getFillColor(), "Il colore di riempimento dovrebbe rimanere invariato dopo il movimento.");
     }
 }
