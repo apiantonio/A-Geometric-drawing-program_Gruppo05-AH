@@ -133,7 +133,7 @@ class ExitTest {
 
             // Verifica le interazioni con il controller e il contesto di file
             verify(drawingControllerMock).getFileOperationContext();
-            verify(fileOperationContextMock).executeSave(isA(SerializedSaveStrategy.class));
+            verify(fileOperationContextMock).executeSave();
             // Verifica che Platform.exit() sia stato chiamato una volta
             platformMockedStatic.verify(Platform::exit, times(1));
         }
@@ -150,7 +150,7 @@ class ExitTest {
             // Assert
             verify(alertMockInstance).showAndWait(); // L'alert viene comunque mostrato
             verify(drawingControllerMock).getFileOperationContext(); // Il contesto viene richiesto
-            verify(fileOperationContextMock, never()).executeSave(any()); // Ma non si salva
+            verify(fileOperationContextMock, never()).executeSave(); // Ma non si salva
             platformMockedStatic.verify(Platform::exit, never()); // E non si esce da questo specifico percorso logico
         }
     }
@@ -161,7 +161,7 @@ class ExitTest {
             exitUnderTest.exit();
 
             verify(alertMockInstance).showAndWait();
-            verify(fileOperationContextMock, never()).executeSave(any());
+            verify(fileOperationContextMock, never()).executeSave();
             platformMockedStatic.verify(Platform::exit, times(1));
         }
     }
@@ -172,7 +172,7 @@ class ExitTest {
             exitUnderTest.exit();
 
             verify(alertMockInstance).showAndWait();
-            verify(fileOperationContextMock, never()).executeSave(any());
+            verify(fileOperationContextMock, never()).executeSave();
             platformMockedStatic.verify(Platform::exit, never());
         }
     }
