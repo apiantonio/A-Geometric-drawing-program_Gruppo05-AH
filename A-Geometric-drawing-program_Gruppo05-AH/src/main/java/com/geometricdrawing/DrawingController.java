@@ -10,6 +10,7 @@ import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
+import javafx.application.Platform;
 import javafx.animation.PauseTransition;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
@@ -36,6 +37,7 @@ import com.geometricdrawing.model.AbstractShape;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -81,7 +83,6 @@ public class DrawingController {
     private ClipboardManager clipboardManager; // Gestore appunti per copia/incolla
     private FileOperationContext fileOperationContext; // Contesto per operazioni su file (salva/carica)
     private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
-    private NewWorkspace newWorkspace; // Gestore per nuove aree di lavoro
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -116,14 +117,13 @@ public class DrawingController {
             gc = drawingCanvas.getGraphicsContext2D();
             // Inizializza componenti mancanti
             if (this.model == null) this.model = new DrawingModel();
-            setModel(this.model); // Imposta il modello e aggiunge listener
-
             if (this.commandManager == null) this.commandManager = new CommandManager();
             if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager();
 
+            setModel(this.model); // Imposta il modello e aggiunge listener
+
             this.fileOperationContext = new FileOperationContext(this);
-            this.zoomHandler = new ZoomHandler(this);
-            this.newWorkspace = new NewWorkspace(this);
+            this.zoomHandler = new ZoomHandler(this, drawingCanvas);
 
             // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -710,7 +710,7 @@ public class DrawingController {
     @FXML
     public void handleDeleteShape(ActionEvent event) {
         if (currentShape != null && model != null && commandManager != null) {
-            if (shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
+            if(shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
             DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
             commandManager.executeCommand(deleteCmd);
             setCurrentShape(null); // Deseleziona la figura
@@ -779,7 +779,9 @@ public class DrawingController {
 
         // Nasconde la label dopo 2 secondi (o quanto preferisci)
         PauseTransition delay = new PauseTransition(Duration.seconds(1));
-        delay.setOnFinished(event -> cutCopyLabel.setVisible(false));
+        delay.setOnFinished(event -> {
+            cutCopyLabel.setVisible(false);
+        });
         delay.play();
     }
 
@@ -1043,16 +1045,41 @@ public class DrawingController {
     }
 
     // --- Gestori per i bottoni del menu File e Zoom ---
-    @FXML public void handleSaveSerialized(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new SerializedSaveStrategy()); }
-    @FXML public void handleLoadSerialized(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeLoad(new SerializedLoadStrategy()); }
-    @FXML public void handleSaveAsPng(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new PngSaveStrategy()); }
-    @FXML public void handleSaveAsPdf(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new PdfSaveStrategy()); }
+    @FXML public void handleSaveSerialized(ActionEvent event) {
+        if (fileOperationContext != null) {
+            fileOperationContext.setStrategySave(new SerializedSaveStrategy() {
+            });
+            fileOperationContext.executeSave();
+        }
+    }
+    @FXML public void handleLoadSerialized(ActionEvent event) {
+        if (fileOperationContext != null){
+            fileOperationContext.setStrategyLoad(new SerializedLoadStrategy() {});
+            fileOperationContext.executeLoad();
+        } }
+    @FXML public void handleSaveAsPng(ActionEvent event) {
+        if (fileOperationContext != null){
+            fileOperationContext.setStrategySave(new PngSaveStrategy() {});
+            fileOperationContext.executeSave();
+        } }
+    @FXML public void handleSaveAsPdf(ActionEvent event) {
+        if (fileOperationContext != null){
+            fileOperationContext.setStrategySave(new PdfSaveStrategy() {});
+            fileOperationContext.executeSave();
+        } }
 
     @FXML private void handleZoom25() { if (zoomHandler != null) zoomHandler.setZoom25(); }
     @FXML private void handleZoom50() { if (zoomHandler != null) zoomHandler.setZoom50(); }
     @FXML private void handleZoom75() { if (zoomHandler != null) zoomHandler.setZoom75(); }
     @FXML private void handleZoom100() { if (zoomHandler != null) zoomHandler.setZoom100(); }
     @FXML private void handleZoom150() { if (zoomHandler != null) zoomHandler.setZoom150(); }
+
+    @FXML
+    private void handleCloseFile() {
+        Exit exit = new Exit(this);
+        exit.exit();
+        }
+
 
     // --- Metodi Getter e Setter usati principalmente dai gestori eventi o per test ---
     public Window getWindow() { return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null; }
@@ -1120,9 +1147,16 @@ public class DrawingController {
     public Spinner<Double> getHeightSpinner() { return heightSpinner; }
     public Spinner<Double> getWidthSpinner() { return widthSpinner; }
 
-    public ZoomHandler getZoomHandler() { return zoomHandler; }
-
-    public FileOperationContext getFileOperationContext() {
-        return this.fileOperationContext;
+    public ShapeFactory getCurrentShapeFactory() { return currentShapeFactory; }
+    /** Imposta la factory per la creazione di nuove figure e aggiorna il cursore. */
+    public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
+        this.currentShapeFactory = currentShapeFactory;
+        if (this.currentShapeFactory == null && drawingCanvas != null) {
+            drawingCanvas.setCursor(Cursor.DEFAULT); // Cursore default se nessuna factory
+        } else if (this.currentShapeFactory != null && drawingCanvas != null) {
+            drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cursore a croce se factory attiva
+        }
     }
+    public ZoomHandler getZoomHandler() { return zoomHandler; }
+    public FileOperationContext getFileOperationContext() { return fileOperationContext; }
 }

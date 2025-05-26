@@ -13,6 +13,8 @@ import java.io.IOException;
 public class FileOperationContext {
 
     private final DrawingController controller;
+    private LoadStrategy loadStrategy;
+    private SaveStrategy saveStrategy;
 
     public FileOperationContext(DrawingController controller) {
         if (controller == null) {
@@ -20,8 +22,14 @@ public class FileOperationContext {
         }
         this.controller = controller;
     }
+    public void setStrategySave(SaveStrategy saveStrategy) {
+        this.saveStrategy = saveStrategy;
+    }
+    public void setStrategyLoad(LoadStrategy loadStrategy) {
+        this.loadStrategy = loadStrategy;
+    }
 
-    public void executeSave(SaveStrategy saveStrategy) {
+    public void executeSave() {
         if (saveStrategy == null) {
             System.err.println("Strategia di salvataggio non fornita al contesto.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Strategia di salvataggio non specificata.");
@@ -73,7 +81,7 @@ public class FileOperationContext {
         }
     }
 
-    public void executeLoad(LoadStrategy loadStrategy) {
+    public void executeLoad() {
         if (loadStrategy == null) {
             System.err.println("Strategia di caricamento non fornita al contesto.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Strategia di caricamento non specificata.");

@@ -5,51 +5,40 @@ import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Rectangle; // Usa una forma concreta
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 
-@ExtendWith(MockitoExtension.class)
+
 class ChangeHeightCommandTest {
 
-    @Mock
-    private DrawingModel mockDrawingModel;
-
+    private DrawingModel drawingModel;
     private AbstractShape shapeToResize;
     private double newHeight;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
+        drawingModel = new DrawingModel(); // Usa una vera implementazione
         shapeToResize = new Rectangle(10, 10, 50, 50);
         newHeight = 60.0;
     }
 
     @Test
-    void executeShouldCallSetShapeHeightOnModel() {
-        ChangeHeightCommand command = new ChangeHeightCommand(mockDrawingModel, shapeToResize, newHeight);
+    void executeShouldChangeShapeHeight() {
+        ChangeHeightCommand command = new ChangeHeightCommand(drawingModel, shapeToResize, newHeight);
 
         command.execute();
 
-        verify(mockDrawingModel, times(1)).setShapeHeight(shapeToResize, newHeight);
-        // verifica che l'altezza sia stata cambiata correttamente
+        // Si controlla che l'altezza sia stata davvero modificata
         assertEquals(60.0, shapeToResize.getHeight());
     }
 
     @Test
-    void resetOldHeightShapeWithUndo() {
-        ChangeHeightCommand command = new ChangeHeightCommand(mockDrawingModel, shapeToResize, newHeight);
+    void undoShouldRestoreOldHeight() {
+        ChangeHeightCommand command = new ChangeHeightCommand(drawingModel, shapeToResize, newHeight);
         command.execute();
-
-        // Effettua l'undo per il ripristino dell'altezza di partenza
         command.undo();
 
-        // Verifica che il metodo setShapeHeight sia stato chiamato con l'altezza originale
-        verify(mockDrawingModel, times(1)).setShapeHeight(shapeToResize, shapeToResize.getHeight());
-        // Verifico che l'altezza sia quella di partenza
+        // L'altezza originale è stata ripristinata
         assertEquals(50.0, shapeToResize.getHeight());
     }
 }
