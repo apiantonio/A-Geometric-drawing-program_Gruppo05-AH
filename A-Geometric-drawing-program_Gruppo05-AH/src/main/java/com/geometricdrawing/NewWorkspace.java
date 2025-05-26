@@ -1,5 +1,6 @@
 package com.geometricdrawing;
 
+import com.geometricdrawing.strategy.FileOperationContext;
 import com.geometricdrawing.strategy.SerializedSaveStrategy;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -48,7 +49,9 @@ public class NewWorkspace {
         confirmAlert.showAndWait().ifPresent(result -> {
             if (result == buttonTypeSave) {
                 // Salva il lavoro corrente come serializzato
-                controller.getFileOperationContext().executeSave(new SerializedSaveStrategy());
+                FileOperationContext foc =  controller.getFileOperationContext();
+                foc.setStrategySave(new SerializedSaveStrategy());
+                foc.executeSave();
                 // Procede con la creazione della nuova area solo se il salvataggio è andato a buon fine
                 createNewWorkspace();
             } else if (result == buttonTypeNoSave) {

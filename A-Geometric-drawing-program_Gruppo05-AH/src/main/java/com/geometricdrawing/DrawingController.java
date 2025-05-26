@@ -83,6 +83,7 @@ public class DrawingController {
     private ClipboardManager clipboardManager; // Gestore appunti per copia/incolla
     private FileOperationContext fileOperationContext; // Contesto per operazioni su file (salva/carica)
     private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
+    private NewWorkspace newWorkspace;
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -123,7 +124,8 @@ public class DrawingController {
             setModel(this.model); // Imposta il modello e aggiunge listener
 
             this.fileOperationContext = new FileOperationContext(this);
-            this.zoomHandler = new ZoomHandler(this, drawingCanvas);
+            this.zoomHandler = new ZoomHandler(this);
+            this.newWorkspace = new NewWorkspace(this);
 
             // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -1107,19 +1109,6 @@ public class DrawingController {
         // L'aggiornamento dello stato dei controlli (updateControlState)
         // sarà chiamato da chi invoca setCurrentShape (es. selectShapeAt, handleDeleteShape).
     }
-
-    /**
-     * Imposta la factory per la creazione di nuove figure e aggiorna il cursore.
-     */
-    public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
-        this.currentShapeFactory = currentShapeFactory;
-        if (this.currentShapeFactory == null && drawingCanvas != null) {
-            drawingCanvas.setCursor(Cursor.DEFAULT); // Cursore default se nessuna factory
-        } else if (this.currentShapeFactory != null && drawingCanvas != null) {
-            drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cursore a croce se factory attiva
-        }
-    }
-    public ShapeFactory getCurrentShapeFactory() { return currentShapeFactory; }
 
     public void resetDrag() { startDragX = RESET_DRAG; startDragY = RESET_DRAG; } // Resetta stato trascinamento
     public boolean isDragging() { return startDragX != RESET_DRAG && startDragY != RESET_DRAG; } // Verifica se in trascinamento
