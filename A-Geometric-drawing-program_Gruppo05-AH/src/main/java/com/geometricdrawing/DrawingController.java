@@ -922,12 +922,29 @@ public class DrawingController {
         gc.fillOval(worldX - handleRadiusWorld, worldY - handleRadiusWorld,
                 handleRadiusWorld * 2, handleRadiusWorld * 2); // x, y, larghezza, altezza dell'ovale
     }
-
     // --- Gestori per i bottoni del menu File e Zoom ---
-    @FXML public void handleSaveSerialized(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new SerializedSaveStrategy()); }
-    @FXML public void handleLoadSerialized(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeLoad(new SerializedLoadStrategy()); }
-    @FXML public void handleSaveAsPng(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new PngSaveStrategy()); }
-    @FXML public void handleSaveAsPdf(ActionEvent event) { if (fileOperationContext != null) fileOperationContext.executeSave(new PdfSaveStrategy()); }
+    @FXML public void handleSaveSerialized(ActionEvent event) {
+        if (fileOperationContext != null) {
+            fileOperationContext.setStrategySave(new SerializedSaveStrategy() {
+            });
+            fileOperationContext.executeSave();
+        }
+    }
+    @FXML public void handleLoadSerialized(ActionEvent event) {
+        if (fileOperationContext != null){
+            fileOperationContext.setStrategyLoad(new SerializedLoadStrategy() {});
+            fileOperationContext.executeLoad();
+        } }
+    @FXML public void handleSaveAsPng(ActionEvent event) {
+        if (fileOperationContext != null){
+            fileOperationContext.setStrategySave(new PngSaveStrategy() {});
+            fileOperationContext.executeSave();
+        } }
+    @FXML public void handleSaveAsPdf(ActionEvent event) {
+        if (fileOperationContext != null){
+            fileOperationContext.setStrategySave(new PdfSaveStrategy() {});
+            fileOperationContext.executeSave();
+        } }
 
     @FXML private void handleZoom25() { if (zoomHandler != null) zoomHandler.setZoom25(); }
     @FXML private void handleZoom50() { if (zoomHandler != null) zoomHandler.setZoom50(); }
