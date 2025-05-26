@@ -6,10 +6,13 @@ import com.geometricdrawing.model.Rectangle; // Usa una forma concreta per il te
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 
@@ -18,6 +21,8 @@ class ChangeWidthCommandTest {
 
     @Mock
     private DrawingModel mockDrawingModel;
+    @Captor
+    private ArgumentCaptor<Double> widthCaptor;
 
     private AbstractShape shapeToResize;
     private double newWidth;
@@ -31,14 +36,16 @@ class ChangeWidthCommandTest {
 
     @Test
     void executeShouldCallSetShapeWidthOnModel() {
+        AbstractShape shapeToResize = new Rectangle(10, 10, 50, 50); // Larghezza iniziale 50
+        double newWidth = 75.0;
         ChangeWidthCommand command = new ChangeWidthCommand(mockDrawingModel, shapeToResize, newWidth);
+
         command.execute();
 
-        // Verifica che il metodo setShapeWidth del DrawingModel sia stato chiamato
-        // esattamente una volta con la forma e la nuova larghezza corrette.
-        verify(mockDrawingModel, times(1)).setShapeWidth(shapeToResize, newWidth);
-        // Verifico che la larghezza sia stata cambiata correttamente
-        assertEquals(shapeToResize.getWidth(), 75.0);
+        verify(mockDrawingModel, times(1)).setShapeWidth(eq(shapeToResize), widthCaptor.capture());
+
+        // Asserisci esplicitamente sul valore catturato.
+        assertEquals(newWidth, widthCaptor.getValue(), "Il valore della larghezza passato al modello non è corretto.");
     }
 
     @Test

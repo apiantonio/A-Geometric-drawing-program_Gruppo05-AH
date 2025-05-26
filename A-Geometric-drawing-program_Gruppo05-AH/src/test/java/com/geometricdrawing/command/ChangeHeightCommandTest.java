@@ -6,10 +6,13 @@ import com.geometricdrawing.model.Rectangle; // Usa una forma concreta
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 
@@ -18,25 +21,32 @@ class ChangeHeightCommandTest {
 
     @Mock
     private DrawingModel mockDrawingModel;
+    @Captor
+    private ArgumentCaptor<Double> heightCaptor;
 
     private AbstractShape shapeToResize;
     private double newHeight;
 
     @BeforeEach
-    private void setUp() {
+    public void setUp() {
         shapeToResize = new Rectangle(10, 10, 50, 50);
         newHeight = 60.0;
     }
 
     @Test
     void executeShouldCallSetShapeHeightOnModel() {
+        AbstractShape shapeToResize = new Rectangle(10, 10, 50, 50); // Altezza iniziale 50
+        double newHeight = 60.0;
         ChangeHeightCommand command = new ChangeHeightCommand(mockDrawingModel, shapeToResize, newHeight);
 
         command.execute();
 
-        verify(mockDrawingModel, times(1)).setShapeHeight(shapeToResize, newHeight);
-        // verifica che l'altezza sia stata cambiata correttamente
-        assertEquals(shapeToResize.getHeight(), 60.0);
+        // Verifica che il metodo setShapeHeight sia stato chiamato una volta.
+        // Usa eq() per l'oggetto shape e cattura l'argomento double.
+        verify(mockDrawingModel, times(1)).setShapeHeight(eq(shapeToResize), heightCaptor.capture());
+
+        // Asserisci esplicitamente sul valore catturato.
+        assertEquals(newHeight, heightCaptor.getValue(), "Il valore dell'altezza passato al modello non è corretto.");
     }
 
     @Test
