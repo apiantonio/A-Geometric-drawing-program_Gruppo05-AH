@@ -1,113 +1,80 @@
 package com.geometricdrawing.command;
 
-import com.geometricdrawing.model.AbstractShape;
-import com.geometricdrawing.model.Rectangle;
+import com.geometricdrawing.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
 class CopyShapeCommandTest {
 
-    @Mock
-    private ClipboardManager mockClipboardManager;
-
-    private AbstractShape testShape;
+    private ClipboardManager clipboardManager;
+    private AbstractShape shape;
 
     @BeforeEach
     void setUp() {
-        testShape = new Rectangle(0, 0, 10, 10);
+        clipboardManager = new ClipboardManager();
+        shape = new Rectangle(0, 0, 10, 10);
     }
 
     @Test
-    void executeShouldCallCopyToClipboardOnManager() {
-        CopyShapeCommand copyCommand = new CopyShapeCommand(testShape, mockClipboardManager);
-        copyCommand.execute();
-        verify(mockClipboardManager, times(1)).copyToClipboard(testShape);
-    }
-
-    @Test
-    void executeWithNullShapeShouldNotInteractWithClipboardManager() {
-        CopyShapeCommand copyCommand = new CopyShapeCommand(null, mockClipboardManager);
-        copyCommand.execute();
-        verifyNoInteractions(mockClipboardManager);
-    }
-
-    @Test
-    void executeWithNullClipboardManagerShouldNotThrowExceptionAndDoNothing() { // Nome leggermente modificato
-        CopyShapeCommand copyCommand = new CopyShapeCommand(testShape, null);
-        assertDoesNotThrow(copyCommand::execute);
-        // Non possiamo verificare interazioni su un mock nullo,
-        // ma ci aspettiamo che operationPerformed rimanga false
-    }
-
-    // --- Test per Undo ---
-
-    @Test
-    void undo_afterSuccessfulExecute_shouldClearClipboard() {
-        // Arrange
-        CopyShapeCommand command = new CopyShapeCommand(testShape, mockClipboardManager);
-        // Simula l'esecuzione che popola la clipboard
-        command.execute();
-        // Verifica che execute abbia chiamato copyToClipboard (implicando operationPerformed = true)
-        verify(mockClipboardManager).copyToClipboard(testShape);
-
-        // Act
-        command.undo();
-
-        // Assert
-        // Verifica che clearClipboard sia stato chiamato perché execute ha avuto successo
-        verify(mockClipboardManager, times(1)).clearClipboard();
-    }
-
-    @Test
-    void undo_whenExecuteDidNotPerformOperationDueToNullShape_shouldNotClearClipboard() {
-        // Arrange: shapeToCopy è null, quindi execute() non fa nulla e operationPerformed è false
-        CopyShapeCommand command = new CopyShapeCommand(null, mockClipboardManager);
+    void executeShouldCopyShapeToClipboard() {
+        CopyShapeCommand command = new CopyShapeCommand(shape, clipboardManager);
         command.execute();
 
-        // Verifica che execute non abbia interagito (operationPerformed è false)
-        verifyNoInteractions(mockClipboardManager);
+        AbstractShape fromClipboard = clipboardManager.getFromClipboard();
+        assertNotNull(fromClipboard);   // non deve essere null
+        assertShapesAreEqualButNotSame(shape, fromClipboard);
+    }
 
-        // Act
-        command.undo();
+    // metodo di supporto che verifica che siano uguali ma non lo stesso oggetto
+    static void assertShapesAreEqualButNotSame(AbstractShape expected, AbstractShape actual) {
+        assertNotSame(expected, actual);
+        // devono essere della stessa classe e avere stesse coordinate di partenza
+        assertEquals(expected.getClass(), actual.getClass());
+        assertEquals(expected.getX(), actual.getX());
+        assertEquals(expected.getY(), actual.getY());
 
-        // Assert: undo non dovrebbe fare nulla perché execute non ha fatto nulla
-        // Quindi, clearClipboard non dovrebbe essere stato chiamato.
-        // Poiché non ci sono state interazioni precedenti, verifyNoMoreInteractions è appropriato.
-        verifyNoMoreInteractions(mockClipboardManager);
+       if(expected instanceof Line e && actual instanceof Line a) {
+            assertEquals(e.getEndX(), a.getEndX());
+            assertEquals(e.getEndY(), a.getEndY());
+        } else {
+            assertEquals(expected.getWidth(), actual.getWidth());
+            assertEquals(expected.getHeight(), actual.getHeight());
+        }
+    }
+
+
+    @Test
+    void executeWithNullShapeShouldDoNothing() {
+        CopyShapeCommand command = new CopyShapeCommand(null, clipboardManager);
+        command.execute();
+
+        assertFalse(clipboardManager.hasContent());
     }
 
     @Test
-    void undo_whenExecuteDidNotPerformOperationDueToNullManager_shouldNotThrowAndNotInteract() {
-        // Arrange: clipboardManager è null, quindi execute() non fa nulla e operationPerformed è false
-        CopyShapeCommand command = new CopyShapeCommand(testShape, null);
-        command.execute(); // operationPerformed sarà false
+    void executeWithNullClipboardManagerShouldNotThrow() {
+        CopyShapeCommand command = new CopyShapeCommand(shape, null);
+        assertDoesNotThrow(command::execute);
+    }
 
-        // Act & Assert
+    @Test
+    void undoAfterSuccessfulCopyShouldClearClipboard() {
+        CopyShapeCommand command = new CopyShapeCommand(shape, clipboardManager);
+        command.execute();
+        assertTrue(clipboardManager.hasContent());
+        assertShapesAreEqualButNotSame(shape, clipboardManager.getFromClipboard());
+
+        command.undo();
+        assertFalse(clipboardManager.hasContent());
+    }
+
+    @Test
+    void undoWhenNothingWasCopiedShouldNotThrowOrChangeAnything() {
+        CopyShapeCommand command = new CopyShapeCommand(null, clipboardManager);
+        command.execute();
         assertDoesNotThrow(command::undo);
-        // Non possiamo verificare interazioni su mockClipboardManager perché è null nel comando,
-        // ma ci aspettiamo che non ci siano eccezioni.
+        assertFalse(clipboardManager.hasContent());
     }
-
-
-    @Test
-    void undo_whenClipboardManagerIsNullForUndoButOperationWasPerformed_shouldNotThrowException() {
-
-        ClipboardManager initialManager = mock(ClipboardManager.class); // Un manager valido per execute
-        CopyShapeCommand command = new CopyShapeCommand(testShape, initialManager);
-        command.execute(); // operationPerformed diventa true
-
-        // Questo test verifica che se il clipboardManager è null quando si costruisce il comando,
-        // execute non fa nulla, e undo non fa nulla.
-        CopyShapeCommand commandWithInitiallyNullManager = new CopyShapeCommand(testShape, null);
-        commandWithInitiallyNullManager.execute(); // operationPerformed sarà false
-        assertDoesNotThrow(commandWithInitiallyNullManager::undo); // undo non farà nulla e non lancerà eccezioni
-    }
-
 }

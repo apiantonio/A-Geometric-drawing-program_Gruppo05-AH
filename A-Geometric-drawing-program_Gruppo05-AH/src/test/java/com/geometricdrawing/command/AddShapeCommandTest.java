@@ -1,67 +1,57 @@
 package com.geometricdrawing.command;
 
-import com.geometricdrawing.model.AbstractShape;
-import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Ellipse;
-import com.geometricdrawing.model.Rectangle; // Una forma concreta per il test
+import com.geometricdrawing.model.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 
-@ExtendWith(MockitoExtension.class) // Per usare @Mock
 class AddShapeCommandTest {
 
-    @Mock
-    private DrawingModel mockDrawingModel; // Mock del receiver
+    private DrawingModel drawingModel;
 
-    @Mock
-    private AbstractShape mockShapeToAdd; // Mock della forma da aggiungere
+    @BeforeEach
+    void setUp() {
+        drawingModel = new DrawingModel(); // Usa la vera implementazione
+    }
 
     @Test
     void constructorShouldStoreModelAndShape() {
-        AddShapeCommand command = new AddShapeCommand(mockDrawingModel, mockShapeToAdd);
-        assertNotNull(command); // Verifica base che l'oggetto sia creato
+        AbstractShape shape = new Rectangle(10, 10, 50, 50);
+        AddShapeCommand command = new AddShapeCommand(drawingModel, shape);
+        assertNotNull(command); // Verifica che il comando sia stato istanziato correttamente
     }
 
     @Test
-    void executeShouldCallAddShapeOnModelWithCorrectShape() {
+    void executeShouldAddShapeToModel() {
         AbstractShape rectangle = new Rectangle(10, 10, 50, 50);
-        AddShapeCommand command = new AddShapeCommand(mockDrawingModel, rectangle);
+        AddShapeCommand command = new AddShapeCommand(drawingModel, rectangle);
 
         command.execute();
 
-        // Verifica che il metodo addShape del DrawingModel sia stato chiamato esattamente una volta
-        // e che sia stato chiamato con l'oggetto 'rectangle' corretto.
-        verify(mockDrawingModel, times(1)).addShape(rectangle);
+        assertEquals(1, drawingModel.getShapes().size());
+        assertTrue(drawingModel.getShapes().contains(rectangle));
     }
 
     @Test
-    void executeWithNullShapeShouldCallAddShapeWithNull() {
-        // Questo test verifica come il comando si comporta se, per qualche motivo,
-        // gli viene passata una forma null.
+    void executeWithNullShapeShouldNotThrow() {
+        AddShapeCommand command = new AddShapeCommand(drawingModel, null);
 
-        AddShapeCommand command = new AddShapeCommand(mockDrawingModel, null);
-
-        command.execute();
-
-        verify(mockDrawingModel, times(1)).addShape(null);
+        assertDoesNotThrow(command::execute);
+        assertEquals(0, drawingModel.getShapes().size(), "Nessuna forma dovrebbe essere aggiunta al modello");
     }
 
     @Test
-    void removeCorrectShapeFromModelWithUndo() {
-        // Le prime 5 righe di codice sono di inserimento della figura - abbiamo già testato che funziona correttamente
+    void undoShouldRemoveShapeFromModel() {
         AbstractShape ellipse = new Ellipse(30, 30, 30, 50);
-        AddShapeCommand command = new AddShapeCommand(mockDrawingModel, ellipse);
+        AddShapeCommand command = new AddShapeCommand(drawingModel, ellipse);
+
         command.execute();
-        verify(mockDrawingModel, times(1)).addShape(ellipse); // anche se ridondante si decide di mantenere per chiarezza
+        assertEquals(1, drawingModel.getShapes().size());
+        assertTrue(drawingModel.getShapes().contains(ellipse));
 
         command.undo();
-
-        assertNull(mockDrawingModel.getShapes(), "La forma non dovrebbe essere presente nel model post undo");
+        assertEquals(0, drawingModel.getShapes().size());
+        assertFalse(drawingModel.getShapes().contains(ellipse));
     }
 }
