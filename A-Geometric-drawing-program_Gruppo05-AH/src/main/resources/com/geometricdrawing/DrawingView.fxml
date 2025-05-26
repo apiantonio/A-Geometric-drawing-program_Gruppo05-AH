@@ -27,14 +27,14 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <Pane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
       </Pane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <MenuBar>
+            <MenuBar useSystemMenuBar="true">
                <menus>
                   <Menu mnemonicParsing="false" text="File">
                      <items>
@@ -49,22 +49,22 @@
                            </items>
                         </Menu>
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem mnemonicParsing="false" text="Chiudi" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleCloseFile" text="Chiudi" />
                      </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Visualizza">
                      <items>
                         <Menu mnemonicParsing="false" text="Zoom">
                            <items>
-                              <RadioMenuItem mnemonicParsing="false" text="25%">
+                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom25" text="25%">
                                  <toggleGroup>
                                     <ToggleGroup fx:id="zoomGroup" />
                                  </toggleGroup>
                               </RadioMenuItem>
-                              <RadioMenuItem mnemonicParsing="false" text="50%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" selected="true" text="75%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" text="100%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" text="150%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom50" text="50%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom75" selected="true" text="75%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom100" selected="true" text="100%" toggleGroup="$zoomGroup" />
+                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom150" text="150%" toggleGroup="$zoomGroup" />
                            </items>
                         </Menu>
                      </items>

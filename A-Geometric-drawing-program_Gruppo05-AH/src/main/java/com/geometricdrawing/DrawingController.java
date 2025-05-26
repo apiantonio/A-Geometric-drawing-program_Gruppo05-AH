@@ -10,6 +10,7 @@ import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -35,6 +36,7 @@ import com.geometricdrawing.model.AbstractShape;
 
 import javafx.stage.Window;
 
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -932,6 +934,34 @@ public class DrawingController {
     @FXML private void handleZoom75() { if (zoomHandler != null) zoomHandler.setZoom75(); }
     @FXML private void handleZoom100() { if (zoomHandler != null) zoomHandler.setZoom100(); }
     @FXML private void handleZoom150() { if (zoomHandler != null) zoomHandler.setZoom150(); }
+
+    @FXML
+    private void handleCloseFile() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Chiudi Applicazione");
+        alert.setContentText("Vuoi salvare le modifiche prima di chiudere?");
+
+        ButtonType buttonTypeSave = new ButtonType("Salva");
+        ButtonType buttonTypeDontSave = new ButtonType("Non Salvare");
+        ButtonType buttonTypeCancel = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(buttonTypeSave, buttonTypeDontSave, buttonTypeCancel);
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isPresent()) {
+            if (result.get() == buttonTypeSave) {
+                // L'utente vuole salvare. Mostra il dialogo di salvataggio.
+                // Usiamo lo strategy per il salvataggio serializzato.
+                if (fileOperationContext != null) {
+                    fileOperationContext.executeSave(new SerializedSaveStrategy());
+                    Platform.exit();
+                }
+                }else if (result.get() == buttonTypeDontSave) {
+                Platform.exit();
+            }
+            }
+        }
+
 
     // --- Metodi Getter e Setter usati principalmente dai gestori eventi o per test ---
     public Window getWindow() { return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null; }
