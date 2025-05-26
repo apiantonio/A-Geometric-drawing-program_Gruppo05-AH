@@ -27,18 +27,14 @@ class ZoomHandlerTest {
 
     @BeforeEach
     void setUp() {
-        zoomHandler = new ZoomHandler(mockDrawingController, mockCanvas);
+        zoomHandler = new ZoomHandler(mockDrawingController);
     }
 
     @Test
     void constructorShouldThrowExceptionForNullController() {
-        assertThrows(IllegalArgumentException.class, () -> new ZoomHandler(null, mockCanvas));
+        assertThrows(IllegalArgumentException.class, () -> new ZoomHandler(null));
     }
 
-    @Test
-    void constructorShouldThrowExceptionForNullCanvas() {
-        assertThrows(IllegalArgumentException.class, () -> new ZoomHandler(mockDrawingController, null));
-    }
 
     @Test
     void initialZoomFactorShouldBe100Percent() {

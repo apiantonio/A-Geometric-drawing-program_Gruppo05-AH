@@ -82,6 +82,7 @@ public class DrawingController {
     private ClipboardManager clipboardManager; // Gestore appunti per copia/incolla
     private FileOperationContext fileOperationContext; // Contesto per operazioni su file (salva/carica)
     private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
+    private NewWorkspace newWorkspace; // Gestore per nuove aree di lavoro
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -116,13 +117,14 @@ public class DrawingController {
             gc = drawingCanvas.getGraphicsContext2D();
             // Inizializza componenti mancanti
             if (this.model == null) this.model = new DrawingModel();
+            setModel(this.model); // Imposta il modello e aggiunge listener
+
             if (this.commandManager == null) this.commandManager = new CommandManager();
             if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager();
 
-            setModel(this.model); // Imposta il modello e aggiunge listener
-
             this.fileOperationContext = new FileOperationContext(this);
             this.zoomHandler = new ZoomHandler(this);
+            this.newWorkspace = new NewWorkspace(this);
 
             // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -710,7 +712,7 @@ public class DrawingController {
     @FXML
     public void handleDeleteShape(ActionEvent event) {
         if (currentShape != null && model != null && commandManager != null) {
-            if(shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
+            if (shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
             DeleteShapeCommand deleteCmd = new DeleteShapeCommand(model, currentShape);
             commandManager.executeCommand(deleteCmd);
             setCurrentShape(null); // Deseleziona la figura
@@ -868,52 +870,25 @@ public class DrawingController {
      */
     @FXML
     public void handleNewWorkspace(ActionEvent event) {
-        // Verifica se ci sono figure nel modello corrente
-        if (model != null && !model.getShapes().isEmpty()) {
-            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmAlert.setTitle("Nuova Area di Lavoro");
-            confirmAlert.setHeaderText(null);
-            confirmAlert.setContentText("Vuoi salvare il lavoro corrente prima di creare una nuova area?");
-
-            ButtonType buttonTypeSave = new ButtonType("Salva");
-            ButtonType buttonTypeNoSave = new ButtonType("Non salvare");
-            ButtonType buttonTypeCancel = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-            confirmAlert.getButtonTypes().setAll(buttonTypeSave, buttonTypeNoSave, buttonTypeCancel);
-
-            confirmAlert.showAndWait().ifPresent(result -> {
-                if (result == buttonTypeSave) {
-                    // Salva il lavoro corrente come serializzato
-                    fileOperationContext.executeSave(new SerializedSaveStrategy());
-                    // Procede con la creazione della nuova area solo se il salvataggio è andato a buon fine
-                    createNewWorkspace();
-                } else if (result == buttonTypeNoSave) {
-                    // Procede direttamente con la creazione della nuova area
-                    createNewWorkspace();
-                }
-            });
-        } else {
-            // Se non ci sono figure, crea direttamente una nuova area di lavoro
-            createNewWorkspace();
-        }
+        this.newWorkspace.handleNewWorkspace(); // Chiama il metodo per creare una nuova area di lavoro
     }
 
-    /**
-     * Crea una nuova area di lavoro vuota
-     */
-    private void createNewWorkspace() {
-        // Resetta il modello
-        model.clear();
-
-        // Resetta lo stato del controller
-        setCurrentShape(null);
-        setCurrentShapeFactory(null);
-
-        // Aggiorna l'interfaccia
-        updateControlState(null);
-        updateSpinners(null);
-        redrawCanvas();
-    }
+//    /**
+//     * Crea una nuova area di lavoro vuota
+//     */
+//    private void createNewWorkspace() {
+//        // Resetta il modello
+//        model.clear();
+//
+//        // Resetta lo stato del controller
+//        setCurrentShape(null);
+//        setCurrentShapeFactory(null);
+//
+//        // Aggiorna l'interfaccia
+//        updateControlState(null);
+//        updateSpinners(null);
+//        redrawCanvas();
+//    }
 
     /**
      * Seleziona la figura alle coordinate del mondo specificate (worldX, worldY).
@@ -1107,6 +1082,19 @@ public class DrawingController {
         // sarà chiamato da chi invoca setCurrentShape (es. selectShapeAt, handleDeleteShape).
     }
 
+    /**
+     * Imposta la factory per la creazione di nuove figure e aggiorna il cursore.
+     */
+    public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
+        this.currentShapeFactory = currentShapeFactory;
+        if (this.currentShapeFactory == null && drawingCanvas != null) {
+            drawingCanvas.setCursor(Cursor.DEFAULT); // Cursore default se nessuna factory
+        } else if (this.currentShapeFactory != null && drawingCanvas != null) {
+            drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cursore a croce se factory attiva
+        }
+    }
+    public ShapeFactory getCurrentShapeFactory() { return currentShapeFactory; }
+
     public void resetDrag() { startDragX = RESET_DRAG; startDragY = RESET_DRAG; } // Resetta stato trascinamento
     public boolean isDragging() { return startDragX != RESET_DRAG && startDragY != RESET_DRAG; } // Verifica se in trascinamento
 
@@ -1133,15 +1121,9 @@ public class DrawingController {
     public Spinner<Double> getHeightSpinner() { return heightSpinner; }
     public Spinner<Double> getWidthSpinner() { return widthSpinner; }
 
-    public ShapeFactory getCurrentShapeFactory() { return currentShapeFactory; }
-    /** Imposta la factory per la creazione di nuove figure e aggiorna il cursore. */
-    public void setCurrentShapeFactory(ShapeFactory currentShapeFactory) {
-        this.currentShapeFactory = currentShapeFactory;
-        if (this.currentShapeFactory == null && drawingCanvas != null) {
-            drawingCanvas.setCursor(Cursor.DEFAULT); // Cursore default se nessuna factory
-        } else if (this.currentShapeFactory != null && drawingCanvas != null) {
-            drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cursore a croce se factory attiva
-        }
-    }
     public ZoomHandler getZoomHandler() { return zoomHandler; }
+
+    public FileOperationContext getFileOperationContext() {
+        return this.fileOperationContext;
+    }
 }
