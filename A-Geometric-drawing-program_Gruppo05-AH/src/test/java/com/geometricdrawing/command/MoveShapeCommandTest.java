@@ -18,6 +18,7 @@ class MoveShapeCommandTest {
 
     @BeforeEach
     void setUp() {
+        drawingModel = new DrawingModel();
         newX = 50.0;
         newY = 60.0;
     }
