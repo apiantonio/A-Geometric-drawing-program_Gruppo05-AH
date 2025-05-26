@@ -888,7 +888,7 @@ public class DrawingController {
             confirmAlert.showAndWait().ifPresent(result -> {
                 if (result == buttonTypeSave) {
                     // Salva il lavoro corrente come serializzato
-                    fileOperationContext.executeSave(new SerializedSaveStrategy());
+                    fileOperationContext.executeSave();
                     // Procede con la creazione della nuova area solo se il salvataggio è andato a buon fine
                     createNewWorkspace();
                 } else if (result == buttonTypeNoSave) {
