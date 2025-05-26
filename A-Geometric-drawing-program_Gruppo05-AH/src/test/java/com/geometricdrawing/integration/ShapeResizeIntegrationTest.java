@@ -93,7 +93,7 @@ public class ShapeResizeIntegrationTest {
                 controller = new DrawingController();
 
                 drawingCanvas = new Canvas();
-                canvasContainer = new Pane(drawingCanvas);
+                canvasContainer = new AnchorPane(drawingCanvas);
                 canvasContainer.setPrefSize(CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
 
                 rootPane = new AnchorPane(canvasContainer);

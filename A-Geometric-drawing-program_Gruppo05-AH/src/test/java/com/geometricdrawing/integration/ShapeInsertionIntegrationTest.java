@@ -40,7 +40,7 @@ public class ShapeInsertionIntegrationTest {
     private CommandManager commandManager;
 
     private Canvas drawingCanvas;
-    private Pane canvasContainer;
+    private AnchorPane canvasContainer;
     private AnchorPane rootPane;
     private ColorPicker fillColorPicker;
     private ColorPicker borderColorPicker;
@@ -95,7 +95,7 @@ public class ShapeInsertionIntegrationTest {
                 controller = new DrawingController();
 
                 drawingCanvas = new Canvas();
-                canvasContainer = new Pane(drawingCanvas);
+                canvasContainer = new AnchorPane(drawingCanvas);
                 canvasContainer.setPrefSize(CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
 
                 rootPane = new AnchorPane(canvasContainer);

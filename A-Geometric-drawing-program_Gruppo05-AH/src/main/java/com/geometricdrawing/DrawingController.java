@@ -25,7 +25,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.AnchorPane;
-//import javafx.scene.layout.Pane;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
@@ -671,7 +670,6 @@ public class DrawingController {
         }
 
 
-
         if (shapeMenu != null) {
             shapeMenu.getItems().stream()
                     .filter(item -> "Taglia".equals(item.getText()))
@@ -728,6 +726,7 @@ public class DrawingController {
 
             CutShapeCommand cutCmd = new CutShapeCommand(model, currentShape, clipboardManager);
             commandManager.executeCommand(cutCmd);
+            showCutCopyLabel();
 
             setCurrentShape(null);      // Deseleziona la figura
             updateControlState(null);   // Aggiorna UI

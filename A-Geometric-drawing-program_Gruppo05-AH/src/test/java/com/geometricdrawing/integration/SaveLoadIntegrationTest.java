@@ -1,77 +1,3 @@
-package com.geometricdrawing.integration;
-
-import com.geometricdrawing.DrawingController;
-import com.geometricdrawing.command.CommandManager;
-import com.geometricdrawing.decorator.ShapeDecorator;
-import com.geometricdrawing.model.*;
-import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import javafx.stage.Window;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-@DisplayName("Test di Integrazione per Salvataggio e Caricamento Disegni")
-public class SaveLoadIntegrationTest {
-
-    private static volatile boolean fxInitialized = false;
-
-    private DrawingController controller;
-    private DrawingModel model;
-    private CommandManager commandManager;
-
-    private Canvas drawingCanvas;
-    private Pane canvasContainer;
-    private AnchorPane rootPane;
-    private ColorPicker fillColorPicker;
-    private ColorPicker borderColorPicker;
-    private Spinner<Double> heightSpinner;
-    private Spinner<Double> widthSpinner;
-    private Button deleteButton;
-
-    private static final double CANVAS_WIDTH_FOR_TEST = 800;
-    private static final double CANVAS_HEIGHT_FOR_TEST = 600;
-
-    @TempDir
-    Path tempDir;
-
-    @BeforeAll
-    public static void initFX() throws InterruptedException {
-        if (fxInitialized) return;
-        final CountDownLatch latch = new CountDownLatch(1);
-        Platform.startup(() -> {
-            fxInitialized = true;
-            latch.countDown();
-        });
-        if (!latch.await(5, TimeUnit.SECONDS)) {
-            throw new InterruptedException("Timeout: JavaFX Toolkit non inizializzato.");
-        }
-    }
 
     @AfterAll
     public static void cleanupFX() {
@@ -88,7 +14,7 @@ public class SaveLoadIntegrationTest {
                 controller = new DrawingController();
 
                 drawingCanvas = new Canvas();
-                canvasContainer = new AnchorPane(drawingCanvas);
+                canvasContainer = new Pane(drawingCanvas);
                 canvasContainer.setPrefSize(CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
 
                 rootPane = new AnchorPane(canvasContainer);
