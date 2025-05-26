@@ -38,7 +38,7 @@ class ChangeWidthCommandTest {
         // esattamente una volta con la forma e la nuova larghezza corrette.
         verify(mockDrawingModel, times(1)).setShapeWidth(shapeToResize, newWidth);
         // Verifico che la larghezza sia stata cambiata correttamente
-        assertEquals(shapeToResize.getWidth(), 75.0);
+        assertEquals(75.0, shapeToResize.getWidth());
     }
 
     @Test
@@ -52,7 +52,7 @@ class ChangeWidthCommandTest {
         // Verifica che il metodo setShapeWidth sia stato chiamato con la larghezza originale
         verify(mockDrawingModel, times(1)).setShapeWidth(shapeToResize, shapeToResize.getWidth());
         // Verifico che la larghezza sia quella di partenza
-        assertEquals(shapeToResize.getWidth(), 50.0);
+        assertEquals(50.0, shapeToResize.getWidth());
     }
 
 
