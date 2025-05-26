@@ -93,7 +93,7 @@ class DrawingControllerTest {
                 widthSpinner = new Spinner<>(1.0, 1000.0, 60.0);
                 deleteButton = new Button();
                 this.canvas = new Canvas();
-                Pane canvasContainer = new Pane();
+                Pane canvasContainer = new AnchorPane();
                 AnchorPane rootPane = new AnchorPane();
 
                 setPrivateField("model", model);
@@ -171,8 +171,8 @@ class DrawingControllerTest {
             // Verifica lo stato dei controlli UI
             assertFalse(widthSpinner.isDisabled(), "Width spinner dovrebbe essere abilitato");
             assertFalse(heightSpinner.isDisabled(), "Height spinner dovrebbe essere abilitato");
-            assertTrue(fillPicker.isDisabled(), "Fill picker dovrebbe essere disabilitato (MOMENTANEE)");
-            assertTrue(borderPicker.isDisabled(), "Border picker dovrebbe essere disabilitato (MOMENTANEE)");
+            assertFalse(fillPicker.isDisabled(), "Fill picker dovrebbe essere abilitato");
+            assertFalse(borderPicker.isDisabled(), "Border picker dovrebbe essere abilitato");
             assertFalse(deleteButton.isDisabled(), "Delete button dovrebbe essere abilitato");
 
             // Verifica che gli spinner mostrino le dimensioni corrette
