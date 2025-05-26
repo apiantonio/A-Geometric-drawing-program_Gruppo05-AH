@@ -36,7 +36,7 @@ class ChangeHeightCommandTest {
 
         verify(mockDrawingModel, times(1)).setShapeHeight(shapeToResize, newHeight);
         // verifica che l'altezza sia stata cambiata correttamente
-        assertEquals(shapeToResize.getHeight(), 60.0);
+        assertEquals(60.0, shapeToResize.getHeight());
     }
 
     @Test
@@ -50,6 +50,6 @@ class ChangeHeightCommandTest {
         // Verifica che il metodo setShapeHeight sia stato chiamato con l'altezza originale
         verify(mockDrawingModel, times(1)).setShapeHeight(shapeToResize, shapeToResize.getHeight());
         // Verifico che l'altezza sia quella di partenza
-        assertEquals(shapeToResize.getHeight(), 50.0);
+        assertEquals(50.0, shapeToResize.getHeight());
     }
 }
