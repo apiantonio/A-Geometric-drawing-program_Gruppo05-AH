@@ -937,29 +937,8 @@ public class DrawingController {
 
     @FXML
     private void handleCloseFile() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Chiudi Applicazione");
-        alert.setContentText("Vuoi salvare le modifiche prima di chiudere?");
-
-        ButtonType buttonTypeSave = new ButtonType("Salva");
-        ButtonType buttonTypeDontSave = new ButtonType("Non Salvare");
-        ButtonType buttonTypeCancel = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(buttonTypeSave, buttonTypeDontSave, buttonTypeCancel);
-
-        Optional<ButtonType> result = alert.showAndWait();
-
-        if (result.isPresent()) {
-            if (result.get() == buttonTypeSave) {
-                // L'utente vuole salvare. Mostra il dialogo di salvataggio.
-                // Usiamo lo strategy per il salvataggio serializzato.
-                if (fileOperationContext != null) {
-                    fileOperationContext.executeSave(new SerializedSaveStrategy());
-                    Platform.exit();
-                }
-                }else if (result.get() == buttonTypeDontSave) {
-                Platform.exit();
-            }
-            }
+        Exit exit = new Exit(this);
+        exit.exit();
         }
 
 
@@ -1027,4 +1006,5 @@ public class DrawingController {
         }
     }
     public ZoomHandler getZoomHandler() { return zoomHandler; }
+    public FileOperationContext getFileOperationContext() { return fileOperationContext; }
 }
