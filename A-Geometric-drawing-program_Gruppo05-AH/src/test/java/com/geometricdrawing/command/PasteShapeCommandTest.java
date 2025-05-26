@@ -2,200 +2,140 @@ package com.geometricdrawing.command;
 
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Rectangle; // Esempio di forma concreta
+import com.geometricdrawing.model.Rectangle;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class PasteShapeCommandTest {
 
-    @Mock
-    private DrawingModel mockModel;
-    @Mock
-    private ClipboardManager mockClipboardManager;
-
-    @Captor
-    private ArgumentCaptor<AbstractShape> shapeCaptorForAdd;
-    @Captor
-    private ArgumentCaptor<AbstractShape> shapeCaptorForMove;
-    @Captor
-    private ArgumentCaptor<Double> xCaptorForMove;
-    @Captor
-    private ArgumentCaptor<Double> yCaptorForMove;
-
-
-    private AbstractShape originalShapeInClipboardSetup; // Rappresenta la forma originale che sarebbe nella clipboard
-    private AbstractShape clonedShapeFromClipboard;      // Rappresenta il clone che getFromClipboard() restituirebbe
+    private DrawingModel model;
+    private ClipboardManager clipboardManager;
+    private AbstractShape originalShapeInClipboardSetup;
+    private AbstractShape shapeToPaste; // Questo sarà il clone ottenuto dal clipboardManager
 
     @BeforeEach
     void setUp() {
-        // Questa è la forma "originale" che immaginiamo sia stata copiata precedentemente.
+        model = new DrawingModel();
+        clipboardManager = new ClipboardManager();
         originalShapeInClipboardSetup = new Rectangle(50, 60, 100, 80);
-        // Quando mockClipboardManager.getFromClipboard() viene chiamato, restituirà questo clone.
-        clonedShapeFromClipboard = originalShapeInClipboardSetup.deepClone();
+
+        clipboardManager.copyToClipboard(originalShapeInClipboardSetup);
+        // shapeToPaste sarà il clone che ci aspettiamo venga manipolato
+        shapeToPaste = clipboardManager.getFromClipboard(); // Otteniamo un clone per il setup, come farebbe il comando
     }
 
     @Test
     void execute_whenClipboardHasContent_withDefaultOffset_shouldMoveAndAddShape() {
         // Arrange
-        when(mockClipboardManager.hasContent()).thenReturn(true);
-        // getFromClipboard() restituisce un clone
-        when(mockClipboardManager.getFromClipboard()).thenReturn(clonedShapeFromClipboard);
-
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager);
+        PasteShapeCommand command = new PasteShapeCommand(model, clipboardManager);
 
         // Act
         command.execute();
 
         // Assert
-        verify(mockClipboardManager, times(1)).hasContent();
-        verify(mockClipboardManager, times(1)).getFromClipboard();
+        assertNotNull(command.getPastedShape(), "Pasted shape in command should not be null.");
+        assertEquals(1, model.getShapes().size(), "Model should contain one shape after paste.");
+        AbstractShape pastedShapeInModel = model.getShapes().get(0);
 
-        // Verifica che moveShapeTo sia chiamato sul modello con il clone e le coordinate corrette
-        // Le coordinate originali del clone sono (50, 60)
-        double expectedX = clonedShapeFromClipboard.getX() + 10.0; // 50.0 + 10.0 = 60.0
-        double expectedY = clonedShapeFromClipboard.getY() + 10.0; // 60.0 + 10.0 = 70.0
+        assertNotSame(originalShapeInClipboardSetup, pastedShapeInModel, "Pasted shape in model should be a clone.");
+        assertNotSame(shapeToPaste, pastedShapeInModel, "Pasted shape in model should be a new clone from the command's execution.");
 
-        verify(mockModel, times(1)).moveShapeTo(shapeCaptorForMove.capture(), xCaptorForMove.capture(), yCaptorForMove.capture());
-        assertSame(clonedShapeFromClipboard, shapeCaptorForMove.getValue(), "moveShapeTo should be called with the cloned shape.");
-        assertEquals(expectedX, xCaptorForMove.getValue(), "X coordinate for moveShapeTo (default offset) is incorrect.");
-        assertEquals(expectedY, yCaptorForMove.getValue(), "Y coordinate for moveShapeTo (default offset) is incorrect.");
+        double expectedX = originalShapeInClipboardSetup.getX() + 10.0; // 50.0 + 10.0 = 60.0
+        double expectedY = originalShapeInClipboardSetup.getY() + 10.0; // 60.0 + 10.0 = 70.0
 
-        // Verifica che addShape sia chiamato sul modello con il clone
-        verify(mockModel, times(1)).addShape(shapeCaptorForAdd.capture());
-        assertSame(clonedShapeFromClipboard, shapeCaptorForAdd.getValue(), "The shape added to the model should be the cloned one from clipboard.");
+        assertEquals(expectedX, pastedShapeInModel.getX(), "X coordinate for pasted shape (default offset) is incorrect.");
+        assertEquals(expectedY, pastedShapeInModel.getY(), "Y coordinate for pasted shape (default offset) is incorrect.");
+        assertEquals(originalShapeInClipboardSetup.getWidth(), pastedShapeInModel.getWidth(), "Width of pasted shape is incorrect.");
+        assertEquals(originalShapeInClipboardSetup.getHeight(), pastedShapeInModel.getHeight(), "Height of pasted shape is incorrect.");
 
-        // getPastedShape dovrebbe restituire il clone che è stato elaborato
-        assertSame(clonedShapeFromClipboard, command.getPastedShape(), "getPastedShape should return the processed (cloned) shape.");
+        assertSame(pastedShapeInModel, command.getPastedShape(), "The command's getPastedShape should return the shape added to the model.");
     }
 
     @Test
     void execute_whenClipboardHasContent_withAbsoluteCoordinates_shouldMoveAndAddShapeAtTarget() {
         // Arrange
-        when(mockClipboardManager.hasContent()).thenReturn(true);
-        when(mockClipboardManager.getFromClipboard()).thenReturn(clonedShapeFromClipboard);
-
         double targetX = 200.0;
         double targetY = 250.0;
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager, targetX, targetY, true);
+        PasteShapeCommand command = new PasteShapeCommand(model, clipboardManager, targetX, targetY, true);
 
         // Act
         command.execute();
 
         // Assert
-        verify(mockClipboardManager, times(1)).hasContent();
-        verify(mockClipboardManager, times(1)).getFromClipboard();
+        assertNotNull(command.getPastedShape(), "Pasted shape in command should not be null.");
+        assertEquals(1, model.getShapes().size(), "Model should contain one shape after paste.");
+        AbstractShape pastedShapeInModel = model.getShapes().get(0);
 
-        // Verifica che moveShapeTo sia chiamato con il clone e le coordinate target
-        verify(mockModel, times(1)).moveShapeTo(shapeCaptorForMove.capture(), xCaptorForMove.capture(), yCaptorForMove.capture());
-        assertSame(clonedShapeFromClipboard, shapeCaptorForMove.getValue(), "moveShapeTo should be called with the cloned shape for absolute coords.");
-        assertEquals(targetX, xCaptorForMove.getValue(), "X coordinate for moveShapeTo (absolute) is incorrect.");
-        assertEquals(targetY, yCaptorForMove.getValue(), "Y coordinate for moveShapeTo (absolute) is incorrect.");
+        assertNotSame(originalShapeInClipboardSetup, pastedShapeInModel, "Pasted shape in model should be a clone.");
 
-        // Verifica che addShape sia chiamato con il clone
-        verify(mockModel, times(1)).addShape(shapeCaptorForAdd.capture());
-        assertSame(clonedShapeFromClipboard, shapeCaptorForAdd.getValue());
-        assertSame(clonedShapeFromClipboard, command.getPastedShape());
+        assertEquals(targetX, pastedShapeInModel.getX(), "X coordinate for pasted shape (absolute) is incorrect.");
+        assertEquals(targetY, pastedShapeInModel.getY(), "Y coordinate for pasted shape (absolute) is incorrect.");
+        assertEquals(originalShapeInClipboardSetup.getWidth(), pastedShapeInModel.getWidth(), "Width of pasted shape is incorrect.");
+        assertEquals(originalShapeInClipboardSetup.getHeight(), pastedShapeInModel.getHeight(), "Height of pasted shape is incorrect.");
+        assertSame(pastedShapeInModel, command.getPastedShape());
     }
 
     @Test
-    void execute_whenClipboardIsEmpty_shouldNotGetFromClipboardAndNotInteractWithModel() {
+    void execute_whenClipboardIsEmpty_shouldNotAddShapeToModel() {
         // Arrange
-        when(mockClipboardManager.hasContent()).thenReturn(false);
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager);
+        clipboardManager.clearClipboard(); // Svuota la clipboard
+        PasteShapeCommand command = new PasteShapeCommand(model, clipboardManager);
 
         // Act
         command.execute();
 
         // Assert
-        verify(mockClipboardManager, times(1)).hasContent();
-        verify(mockClipboardManager, never()).getFromClipboard();
-        verify(mockModel, never()).moveShapeTo(any(AbstractShape.class), anyDouble(), anyDouble());
-        verify(mockModel, never()).addShape(any(AbstractShape.class));
-        assertNull(command.getPastedShape(), "Pasted shape should be null if clipboard was empty.");
-    }
-
-    @Test
-    void execute_whenClipboardHasContentButGetFromClipboardReturnsNull_shouldNotInteractWithModel() {
-        // Arrange
-        when(mockClipboardManager.hasContent()).thenReturn(true);
-        when(mockClipboardManager.getFromClipboard()).thenReturn(null); // Simula getFromClipboard che restituisce null
-
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager);
-
-        // Act
-        command.execute();
-
-        // Assert
-        verify(mockClipboardManager, times(1)).hasContent();
-        verify(mockClipboardManager, times(1)).getFromClipboard();
-        verify(mockModel, never()).moveShapeTo(any(AbstractShape.class), anyDouble(), anyDouble());
-        verify(mockModel, never()).addShape(any(AbstractShape.class));
-        assertNull(command.getPastedShape(), "Pasted shape should be null if getFromClipboard returned null.");
+        assertTrue(model.getShapes().isEmpty(), "Model should be empty if clipboard was empty.");
+        assertNull(command.getPastedShape(), "Pasted shape in command should be null if clipboard was empty.");
     }
 
     @Test
     void undo_afterSuccessfulExecute_shouldRemovePastedShapeFromModel() {
         // Arrange
-        when(mockClipboardManager.hasContent()).thenReturn(true);
-        when(mockClipboardManager.getFromClipboard()).thenReturn(clonedShapeFromClipboard);
+        PasteShapeCommand command = new PasteShapeCommand(model, clipboardManager);
+        command.execute(); // Esegue il paste, aggiungendo una forma al modello
 
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager);
-        command.execute(); // pastedShape nel comando sarà clonedShapeFromClipboard
-
-        // Questo è il clone che è stato aggiunto al modello
-        AbstractShape shapeThatWasAddedToModel = command.getPastedShape();
-        assertNotNull(shapeThatWasAddedToModel, "Pasted shape in command should not be null after execute.");
-        assertSame(clonedShapeFromClipboard, shapeThatWasAddedToModel, "The command's pastedShape should be the clone.");
-
-        // Verifica che il clone sia stato aggiunto
-        // (già verificato nei test di execute, ma utile per il contesto di undo)
-        verify(mockModel).addShape(shapeThatWasAddedToModel);
-
+        assertNotNull(command.getPastedShape(), "Pasted shape in command should not be null after execute.");
+        assertEquals(1, model.getShapes().size(), "Model should have 1 shape after execute.");
+        AbstractShape pastedShapeInstance = command.getPastedShape(); // La forma che è stata incollata
 
         // Act
         command.undo();
 
         // Assert
-        // L'undo dovrebbe rimuovere la stessa istanza di forma (il clone) che è stata aggiunta
-        verify(mockModel, times(1)).removeShape(shapeThatWasAddedToModel);
+        assertTrue(model.getShapes().isEmpty(), "Model should be empty after undo.");
+        assertFalse(model.getShapes().contains(pastedShapeInstance), "Model should not contain the pasted shape after undo.");
     }
 
     @Test
-    void undo_whenExecuteDidNotPasteShape_shouldNotCallRemoveShape() {
+    void undo_whenExecuteDidNotPasteShape_shouldNotChangeModelState() {
         // Arrange
-        when(mockClipboardManager.hasContent()).thenReturn(false); // Clipboard vuota, execute non farà nulla
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager);
+        clipboardManager.clearClipboard(); // Assicura che execute() non incolli nulla
+        PasteShapeCommand command = new PasteShapeCommand(model, clipboardManager);
         command.execute();
 
-        assertNull(command.getPastedShape(), "Pasted shape should be null if execute did not paste anything.");
+        assertTrue(model.getShapes().isEmpty(), "Model should be empty if execute did not paste.");
+        assertNull(command.getPastedShape(), "Pasted shape in command should be null.");
 
         // Act
         command.undo();
 
         // Assert
-        verify(mockModel, never()).removeShape(any(AbstractShape.class));
+        assertTrue(model.getShapes().isEmpty(), "Model should still be empty after undo if nothing was pasted.");
     }
 
     @Test
-    void undo_whenPastedShapeIsNullInternally_shouldNotCallRemoveShape() {
-        // Questo caso si verifica se execute() non è mai stato chiamato,
-        // o se clipboardManager.getFromClipboard() ha restituito null.
-        PasteShapeCommand command = new PasteShapeCommand(mockModel, mockClipboardManager);
+    void undo_whenPastedShapeIsNullInternallyInCommand_shouldNotThrowAndNotChangeModel() {
+        // Questo scenario si verifica se execute() non è mai stato chiamato in modo che
+        // command.pastedShape rimanga null, o se clipboardManager.getFromClipboard()
+        // avesse restituito null e execute() avesse impostato command.pastedShape a null.
+        PasteShapeCommand command = new PasteShapeCommand(model, clipboardManager);
         // Non chiamiamo execute(), quindi command.pastedShape è null.
 
-        // Act
-        command.undo();
-
-        // Assert
-        verify(mockModel, never()).removeShape(any(AbstractShape.class));
+        // Act & Assert
+        assertDoesNotThrow(() -> command.undo());
+        assertTrue(model.getShapes().isEmpty(), "Model should remain empty if undo is called on a command that didn't set a pastedShape.");
     }
 }
