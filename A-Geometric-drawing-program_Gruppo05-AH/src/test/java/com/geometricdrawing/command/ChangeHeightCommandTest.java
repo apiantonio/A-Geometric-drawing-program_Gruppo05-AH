@@ -23,7 +23,7 @@ class ChangeHeightCommandTest {
     private double newHeight;
 
     @BeforeEach
-    private void setUp() {
+    public void setUp() {
         shapeToResize = new Rectangle(10, 10, 50, 50);
         newHeight = 60.0;
     }
