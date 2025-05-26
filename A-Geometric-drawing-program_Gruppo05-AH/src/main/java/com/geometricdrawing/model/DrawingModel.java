@@ -22,46 +22,70 @@ public class DrawingModel {
         this.shapes = FXCollections.observableArrayList();
     }
 
-    public void addShape(AbstractShape s) {
-        if (s != null) {
-            s.setZ(shapes.size()); // La nuova figura ha lo Z più alto
-            this.shapes.add(s);
+    public void addShape(AbstractShape shape) {
+        if (shape != null) {
+            shape.setZ(shapes.size()); // La nuova figura ha lo Z più alto
+            this.shapes.add(shape);
         }
     }
 
     /**
-     * @param s rimuove una figura dalla lista delle figure del modello
+     * @param shape rimuove una figura dalla lista delle figure del modello
      */
-    public void removeShape(AbstractShape s) {
-        if (s != null) {
-            this.shapes.remove(s);
+    public void removeShape(AbstractShape shape) {
+        if (shape != null) {
+            this.shapes.remove(shape);
         }
     }
 
+    /**
+     * @param shape è la figura di cui vogliamo cambiare la larghezza
+     * @param width è la nuova larghezza che vogliamo assegnare alla figura
+     */
     public void setShapeWidth(AbstractShape shape, double width) {
         if (shape != null) {
             shape.setWidth(width);
         }
     }
 
+    /**
+     * @param shape è la figura di cui vogliamo cambiare l'altezza
+     * @param newHeight è la nuova altezza che vogliamo assegnare alla figura
+     */
     public void setShapeHeight(AbstractShape shape, double newHeight) {
         if (shape != null) {
             shape.setHeight(newHeight);
         }
     }
 
+    /**
+     *
+     * @param shape è la figura di cui vogliamo cambiare la posizione
+     * @param newX
+     * @param newY
+     */
     public void moveShapeTo(AbstractShape shape, double newX, double newY) {
         if (shape != null) {
             shape.moveTo(newX, newY);
         }
     }
 
+    /**
+     * Metodo per cambiare il colore di contorno della figura
+     * @param decorator
+     * @param color
+     */
     public void setBorderColor(BorderColorDecorator decorator, Color color) {
         if (decorator != null) {
             decorator.setBorderColor(color);
         }
     }
 
+    /**
+     * Metodo per cambiare il colore di riempimento della figura
+     * @param decorator
+     * @param color
+     */
     public void setFillColor(FillColorDecorator decorator, Color color) {
         if (decorator != null) {
             decorator.setFillColor(color);
@@ -69,26 +93,51 @@ public class DrawingModel {
     }
 
     /**
-     * Metodo del model che permette di portare una figura in primo piano
-     * @param shape è la figura selezionata
+     * il metodo gestisce sia porta in primo piano che in secondo piano e undo delle due operazioni
+     * @param shape è la figura di cui vogliamo cambiare la disposizione nell'area di disegno
+     * @param newZ è l'indice Z che si vuole assegnare alla figura selezionata
      */
-    public void bringToForeground(AbstractShape shape) {
-        if (shape != null && shapes.contains(shape)) {
-            shapes.remove(shape);
-            shapes.add(shape);
+    public void changeZOrder(AbstractShape shape, int newZ) {
+        // Controllo per prima cosa che il valore passato per Z sia valido
+        if(newZ < 0 || newZ >= shapes.size()) {
+            throw new IndexOutOfBoundsException("Invalid Z index: " + newZ);
+        }
 
-            // Tutti gli Z-order vanno scalati in relazione alla figura spostata in primo piano
-            for (int i = 0; i < shapes.size(); i++) {
-                shapes.get(i).setZ(shapes.size() - 1 - i);
+        // se la figura è presente nella lista
+        if (shape != null && shapes.contains(shape)) {
+            int actualZ = shape.getZ();
+
+            // Solo se gli indici - di partenza e nuovo - per la figura sono diversi eseguo l'operazione
+            if(newZ != actualZ) {
+                // scorro tutte le figure
+                for (AbstractShape s : shapes) {
+                    // PER PORTARE IN PRIMO PIANO
+                    // se la figura ha uno Z maggiore del nuovo Z, lo decremento
+                    if (s.getZ() >= newZ && s.getZ() < actualZ) {
+                        s.setZ(s.getZ() + 1);
+                    }
+                    // PER PORTARE IN SECONDO PIANO
+                    // se la figura ha uno Z minore del nuovo Z, lo incremento
+                    else if (s.getZ() <= newZ && s.getZ() > actualZ) {
+                        s.setZ(s.getZ() - 1);
+                    }
+                }
+                // rimuovo la figura e la reinserisco nella posizione corretta
+                removeShape(shape);
+                shapes.add(newZ, shape);
+                // ne definisco lo Z-index come il parametro passato
+                shape.setZ(newZ);
             }
         }
     }
-
 
     public ObservableList<AbstractShape> getShapes() {
         return this.shapes;
     }
 
+    /**
+     * Metodo che ripulisce tutta la lista di figure presenti nell'area di disegno
+     */
     public void clear() {
         this.shapes.clear();
     }

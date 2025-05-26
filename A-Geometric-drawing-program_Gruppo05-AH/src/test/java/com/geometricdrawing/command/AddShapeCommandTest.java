@@ -2,6 +2,7 @@ package com.geometricdrawing.command;
 
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
+import com.geometricdrawing.model.Ellipse;
 import com.geometricdrawing.model.Rectangle; // Una forma concreta per il test
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,5 +50,18 @@ class AddShapeCommandTest {
         command.execute();
 
         verify(mockDrawingModel, times(1)).addShape(null);
+    }
+
+    @Test
+    void removeCorrectShapeFromModelWithUndo() {
+        // Le prime 5 righe di codice sono di inserimento della figura - abbiamo già testato che funziona correttamente
+        AbstractShape ellipse = new Ellipse(30, 30, 30, 50);
+        AddShapeCommand command = new AddShapeCommand(mockDrawingModel, ellipse);
+        command.execute();
+        verify(mockDrawingModel, times(1)).addShape(ellipse); // anche se ridondante si decide di mantenere per chiarezza
+
+        command.undo();
+
+        assertNull(mockDrawingModel.getShapes(), "La forma non dovrebbe essere presente nel model post undo");
     }
 }
