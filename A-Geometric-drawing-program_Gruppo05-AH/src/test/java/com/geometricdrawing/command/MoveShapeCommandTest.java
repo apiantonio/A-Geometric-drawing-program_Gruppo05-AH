@@ -6,22 +6,13 @@ import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.Ellipse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
 
-@ExtendWith(MockitoExtension.class)
 class MoveShapeCommandTest {
 
-    @Mock
-    private DrawingModel mockDrawingModel;
-
+    private DrawingModel drawingModel;
     private double newX;
     private double newY;
 
@@ -34,11 +25,10 @@ class MoveShapeCommandTest {
     @Test
     void executeShouldCallMoveShapeToWithLineShape() {
         AbstractShape shapeToMove = new Line(100, 100, 200, 200);
-        MoveShapeCommand command = new MoveShapeCommand(mockDrawingModel, shapeToMove, newX, newY);
+        MoveShapeCommand command = new MoveShapeCommand(drawingModel, shapeToMove, newX, newY);
 
         command.execute();
 
-        verify(mockDrawingModel, times(1)).moveShapeTo(shapeToMove, newX, newY);
         assertEquals(shapeToMove.getX(), newX);
         assertEquals(shapeToMove.getY(), newY);
     }
@@ -46,11 +36,10 @@ class MoveShapeCommandTest {
     @Test
     void executeShouldCallMoveShapeToWithEllipseShape() {
         AbstractShape shapeToMove = new Ellipse(120, 120, 80, 40);
-        MoveShapeCommand command = new MoveShapeCommand(mockDrawingModel, shapeToMove, newX, newY);
+        MoveShapeCommand command = new MoveShapeCommand(drawingModel, shapeToMove, newX, newY);
 
         command.execute();
 
-        verify(mockDrawingModel, times(1)).moveShapeTo(shapeToMove, newX, newY);
         assertEquals(shapeToMove.getX(), newX);
         assertEquals(shapeToMove.getY(), newY);
     }
@@ -60,17 +49,17 @@ class MoveShapeCommandTest {
     void executeWithNullShapeShouldCallMoveShapeToWithNull() {
         // verifica come il command si comporta se, per qualche motivo,
         // gli viene passata una forma null.
-        MoveShapeCommand command = new MoveShapeCommand(mockDrawingModel, null, 30.0, 40.0);
+        MoveShapeCommand command = new MoveShapeCommand(drawingModel, null, 30.0, 40.0);
 
         command.execute();
 
-        verify(mockDrawingModel, times(1)).moveShapeTo(null, 30.0, 40.0);
+        assertDoesNotThrow(command::execute, "Il comando non dovrebbe lanciare eccezioni se la shape è null");
     }
 
     @Test
     void undoShouldResetShapePosition() {
         AbstractShape shapeToMove = new Line(100, 100, 200, 200);
-        MoveShapeCommand command = new MoveShapeCommand(mockDrawingModel, shapeToMove, newX, newY);
+        MoveShapeCommand command = new MoveShapeCommand(drawingModel, shapeToMove, newX, newY);
 
         // Salva le coordinate originali
         double originalX = shapeToMove.getX();

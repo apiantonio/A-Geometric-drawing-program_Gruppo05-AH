@@ -1,67 +1,58 @@
 package com.geometricdrawing.command;
 
 import com.geometricdrawing.model.*;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class) // Per usare @Mock
 class DeleteShapeCommandTest {
 
-    @Mock
-    private DrawingModel mockDrawingModel; // Mock del receiver
-
+    private DrawingModel drawingModel;
     private AbstractShape shapeToRemove;
 
     @BeforeEach
     void setUp() {
-        // Inizializza la forma da rimuovere, ad esempio un rettangolo
+        drawingModel = new DrawingModel(); // Init del modello di disegno
         shapeToRemove = new Rectangle(10, 10, 50, 50);
-        mockDrawingModel.addShape(shapeToRemove);
-        assertEquals(1, mockDrawingModel.getShapes().size());
+        drawingModel.addShape(shapeToRemove);
+
+        assertEquals(1, drawingModel.getShapes().size());
     }
 
     @Test
-    void executeShouldCallRemoveShapeOnModelWithRectangleShape() {
-        DeleteShapeCommand deleteCommand = new DeleteShapeCommand(mockDrawingModel, shapeToRemove);
+    void executeShouldRemoveShapeFromModel() {
+        DeleteShapeCommand deleteCommand = new DeleteShapeCommand(drawingModel, shapeToRemove);
 
         deleteCommand.execute();
 
-        // il metodo nel DrawingModel deve essere chiamato una volta e deve rimuovere la figura corretta
-        verify(mockDrawingModel, times(1)).removeShape(shapeToRemove);
-        assertEquals(0, mockDrawingModel.getShapes().size());   // verifica che non ci siano forme nel modello
+        // La shape deve essere rimossa dal modello
+        assertEquals(0, drawingModel.getShapes().size());
+        assertFalse(drawingModel.getShapes().contains(shapeToRemove));
     }
 
     @Test
-    void executeWithNullShapeShouldCallRemoveShapeWithNull() {
-        // Questo test verifica come il comando si comporta se, per qualche motivo,
-        // gli viene passata una forma null.
+    void executeWithNullShapeShouldNotThrow() {
+        // Verifica comportamento con una shape null
         shapeToRemove = null;
-        DeleteShapeCommand command = new DeleteShapeCommand(mockDrawingModel, shapeToRemove);
+        DeleteShapeCommand command = new DeleteShapeCommand(drawingModel, shapeToRemove);
 
         command.execute();
 
-        verify(mockDrawingModel, times(1)).removeShape(null);
-        assertEquals(0, mockDrawingModel.getShapes().size());   // verifica che non ci siano forme nel modello
+        // Non deve lanciare eccezioni, e lo stato del modello deve rimanere invariato
+        assertEquals(1, drawingModel.getShapes().size());
     }
 
     @Test
-    void insertCorrectShapeInTheModelWithUndo() {
-        DeleteShapeCommand command = new DeleteShapeCommand(mockDrawingModel, shapeToRemove);
+    void undoShouldReinsertShapeIntoModel() {
+        DeleteShapeCommand command = new DeleteShapeCommand(drawingModel, shapeToRemove);
         command.execute();
 
-        verify(mockDrawingModel, times(1)).removeShape(shapeToRemove);
-        assertEquals(0, mockDrawingModel.getShapes().size());   // verifica che non ci siano forme nel modello
+        assertEquals(0, drawingModel.getShapes().size());
 
         command.undo();
-        assertEquals(1, mockDrawingModel.getShapes().size());   // verifica che la forma sia stata reinserita nel modello
-        assertTrue(mockDrawingModel.getShapes().contains(shapeToRemove), "La forma rimossa in precedenza dovrebbe essere presente nel model post undo");
+
+        assertEquals(1, drawingModel.getShapes().size());
+        assertTrue(drawingModel.getShapes().contains(shapeToRemove));
     }
 }
