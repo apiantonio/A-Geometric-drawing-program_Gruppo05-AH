@@ -73,7 +73,7 @@
                            </items>
                         </Menu>
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem mnemonicParsing="false" text="Chiudi" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleCloseFile" text="Chiudi" />
                      </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Visualizza">

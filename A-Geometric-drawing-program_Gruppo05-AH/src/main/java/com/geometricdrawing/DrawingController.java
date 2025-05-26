@@ -1080,7 +1080,7 @@ public class DrawingController {
     private void handleCloseFile() {
         Exit exit = new Exit(this);
         exit.exit();
-        }
+    }
 
 
     // --- Metodi Getter e Setter usati principalmente dai gestori eventi o per test ---
