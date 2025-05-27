@@ -34,6 +34,7 @@ public class Exit {
                 // L'utente vuole salvare. Mostra il dialogo di salvataggio.
                 // Usiamo lo strategy per il salvataggio serializzato.
                 if (foc != null) {
+                    foc.setStrategySave(new SerializedSaveStrategy());
                     foc.executeSave();
                     Platform.exit();
                 }
