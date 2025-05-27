@@ -877,23 +877,6 @@ public class DrawingController {
         this.newWorkspace.handleNewWorkspace(); // Chiama il metodo per creare una nuova area di lavoro
     }
 
-//    /**
-//     * Crea una nuova area di lavoro vuota
-//     */
-//    private void createNewWorkspace() {
-//        // Resetta il modello
-//        model.clear();
-//
-//        // Resetta lo stato del controller
-//        setCurrentShape(null);
-//        setCurrentShapeFactory(null);
-//
-//        // Aggiorna l'interfaccia
-//        updateControlState(null);
-//        updateSpinners(null);
-//        redrawCanvas();
-//    }
-
     /**
      * Seleziona la figura alle coordinate del mondo specificate (worldX, worldY).
      * @return La figura selezionata, o null se nessuna figura è trovata.
