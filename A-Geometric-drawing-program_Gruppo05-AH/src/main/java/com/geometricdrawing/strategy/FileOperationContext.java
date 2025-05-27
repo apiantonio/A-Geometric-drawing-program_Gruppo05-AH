@@ -22,6 +22,7 @@ public class FileOperationContext {
         }
         this.controller = controller;
     }
+
     public void setStrategySave(SaveStrategy saveStrategy) {
         this.saveStrategy = saveStrategy;
     }

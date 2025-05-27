@@ -13,6 +13,7 @@ import java.util.Optional;
 
 public class Exit {
     private final DrawingController drawingController;
+
     public Exit(DrawingController drawingController) {
         this.drawingController = drawingController;
     }

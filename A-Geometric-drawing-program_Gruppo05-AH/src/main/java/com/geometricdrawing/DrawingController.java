@@ -69,6 +69,7 @@ public class DrawingController {
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
     private boolean firstTime = true;   // per gestire la non comparsa della label appunti svuotati all'avvio
+    private Stage stage;
 
     // Costanti per la selezione e l'evidenziazione
     private static final double HANDLE_RADIUS = 3.0; // Raggio maniglie di selezione
@@ -85,6 +86,7 @@ public class DrawingController {
     private FileOperationContext fileOperationContext; // Contesto per operazioni su file (salva/carica)
     private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
     private NewWorkspace newWorkspace;
+    private Exit exit;
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -96,7 +98,6 @@ public class DrawingController {
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
 
-    private Stage stage;
     public void setModel(DrawingModel model) {
         this.model = model;
         // Listener per ridisegnare il canvas quando le figure nel modello cambiano
@@ -127,6 +128,7 @@ public class DrawingController {
             this.fileOperationContext = new FileOperationContext(this);
             this.zoomHandler = new ZoomHandler(this);
             this.newWorkspace = new NewWorkspace(this);
+            this.exit = new Exit(this);
 
             // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -1062,7 +1064,6 @@ public class DrawingController {
 
     @FXML
     private void handleCloseFile() {
-        Exit exit = new Exit(this);
         exit.exit();
     }
 
