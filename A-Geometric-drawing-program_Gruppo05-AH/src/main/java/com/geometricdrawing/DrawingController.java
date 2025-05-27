@@ -1150,9 +1150,12 @@ public class DrawingController {
     public FileOperationContext getFileOperationContext() { return fileOperationContext; }
     public void setStage(Stage stage) {
         this.stage = stage;
-
         this.stage.setOnCloseRequest(event -> {
-            handleCloseFile();
+            Exit exitLogic = new Exit(this);
+            boolean willExit = exitLogic.exit(); // Chiamata al metodo modificato
+            if (!willExit) {
+                event.consume(); // Consuma l'evento SOLO se l'applicazione NON deve chiudersi
+            }
         });
     }
 }
