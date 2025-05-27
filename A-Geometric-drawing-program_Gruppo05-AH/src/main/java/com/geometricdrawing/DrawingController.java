@@ -34,6 +34,7 @@ import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
 
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
@@ -95,7 +96,7 @@ public class DrawingController {
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
 
-
+    private Stage stage;
     public void setModel(DrawingModel model) {
         this.model = model;
         // Listener per ridisegnare il canvas quando le figure nel modello cambiano
@@ -1147,4 +1148,11 @@ public class DrawingController {
     }
     public ZoomHandler getZoomHandler() { return zoomHandler; }
     public FileOperationContext getFileOperationContext() { return fileOperationContext; }
+    public void setStage(Stage stage) {
+        this.stage = stage;
+
+        this.stage.setOnCloseRequest(event -> {
+            handleCloseFile();
+        });
+    }
 }
