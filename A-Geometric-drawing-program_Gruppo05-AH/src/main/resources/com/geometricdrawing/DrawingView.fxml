@@ -62,18 +62,53 @@
                <menus>
                   <Menu mnemonicParsing="false" text="File">
                      <items>
-                        <MenuItem mnemonicParsing="false" onAction="#handleNewWorkspace" text="Nuovo" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleNewWorkspace" text="Nuovo">
+                           <graphic>
+                              <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../icons/nuovo.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic></MenuItem>
+                        <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica">
+                           <graphic>
+                              <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../icons/carica.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic></MenuItem>
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleSaveSerialized" text="Salva" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleSaveSerialized" text="Salva">
+                           <graphic>
+                              <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../icons/salva.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic></MenuItem>
                         <Menu mnemonicParsing="false" text="Salva come">
                            <items>
                               <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPng" text="PNG" />
                               <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPdf" text="PDF" />
                            </items>
+                           <graphic>
+                              <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../icons/sala%20come.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic>
                         </Menu>
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleCloseFile" text="Chiudi" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleCloseFile" text="Chiudi">
+                           <graphic>
+                              <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../icons/chiudi.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic></MenuItem>
                      </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Visualizza">
@@ -90,6 +125,13 @@
                               <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom100" selected="true" text="100%" toggleGroup="$zoomGroup" />
                               <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom150" text="150%" toggleGroup="$zoomGroup" />
                            </items>
+                           <graphic>
+                              <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../icons/zoom.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic>
                         </Menu>
                      </items>
                   </Menu>

@@ -31,4 +31,8 @@ public class CommandManager {
             System.out.println("Stack dei comandi vuoto");
         }
     }
+
+    public void clear() {
+        undoStack.clear(); // Pulisce lo stack dei comandi
+    }
 }
