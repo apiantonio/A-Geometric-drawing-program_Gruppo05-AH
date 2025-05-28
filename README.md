@@ -42,9 +42,9 @@ La repository è organizzata per riflettere le varie fasi di sviluppo:
 │       Definition_of_Done.pdf
 │       Environment_configuration.pdf
 │       presentazione_1week.pptx
-│       README.md
 │       Scelte_di_Design.pdf
 │       Week1_PreGame.pdf
+│       README.md
 │
 ├───Sprint1
 |       Class Diagram.pdf
@@ -58,6 +58,14 @@ La repository è organizzata per riflettere le varie fasi di sviluppo:
 │       README.md
 │
 ├───Sprint2
+│       Class Diagram-2.pdf
+│       presentazioneSprint2.pptx
+│       Product e Sprint Backlog - sprint 2.pdf
+│       PROJECT BURNDOWN (2).pdf
+│       Sprint Review.pdf
+│       Sprint_Retrospective.pdf
+│       Test Funzionali.pdf
+│       Updated Mockup.pdf
 │       README.md
 │
 └───Sprint3
