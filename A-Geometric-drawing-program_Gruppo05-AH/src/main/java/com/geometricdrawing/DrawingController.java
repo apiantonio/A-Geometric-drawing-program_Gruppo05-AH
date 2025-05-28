@@ -759,6 +759,14 @@ public class DrawingController {
         }
     }
 
+    // metodo di supporto per creare un nuovo workspace
+    public void clearCommands() {
+        if (commandManager != null) {
+            commandManager.clear(); // Svuota lo stack dei comandi
+            clipboardManager.clearClipboard();
+        }
+    }
+
     /**
      * Gestisce l'azione di copia della figura selezionata negli appunti.
      */
