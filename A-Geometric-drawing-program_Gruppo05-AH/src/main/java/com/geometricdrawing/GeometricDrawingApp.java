@@ -24,7 +24,7 @@ public class GeometricDrawingApp extends Application {
         AnchorPane root = fxmlLoader.load();
 
         DrawingController controller = fxmlLoader.getController();
-
+        controller.setStage(stage);
 
         Scene scene = new Scene(root);
         stage.setTitle("Geometric Drawing App");

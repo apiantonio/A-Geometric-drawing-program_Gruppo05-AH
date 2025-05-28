@@ -13,6 +13,7 @@ import java.util.Optional;
 
 public class Exit {
     private final DrawingController drawingController;
+
     public Exit(DrawingController drawingController) {
         this.drawingController = drawingController;
     }
@@ -34,6 +35,7 @@ public class Exit {
                 // L'utente vuole salvare. Mostra il dialogo di salvataggio.
                 // Usiamo lo strategy per il salvataggio serializzato.
                 if (foc != null) {
+                    foc.setStrategySave(new SerializedSaveStrategy());
                     foc.executeSave();
                     Platform.exit();
                 }
