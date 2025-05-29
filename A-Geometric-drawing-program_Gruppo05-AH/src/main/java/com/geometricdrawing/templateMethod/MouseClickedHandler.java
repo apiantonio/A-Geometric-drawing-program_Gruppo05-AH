@@ -7,7 +7,8 @@ import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
-import com.geometricdrawing.ZoomHandler;
+// Rimuovi l'importazione di ZoomHandler se non più usato direttamente qui
+// import com.geometricdrawing.ZoomHandler;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
@@ -27,16 +28,21 @@ public class MouseClickedHandler extends AbstractMouseHandler {
     @Override
     protected void preProcess(MouseEvent event) {
         if (controller.getModel() == null || controller.getCommandManager() == null ||
-                controller.getHeightSpinner() == null || controller.getWidthSpinner() == null ||
-                controller.getZoomHandler() == null) {
-            System.err.println("Errore: Componenti non inizializzati (model, commandManager, spinners o zoomHandler).");
+                controller.getHeightSpinner() == null || controller.getWidthSpinner() == null) { // Rimossa la dipendenza diretta da zoomHandler qui per il check iniziale
+            System.err.println("Errore: Componenti non inizializzati (model, commandManager, spinners).");
+            // Non possiamo convertire le coordinate se il controller o i suoi componenti mancano
+            // Considera se impostare worldX/Y a valori che prevengono ulteriori elaborazioni
+            // o lanciare un'eccezione, o gestire l'errore in modo più robusto.
+            // Per ora, usiamo le coordinate dell'evento direttamente, ma questo sarà scorretto
+            // se lo zoom/scroll è attivo. Idealmente, il controller dovrebbe essere sempre pronto.
             this.worldX = event.getX();
             this.worldY = event.getY();
+            currentShapeFactory = null; // Previene la creazione di forme se lo stato non è valido
             return;
         }
 
-        ZoomHandler zoomHandler = controller.getZoomHandler();
-        Point2D worldCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
+        // Utilizza il metodo centralizzato del controller per la conversione delle coordinate
+        Point2D worldCoords = controller.canvasToWorldCoordinates(event.getX(), event.getY());
         this.worldX = worldCoords.getX();
         this.worldY = worldCoords.getY();
 
