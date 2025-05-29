@@ -8,6 +8,7 @@ import com.geometricdrawing.factory.EllipseFactory;
 import com.geometricdrawing.factory.LineFactory;
 import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
+import com.geometricdrawing.model.Polygon;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
 import javafx.animation.PauseTransition;
@@ -41,6 +42,9 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 /**
@@ -103,6 +107,10 @@ public class DrawingController {
     // Coordinate per "Incolla qui" (locali al canvas)
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
+
+    // Punti temporanei per la creazione di poligoni
+    private List<Point2D> tempPolygonPoints;
+    private boolean isDrawingPolygon = false;
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -1003,6 +1011,27 @@ public class DrawingController {
                 }
             }
         }
+
+        // Se stiamo disegnando un poligono, mostra i punti temporanei
+        if (isDrawingPolygon && tempPolygonPoints != null && !tempPolygonPoints.isEmpty()) {
+            gc.setStroke(Color.GRAY);
+            gc.setLineWidth(1.0);
+
+            // Disegna linee tra i punti
+            for (int i = 0; i < tempPolygonPoints.size() - 1; i++) {
+                Point2D p1 = tempPolygonPoints.get(i);
+                Point2D p2 = tempPolygonPoints.get(i + 1);
+                gc.strokeLine(p1.getX(), p1.getY(), p2.getX(), p2.getY());
+            }
+
+            // Disegna linea dal ultimo punto al mouse se ci sono almeno 2 punti
+            if (tempPolygonPoints.size() >= 2) {
+                Point2D lastPoint = tempPolygonPoints.getLast();
+                gc.strokeLine(lastPoint.getX(), lastPoint.getY(),
+                        this.lastCanvasMouseX, this.lastCanvasMouseY);
+            }
+        }
+
         gc.restore(); // Ripristina lo stato del GraphicsContext precedente allo save()
     }
 
@@ -1177,6 +1206,7 @@ public class DrawingController {
         Button okButton = new Button("OK");
         okButton.setOnAction(e -> {
             int numVertici = spinner.getValue();
+            startPolygonDrawing(numVertici); // Avvia la creazione del poligono con il numero di vertici selezionato
             popupStage.close();
         });
 
@@ -1192,6 +1222,16 @@ public class DrawingController {
         popupStage.showAndWait();
     }
 
+    private void startPolygonDrawing(int numVertices) {
+        isDrawingPolygon = true;
+        tempPolygonPoints = new ArrayList<>();
+        currentShape = null;
+        drawingCanvas.setCursor(Cursor.CROSSHAIR);
+    }
+
+    public boolean isDrawingPolygon() {
+        return isDrawingPolygon;
+    }
 
     @FXML
     private void handleGrid10() {
@@ -1223,4 +1263,15 @@ public class DrawingController {
         }
     }
 
+    public void setTempPolygonPoints(ArrayList<Point2D> arrayList) {
+        this.tempPolygonPoints = arrayList;
+    }
+
+    public List<Point2D> getTempPolygonPoints() {
+        return this.tempPolygonPoints;
+    }
+
+    public void setIsDrawingPolygon(boolean b) {
+        this.isDrawingPolygon = b;
+    }
 }

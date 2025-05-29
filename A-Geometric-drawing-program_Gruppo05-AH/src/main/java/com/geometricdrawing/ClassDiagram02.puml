@@ -521,6 +521,13 @@ PdfSaveStrategy .up.> fxml : salva >
 SerializedSaveStrategy .up.> fxml : salva >
 FileOperationContext --> SaveStrategy
 FileOperationContext --> LoadStrategy
+SaveStrategy ..> DrawingModel
+LoadStrategy ..> DrawingModel
+SerializedLoadStrategy ..> DrawingModel
+PngSaveStrategy ..> DrawingModel
+PdfSaveStrategy ..> DrawingModel
+SerializedSaveStrategy ..> DrawingModel
+
 
 ' Commands relations
 command.CommandManager --> command.Command : esegue  >
