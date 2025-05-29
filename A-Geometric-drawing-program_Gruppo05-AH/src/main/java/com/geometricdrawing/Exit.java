@@ -18,7 +18,7 @@ public class Exit {
         this.drawingController = drawingController;
     }
 
-    public void exit() {
+    public boolean exit() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Chiudi Applicazione");
         alert.setContentText("Vuoi salvare le modifiche prima di chiudere?");
@@ -36,14 +36,19 @@ public class Exit {
                 // Usiamo lo strategy per il salvataggio serializzato.
                 if (foc != null) {
                     foc.setStrategySave(new SerializedSaveStrategy());
-                    foc.executeSave();
-                    Platform.exit();
+                    boolean prova = foc.executeSave();
+                    if(prova) {
+                        Platform.exit();
+                        return true;
+                    }else return false;
                 }
             }else if (result.get() == buttonTypeDontSave) {
                 Platform.exit();
+                return true;
             }else {
-                return;
+                return false;
             }
         }
+        return false;
     }
 }

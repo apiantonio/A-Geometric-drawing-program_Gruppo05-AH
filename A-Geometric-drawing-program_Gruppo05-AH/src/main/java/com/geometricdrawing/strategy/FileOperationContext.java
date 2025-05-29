@@ -30,11 +30,11 @@ public class FileOperationContext {
         this.loadStrategy = loadStrategy;
     }
 
-    public void executeSave() {
+    public boolean executeSave() {
         if (saveStrategy == null) {
             System.err.println("Strategia di salvataggio non fornita al contesto.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Strategia di salvataggio non specificata.");
-            return;
+            return false;
         }
 
         DrawingModel currentModel = controller.getModel();
@@ -45,17 +45,17 @@ public class FileOperationContext {
         if (saveStrategy instanceof SerializedSaveStrategy && currentModel == null) {
             System.err.println("Modello non inizializzato. Impossibile salvare il file serializzato.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Salvataggio", "Modello non inizializzato. Impossibile salvare.");
-            return;
+            return false;
         }
         if (!(saveStrategy instanceof SerializedSaveStrategy) && (currentCanvas == null || currentCanvas.getWidth() == 0 || currentCanvas.getHeight() == 0)) {
             System.err.println("Canvas non disponibile o dimensioni nulle. Impossibile salvare file basato su immagine.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Salvataggio", "Il canvas non è pronto per il salvataggio.");
-            return;
+            return false;
         }
         if (currentWindow == null) {
             System.err.println("Finestra non disponibile per FileChooser.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Impossibile visualizzare la finestra di dialogo.");
-            return;
+            return false;
         }
 
         FileChooser fileChooser = new FileChooser();
@@ -68,6 +68,7 @@ public class FileOperationContext {
                 saveStrategy.save(file, currentModel, currentCanvas);
                 System.out.println("File salvato con successo in " + file.getAbsolutePath());
                 controller.showAlertDialog(Alert.AlertType.INFORMATION, "Salvataggio Riuscito", "File salvato in:\n" + file.getName());
+                return true;
             } catch (IOException e) {
                 System.err.println("Errore durante il salvataggio del file: " + e.getMessage());
                 e.printStackTrace();
@@ -80,6 +81,7 @@ public class FileOperationContext {
         } else {
             System.out.println("Operazione di salvataggio annullata dall'utente.");
         }
+        return false;
     }
 
     public void executeLoad() {

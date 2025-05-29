@@ -103,7 +103,8 @@ public class DrawingController {
     private double dragOffsetY;
     private double startDragX = RESET_DRAG;
     private double startDragY = RESET_DRAG;
-
+    private double initialDragShapeX_world; // Shape's world X at mouse press
+    private double initialDragShapeY_world; // Shape's world Y at mouse press
     // Coordinate per "Incolla qui" (locali al canvas)
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
@@ -1111,6 +1112,7 @@ public class DrawingController {
     @FXML private void handleZoom75() { if (zoomHandler != null) zoomHandler.setZoom75(); }
     @FXML private void handleZoom100() { if (zoomHandler != null) zoomHandler.setZoom100(); }
     @FXML private void handleZoom150() { if (zoomHandler != null) zoomHandler.setZoom150(); }
+    @FXML private void handleZoom200(){if (zoomHandler != null) zoomHandler.setZoom200();}
 
     @FXML
     private void handleCloseFile() {
@@ -1184,9 +1186,12 @@ public class DrawingController {
     public FileOperationContext getFileOperationContext() { return fileOperationContext; }
     public void setStage(Stage stage) {
         this.stage = stage;
-
         this.stage.setOnCloseRequest(event -> {
-            handleCloseFile();
+            Exit exitLogic = new Exit(this);
+            boolean willExit = exitLogic.exit(); // Chiamata al metodo modificato
+            if (!willExit) {
+                event.consume(); // Consuma l'evento SOLO se l'applicazione NON deve chiudersi
+            }
         });
     }
 
@@ -1262,6 +1267,10 @@ public class DrawingController {
             redrawCanvas(); // Forza il ridisegno per mostrare/nascondere la griglia
         }
     }
+    public double getInitialDragShapeX_world() { return initialDragShapeX_world; }
+    public void setInitialDragShapeX_world(double initialDragShapeX_world) { this.initialDragShapeX_world = initialDragShapeX_world; }
+    public double getInitialDragShapeY_world() { return initialDragShapeY_world; }
+    public void setInitialDragShapeY_world(double initialDragShapeY_world) { this.initialDragShapeY_world = initialDragShapeY_world; }
 
     public void setTempPolygonPoints(ArrayList<Point2D> arrayList) {
         this.tempPolygonPoints = arrayList;
