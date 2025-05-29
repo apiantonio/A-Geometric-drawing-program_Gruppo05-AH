@@ -8,6 +8,8 @@ public abstract class AbstractShape implements Serializable{
     protected double y; // Posizione y (es. angolo sup-sx, o startY per linea)
     protected int z;    // Livello di profondità della figura
 
+    protected double rotationAngle = 0.0; // Angolo di rotazione della figura espresso in gradi
+
     // Dimensioni definite dalle factory per US-3
     protected double width;
     protected double height;
@@ -22,8 +24,21 @@ public abstract class AbstractShape implements Serializable{
     // Costruttore di default
     protected AbstractShape() {}
 
-    // Metodo per disegnare la figura
-    public abstract void draw(GraphicsContext gc);
+    public void draw(GraphicsContext gc) {
+        gc.save();
+
+        double centerX = x + width / 2;
+        double centerY = y + height / 2;
+
+        gc.translate(centerX, centerY); // l'origine del context adesso è impostato come il centro della figura
+        gc.rotate(rotationAngle);
+
+        drawShape(gc);
+
+        gc.restore();
+    }
+
+    public abstract void drawShape(GraphicsContext gc); // ogni forma concreta implementa questo
 
     public boolean containsPoint(double x, double y, double threshold) {
         return x >= this.x - threshold && x <= this.x + this.width + threshold &&
@@ -99,6 +114,18 @@ public abstract class AbstractShape implements Serializable{
 
     public void setHeight(double height) {
         this.height = height;
+    }
+
+    public double getRotationAngle() {
+        return rotationAngle;
+    }
+
+    public void setRotationAngle(double angle) {
+        this.rotationAngle = angle;
+    }
+
+    public void rotateBy(double deltaAngle) {
+        this.rotationAngle += deltaAngle;
     }
 
     //Utilizzato per copiare la figura nella clipboard

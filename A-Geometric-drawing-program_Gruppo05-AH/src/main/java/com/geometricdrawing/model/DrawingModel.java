@@ -131,6 +131,17 @@ public class DrawingModel {
         }
     }
 
+    /**
+     * Metodo richiamato dal command che ruota una figura di un certo angolo
+     * @param shape figura da ruotare
+     * @param deltaAngle angol di rotazione rispetto alla posizione attuale della figura
+     */
+    public void rotateShape(AbstractShape shape, double deltaAngle) {
+        if (shape != null) {
+            shape.rotateBy(deltaAngle);  // già fa il % 360 e gestisce i negativi
+        }
+    }
+
     public ObservableList<AbstractShape> getShapes() {
         return this.shapes;
     }

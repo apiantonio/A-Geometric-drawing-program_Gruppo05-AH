@@ -28,7 +28,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
@@ -391,7 +391,7 @@
                                        </children>
                                     </VBox>
                                     <Separator layoutX="398.0" layoutY="10.0" orientation="VERTICAL" prefHeight="145.0" prefWidth="0.0" />
-                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="265.0">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="364.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="213.0">
                                              <VBox.margin>
@@ -423,6 +423,7 @@
                                                       </Button>
                                                    </children>
                                                 </VBox>
+                                                <Spinner fx:id="rotationSpinner" />
                                                 <MenuButton id="grid_options" fx:id="gridOptions" contentDisplay="TOP" mnemonicParsing="false" prefHeight="90.0" prefWidth="92.0" stylesheets="@../../style.css" text="Opzioni&#10;Griglia" textAlignment="CENTER">
                                                    <graphic>
                                                       <ImageView fitHeight="45.0" fitWidth="42.0" pickOnBounds="true" preserveRatio="true">

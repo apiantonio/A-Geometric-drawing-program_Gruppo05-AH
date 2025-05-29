@@ -40,6 +40,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 
 import java.util.function.UnaryOperator;
 
@@ -70,6 +71,8 @@ public class DrawingController {
 
     @FXML private CheckMenuItem toggleGrid; // Menu per mostrare/nascondere la griglia
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
+
+    @FXML private Spinner<Double> rotationSpinner;
 
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
@@ -104,6 +107,9 @@ public class DrawingController {
     // Coordinate per "Incolla qui" (locali al canvas)
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
+
+    private boolean isUpdatedRotateSpinner = false;     // serve perchè altrimenti il listener viene chiamato anche
+    // quando il valore dello spinner non è impostato dall'utente ma da codice
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -230,6 +236,22 @@ public class DrawingController {
             configureNumericTextFormatter(widthSpinner);
         }
 
+        // Per inizializzare lo spinner di rotazione
+        if(rotationSpinner != null) {
+            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-360, 360, 0, 1);
+
+            rotationSpinner.setValueFactory(rotationValueFactory);
+            rotationSpinner.setEditable(true);
+            rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                if (!isUpdatedRotateSpinner && oldValue != null && newValue != null) {
+                    double deltaAngle = newValue - oldValue;
+                    handleRotation(deltaAngle);
+                }
+            });
+            configureSpinnerFocusListener(rotationSpinner);
+            configureNumericTextFormatter(rotationSpinner);
+        }
+
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
         updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
 
@@ -300,6 +322,19 @@ public class DrawingController {
             }
         });
         canvasContextMenu.getItems().add(pasteHereItem);
+    }
+
+    /**
+     * Gestisce la rotazione della figura
+     * @param deltaAngle rappresenta l'angolo di cui la figura selezionata va ruotata
+     */
+    @FXML
+    public void handleRotation(double deltaAngle) {
+        if (currentShape != null && rotationSpinner.getValue() != null) {
+            RotateShapeCommand cmd = new RotateShapeCommand(model, currentShape, deltaAngle);
+            commandManager.executeCommand(cmd);
+            redrawCanvas();
+        }
     }
 
     /**
@@ -611,6 +646,7 @@ public class DrawingController {
         boolean enableCut = false;
         boolean enableForeground = false;
         boolean enableBackground = false;
+        boolean enableRotation = false;
 
         currentShape = shape;
 
@@ -640,6 +676,7 @@ public class DrawingController {
             enableBackground = true;
             enableForeground = true;
             enableBorderPicker = true;
+            enableRotation = true;
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
@@ -672,6 +709,7 @@ public class DrawingController {
         if (cutButton != null) cutButton.setDisable(!enableCut);
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
+        if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
 
         // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
@@ -934,7 +972,12 @@ public class DrawingController {
 
         if (shape != null) { // Se una figura è selezionata
             AbstractShape baseShape = getBaseShape(shape);
-            widthSpinner.getValueFactory().setValue(baseShape.getWidth()); // Imposta larghezza
+            widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
+
+            isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
+            rotationSpinner.getValueFactory().setValue(shape.getRotationAngle()); // Imposta angolo di rotazione
+            isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
+
             if (baseShape instanceof Line) {
                 // Per la Linea, l'altezza non è direttamente modificabile.
                 // Lo spinner altezza mostrerà un valore di default (es. il suo minimo)
@@ -947,6 +990,7 @@ public class DrawingController {
             // Resetta gli spinner ai valori di default della factory
             widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
             heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
+            rotationSpinner.getValueFactory().setValue(0.0); // Imposta angolo di rotazione
             // Gli spinner saranno disabilitati da updateControlState se nessuna figura è selezionata.
         }
     }
@@ -1007,37 +1051,53 @@ public class DrawingController {
         gc.restore(); // Ripristina lo stato del GraphicsContext precedente allo save()
     }
 
-    /**
-     * Disegna il bordo di evidenziazione e le maniglie per la figura selezionata.
-     * @param shape La figura da evidenziare.
-     */
     private void drawHighlightBorder(AbstractShape shape) {
         AbstractShape baseShape = getBaseShape(shape); // Ottiene la forma base (non decorata)
 
-        // Impostazioni per il bordo di selezione (tratteggiato, colore specifico)
-        double lineWidthOnScreen = 1.0; // Spessore desiderato per la linea di selezione sullo schermo
-        double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor(); // Spessore in coordinate del mondo
+        double centerX = baseShape.getX() + baseShape.getWidth() / 2;
+        double centerY = baseShape.getY() + baseShape.getHeight() / 2;
+        double angle = baseShape.getRotationAngle();
 
-        gc.setStroke(Color.SKYBLUE); // Colore del bordo di selezione
-        gc.setLineWidth(worldLineWidth); // Spessore linea (scalato per zoom)
-        gc.setLineDashes(5 * worldLineWidth); // Linea tratteggiata (tratteggio scalato)
+        // Impostazioni per il bordo di selezione
+        double lineWidthOnScreen = 1.0;
+        double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor();
 
-        if (baseShape instanceof Line line) { // Se è una linea, evidenzia la linea stessa e le sue estremità
-            gc.strokeLine(line.getX(), line.getY(), line.getEndX(), line.getEndY());
-            drawHandle(line.getX(), line.getY()); // Maniglia all'inizio
-            drawHandle(line.getEndX(), line.getEndY()); // Maniglia alla fine
-        } else { // Se è un rettangolo o ellisse (o altra forma con bounding box)
-            // Disegna un rettangolo tratteggiato attorno al bounding box
-            gc.strokeRect(baseShape.getX(), baseShape.getY(), baseShape.getWidth(), baseShape.getHeight());
-            // Disegna maniglie agli angoli del bounding box
-            drawHandle(baseShape.getX(), baseShape.getY()); // Alto-sinistra
-            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY()); // Alto-destra
-            drawHandle(baseShape.getX(), baseShape.getY() + baseShape.getHeight()); // Basso-sinistra
-            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY() + baseShape.getHeight()); // Basso-destra
-            // Opzionale: maniglie ai punti medi dei lati
+        gc.save(); // Salva lo stato grafico prima della trasformazione
+
+        gc.translate(centerX, centerY);
+        gc.rotate(angle); // Applica la rotazione
+
+        gc.setStroke(Color.SKYBLUE);
+        gc.setLineWidth(worldLineWidth);
+        gc.setLineDashes(5 * worldLineWidth);
+
+        if (baseShape instanceof Line line) {
+            // Calcola estremi relativi al centro per rispettare la trasformazione
+            double startX = line.getX() - centerX;
+            double startY = line.getY() - centerY;
+            double endX = line.getEndX() - centerX;
+            double endY = line.getEndY() - centerY;
+
+            gc.strokeLine(startX, startY, endX, endY);
+            drawHandle(startX, startY);
+            drawHandle(endX, endY);
+        } else {
+            // Rettangolo tratteggiato attorno alla bounding box ruotata
+            double x = baseShape.getX() - centerX;
+            double y = baseShape.getY() - centerY;
+            double w = baseShape.getWidth();
+            double h = baseShape.getHeight();
+
+            gc.strokeRect(x, y, w, h);
+
+            // Maniglie ai quattro angoli (coordinate relative al centro)
+            drawHandle(x, y); // top-left
+            drawHandle(x + w, y); // top-right
+            drawHandle(x, y + h); // bottom-left
+            drawHandle(x + w, y + h); // bottom-right
         }
-        gc.setLineDashes(0); // Ripristina linea continua per disegni successivi
-        // gc.setLineWidth(1.0); // Opzionale: ripristina spessore linea default (in unità del mondo)
+
+        gc.restore(); // Ripristina il contesto grafico
     }
 
     /**

@@ -16,7 +16,7 @@ public abstract class ShapeDecorator extends AbstractShape {
     }
 
     @Override
-    public final void draw(GraphicsContext gc) {
+    public final void drawShape(GraphicsContext gc) {
         gc.save();
         // il metodo successivo è quello usato per settare colore di riempimento e di bordo
         decorateShape(gc);
@@ -30,6 +30,12 @@ public abstract class ShapeDecorator extends AbstractShape {
     public boolean containsPoint(double x, double y, double threshold) {
         return decoratedShape.containsPoint(x, y, threshold);
     }
+
+    @Override
+    public void rotateBy(double deltaAngle) {
+        decoratedShape.rotateBy(deltaAngle);
+    }
+
 
     @Override
     public void moveTo(double newX, double newY) {
@@ -48,6 +54,7 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public double getEndY()       { return decoratedShape.getEndY(); }
     @Override public double getWidth()      { return decoratedShape.getWidth(); }
     @Override public double getHeight()     { return decoratedShape.getHeight(); }
+    @Override public double getRotationAngle() { return decoratedShape.getRotationAngle();}
 
     @Override public void setX(double x)           { decoratedShape.setX(x); }
     @Override public void setY(double y)           { decoratedShape.setY(y); }
@@ -56,4 +63,5 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public void setEndY(double y)        { decoratedShape.setEndY(y); }
     @Override public void setWidth(double width)   { decoratedShape.setWidth(width); }
     @Override public void setHeight(double height) { decoratedShape.setHeight(height); }
+    @Override public void setRotationAngle(double angle) { decoratedShape.setRotationAngle(angle);}
 }
