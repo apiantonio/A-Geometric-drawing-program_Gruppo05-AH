@@ -28,7 +28,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
@@ -59,7 +59,7 @@
       </AnchorPane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <MenuBar>
+            <MenuBar useSystemMenuBar="true">
                <menus>
                   <Menu mnemonicParsing="false" text="File">
                      <items>

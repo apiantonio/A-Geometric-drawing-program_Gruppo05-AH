@@ -1082,6 +1082,8 @@ public class DrawingController {
     @FXML private void handleZoom75() { if (zoomHandler != null) zoomHandler.setZoom75(); }
     @FXML private void handleZoom100() { if (zoomHandler != null) zoomHandler.setZoom100(); }
     @FXML private void handleZoom150() { if (zoomHandler != null) zoomHandler.setZoom150(); }
+    //TODO
+    @FXML private void handleZoom200(){}
 
     @FXML
     private void handleCloseFile() {
