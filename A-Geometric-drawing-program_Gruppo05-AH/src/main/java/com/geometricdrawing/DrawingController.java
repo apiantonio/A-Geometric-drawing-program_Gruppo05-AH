@@ -99,7 +99,8 @@ public class DrawingController {
     private double dragOffsetY;
     private double startDragX = RESET_DRAG;
     private double startDragY = RESET_DRAG;
-
+    private double initialDragShapeX_world; // Shape's world X at mouse press
+    private double initialDragShapeY_world; // Shape's world Y at mouse press
     // Coordinate per "Incolla qui" (locali al canvas)
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
@@ -1226,5 +1227,9 @@ public class DrawingController {
             redrawCanvas(); // Forza il ridisegno per mostrare/nascondere la griglia
         }
     }
+    public double getInitialDragShapeX_world() { return initialDragShapeX_world; }
+    public void setInitialDragShapeX_world(double initialDragShapeX_world) { this.initialDragShapeX_world = initialDragShapeX_world; }
+    public double getInitialDragShapeY_world() { return initialDragShapeY_world; }
+    public void setInitialDragShapeY_world(double initialDragShapeY_world) { this.initialDragShapeY_world = initialDragShapeY_world; }
 
 }

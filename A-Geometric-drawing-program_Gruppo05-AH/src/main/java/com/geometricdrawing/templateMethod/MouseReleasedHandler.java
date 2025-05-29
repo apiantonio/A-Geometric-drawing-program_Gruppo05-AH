@@ -30,8 +30,11 @@ public class MouseReleasedHandler extends AbstractMouseHandler {
             // Crea il comando usando la posizione iniziale del drag e la posizione finale della figura
             MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentShape, x, y);
 
-            moveCmd.setOldX(controller.getStartDragX() - controller.getDragOffsetX());
-            moveCmd.setOldY(controller.getStartDragY() - controller.getDragOffsetY());
+            double oldXVal = controller.getInitialDragShapeX_world();
+            double oldYVal = controller.getInitialDragShapeY_world();
+
+            moveCmd.setOldX(oldXVal);
+            moveCmd.setOldY(oldYVal);
 
             controller.getCommandManager().executeCommand(moveCmd);
         }

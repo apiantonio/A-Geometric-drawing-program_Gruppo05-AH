@@ -59,7 +59,7 @@
       </AnchorPane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <MenuBar useSystemMenuBar="true">
+            <MenuBar>
                <menus>
                   <Menu mnemonicParsing="false" text="File">
                      <items>

@@ -51,13 +51,19 @@ public class MousePressedHandler extends AbstractMouseHandler {
         if (currentShape != null && currentShape.containsPoint(worldX, worldY, SELECTION_THRESHOLD)) { //
             // Il clic è su una forma esistente (o quella appena selezionata in preProcess)
             // currentShape è già stato determinato in preProcess e trasformato in coordinate del mondo
-            if (currentShape != null && currentShape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD)) {
+                controller.setInitialDragShapeX_world(currentShape.getX());
+                controller.setInitialDragShapeY_world(currentShape.getY());
+
                 dragOffsetX = this.worldX - currentShape.getX();
                 controller.setDragOffsetX(dragOffsetX);
                 dragOffsetY = this.worldY - currentShape.getY();
                 controller.setDragOffsetY(dragOffsetY);
                 canvas.setCursor(Cursor.CLOSED_HAND);
 
+                controller.getRootPane().requestFocus();
+                if (event.getButton() == MouseButton.SECONDARY) {
+                    controller.showContextMenu(event);
+                }
                 // Calcola l'offset per il trascinamento
                 dragOffsetX = worldX - currentShape.getX(); //
                 controller.setDragOffsetX(dragOffsetX); //
@@ -73,13 +79,13 @@ public class MousePressedHandler extends AbstractMouseHandler {
                     // controller.setLastContextMousePosition(x, y); // Se vuoi usare questo per il menu delle forme
                     controller.showContextMenu(event); //
                 }
-            } else {
+             else {
                 // Deseleziona la forma corrente nel controller
-                currentShape = null; // Aggiorna la copia locale
-                controller.setCurrentShape(null);
+                //currentShape = null; // Aggiorna la copia locale
+                //controller.setCurrentShape(null);
                 // updateSpinners e updateControlState verranno chiamati in postProcess
                 // Aggiorna la forma corrente nel controller con quella identificata
-                controller.setCurrentShape(currentShape);
+                //controller.setCurrentShape(currentShape);
 
             }
         }
