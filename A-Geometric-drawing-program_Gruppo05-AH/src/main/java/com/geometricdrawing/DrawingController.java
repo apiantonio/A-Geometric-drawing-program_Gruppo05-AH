@@ -52,6 +52,7 @@ public class DrawingController {
     @FXML private AnchorPane rootPane;
     @FXML private Canvas drawingCanvas;
     @FXML private AnchorPane canvasContainer;
+    @FXML private ScrollPane drawingScrollPane; // NUOVA INIZIALIZZAZIONE
 
     @FXML private Button deleteButton;
     @FXML private Button copyButton;
@@ -197,44 +198,122 @@ public class DrawingController {
             rootPane.setOnKeyPressed(this::onRootKeyPressed);
 
             // Binding dimensioni canvas al contenitore
+            // Le dimensioni del Canvas devono essere legate alle dimensioni del canvasContainer
             drawingCanvas.widthProperty().bind(canvasContainer.widthProperty());
             drawingCanvas.heightProperty().bind(canvasContainer.heightProperty());
 
-            // Listener per ridisegnare se le dimensioni del canvas cambiano
-            drawingCanvas.widthProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
-            drawingCanvas.heightProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
+            // Listener per lo zoom, che innesca l'aggiornamento delle dimensioni del canvasContainer
+            zoomHandler.zoomFactorProperty().addListener((obs, oldVal, newVal) -> {
+                updateCanvasContainerSize();
+                // NON CHIAMIAMO redrawCanvas() QUI DIRETTAMENTE!
+                // Verrà chiamato dal listener sottostante dopo il layout.
+            });
+
+            // *** CRITICAL FIX: Listener per ridisegnare DOPO che canvasContainer (e quindi canvas) è stato ridimensionato ***
+            // Questo garantisce che il canvas abbia dimensioni valide prima di tentare il disegno,
+            // evitando la NullPointerException.
+            canvasContainer.widthProperty().addListener((obs, oldVal, newVal) -> {
+                // Assicurati che le dimensioni siano positive prima di ridisegnare
+                if (newVal != null && newVal.doubleValue() > 0 && drawingCanvas.getHeight() > 0) {
+                    redrawCanvas();
+                }
+            });
+            canvasContainer.heightProperty().addListener((obs, oldVal, newVal) -> {
+                // Assicurati che le dimensioni siano positive prima di ridisegnare
+                if (newVal != null && newVal.doubleValue() > 0 && drawingCanvas.getWidth() > 0) {
+                    redrawCanvas();
+                }
+            });
+
+
+            // Inizializzazione Spinner per altezza e larghezza
+            if (heightSpinner != null) {
+                SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
+                heightSpinner.setValueFactory(heightFactory);
+                heightSpinner.setEditable(true);
+                heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
+                    if (newValue != null) handleDimensionChange(false, newValue); // false indica cambio altezza
+                });
+                configureSpinnerFocusListener(heightSpinner); // Gestisce commit del valore
+                configureNumericTextFormatter(heightSpinner); // Formattatore per input numerico
+            }
+
+            if (widthSpinner != null) {
+                SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0);
+                widthSpinner.setValueFactory(widthFactory);
+                widthSpinner.setEditable(true);
+                widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
+                    if (newValue != null) handleDimensionChange(true, newValue); // true indica cambio larghezza
+                });
+                configureSpinnerFocusListener(widthSpinner);
+                configureNumericTextFormatter(widthSpinner);
+            }
+
+            currentShapeFactory = null; // Nessuna factory attiva all'inizio
+            updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
+
+            // Imposta le dimensioni iniziali del canvasContainer
+            // Questo triggerà il listener di canvasContainer.widthProperty/heightProperty
+            // che a sua volta chiamerà redrawCanvas().
+            updateCanvasContainerSize();
+
+            // Questo chiamerà redrawCanvas() una volta all'inizio,
+            // ma il comportamento di redraw in seguito è gestito dai listeners.
+            onToggleGrid();
         } else {
             System.err.println("Errore: drawingCanvas non è stato iniettato da FXML!");
         }
+    }
 
-        // Inizializzazione Spinner per altezza e larghezza
-        if (heightSpinner != null) {
-            SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
-            heightSpinner.setValueFactory(heightFactory);
-            heightSpinner.setEditable(true);
-            heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
-                if (newValue != null) handleDimensionChange(false, newValue); // false indica cambio altezza
-            });
-            configureSpinnerFocusListener(heightSpinner); // Gestisce commit del valore
-            configureNumericTextFormatter(heightSpinner); // Formattatore per input numerico
+    // NUOVO METODO: Aggiorna le dimensioni del canvasContainer in base al contenuto e allo zoom
+    private void updateCanvasContainerSize() {
+        // Limite massimo suggerito per le dimensioni del canvas in pixel
+        final double MAX_CANVAS_DIMENSION = 4096; // Puoi testare anche 4096 o 16384
+
+        double zoomFactor = zoomHandler.getZoomFactor();
+
+        // Get the current visible viewport dimensions from the ScrollPane.
+        // It's crucial to get these *after* the scene is laid out,
+        // so it's often better to call this in an appropriate listener or after stage.show().
+        double viewportWidth = drawingScrollPane.getViewportBounds().getWidth(); // Use getViewportBounds() for more reliable size
+        double viewportHeight = drawingScrollPane.getViewportBounds().getHeight(); // Use getViewportBounds() for more reliable size
+
+        // IMPORTANT: Add a safety check for zero or negative dimensions
+        // If the ScrollPane hasn't been laid out yet, its dimensions might be 0.
+        // Prevent division by zero or invalid canvas sizes.
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            // Provide a reasonable fallback. These values should represent
+            // what you expect the ScrollPane's minimum visible area to be.
+            // Using the drawingCanvas's current width/height as a fallback is also an option
+            // if you expect it to have some initial size set in FXML or code.
+            viewportWidth = drawingCanvas.getWidth() > 0 ? drawingCanvas.getWidth() : 800; // Fallback to canvas size or a default
+            viewportHeight = drawingCanvas.getHeight() > 0 ? drawingCanvas.getHeight() : 600; // Fallback to canvas size or a default
         }
 
-        if (widthSpinner != null) {
-            SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0);
-            widthSpinner.setValueFactory(widthFactory);
-            widthSpinner.setEditable(true);
-            widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
-                if (newValue != null) handleDimensionChange(true, newValue); // true indica cambio larghezza
-            });
-            configureSpinnerFocusListener(widthSpinner);
-            configureNumericTextFormatter(widthSpinner);
-        }
+        // Calculate the base world dimensions. At 100% zoom, these would match the viewport.
+        // At 25% zoom, these should be 4 times the viewport to fill it.
+        // This ensures that at 25%, the content fits the viewport.
+        double baseWorldWidth = viewportWidth / 0.25;
+        double baseWorldHeight = viewportHeight / 0.25;
 
-        currentShapeFactory = null; // Nessuna factory attiva all'inizio
-        updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
+        // The canvasContainer's preferred size scales the base world dimensions by the current zoom factor.
+        double calculatedPrefWidth = baseWorldWidth * zoomFactor;
+        double calculatedPrefHeight = baseWorldHeight * zoomFactor;
 
-        // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
-        onToggleGrid();
+        // Applica il limite massimo alle dimensioni calcolate
+        double finalPrefWidth = Math.min(calculatedPrefWidth, MAX_CANVAS_DIMENSION);
+        double finalPrefHeight = Math.min(calculatedPrefHeight, MAX_CANVAS_DIMENSION);
+
+
+        canvasContainer.setPrefWidth(finalPrefWidth);
+        canvasContainer.setPrefHeight(finalPrefHeight);
+
+
+        // Since drawingCanvas is bound to canvasContainer, it will automatically resize.
+        // No need to set drawingCanvas.setWidth/Height directly here.
+
+        // Force a redraw to update the visualization
+        //redrawCanvas(); // Rimosso perché gestito dai listener sulle proprietà di dimensione del canvasContainer
     }
 
     /**
@@ -450,6 +529,7 @@ public class DrawingController {
         double shapeHeight = newShape.getHeight();
 
         // Dimensioni del canvas in coordinate del mondo
+        // Ora il canvas ha la dimensione del "mondo logico" esteso, non solo della viewport.
         double worldCanvasWidth = drawingCanvas.getWidth() / zoomHandler.getZoomFactor();
         double worldCanvasHeight = drawingCanvas.getHeight() / zoomHandler.getZoomFactor();
 
@@ -865,11 +945,80 @@ public class DrawingController {
                 setCurrentShape(pastedShape); // Seleziona la nuova figura incollata
                 updateControlState(pastedShape); // Aggiorna UI per la nuova selezione
                 updateSpinners(pastedShape); // Aggiorna valori spinner
+                // Scorri per rendere visibile la forma incollata se si trova fuori dalla viewport
+                scrollToShape(pastedShape);
             }
             redrawCanvas(); // Ridisegna il canvas
             updatePasteControlsState(); // Aggiorna stato controlli Incolla
         }
     }
+
+    /**
+     * Scorri il ScrollPane per rendere visibile la figura specificata.
+     * @param shape La figura da rendere visibile.
+     */
+    public void scrollToShape(AbstractShape shape) {
+        if (shape == null || drawingScrollPane == null || zoomHandler == null) return;
+
+        // Converti le coordinate della forma da mondo a schermo (scalate dallo zoom)
+        Point2D screenCoords = zoomHandler.worldToScreen(shape.getX(), shape.getY());
+        double screenX = screenCoords.getX();
+        double screenY = screenCoords.getY();
+        double screenWidth = shape.getWidth() * zoomHandler.getZoomFactor();
+        double screenHeight = shape.getHeight() * zoomHandler.getZoomFactor();
+
+        // Calcola la posizione della forma all'interno del contenuto scrollabile
+        // Assumiamo che il canvas sia l'unico contenuto del canvasContainer e che le coordinate dello schermo siano relative al canvasContainer
+        double contentX = screenX;
+        double contentY = screenY;
+
+        // Ottieni la dimensione della viewport del ScrollPane
+        double viewportWidth = drawingScrollPane.getViewportBounds().getWidth();
+        double viewportHeight = drawingScrollPane.getViewportBounds().getHeight();
+
+        // Ottieni le posizioni attuali di scorrimento (0.0 a 1.0)
+        double hValue = drawingScrollPane.getHvalue();
+        double vValue = drawingScrollPane.getVvalue();
+
+        // Calcola la posizione corrente del contenuto in pixel
+        double currentScrollX = hValue * (canvasContainer.getPrefWidth() - viewportWidth);
+        double currentScrollY = vValue * (canvasContainer.getPrefHeight() - viewportHeight);
+
+        boolean needsHorizontalScroll = false;
+        boolean needsVerticalScroll = false;
+        double newHValue = hValue;
+        double newVValue = vValue;
+
+        // Controlla se la forma è fuori dalla vista orizzontale
+        if (contentX < currentScrollX) { // Forma a sinistra della viewport
+            newHValue = contentX / (canvasContainer.getPrefWidth() - viewportWidth);
+            needsHorizontalScroll = true;
+        } else if (contentX + screenWidth > currentScrollX + viewportWidth) { // Forma a destra della viewport
+            newHValue = (contentX + screenWidth - viewportWidth) / (canvasContainer.getPrefWidth() - viewportWidth);
+            needsHorizontalScroll = true;
+        }
+
+        // Controlla se la forma è fuori dalla vista verticale
+        if (contentY < currentScrollY) { // Forma sopra la viewport
+            newVValue = contentY / (canvasContainer.getPrefHeight() - viewportHeight);
+            needsVerticalScroll = true;
+        } else if (contentY + screenHeight > currentScrollY + viewportHeight) { // Forma sotto la viewport
+            newVValue = (contentY + screenHeight - viewportHeight) / (canvasContainer.getPrefHeight() - viewportHeight);
+            needsVerticalScroll = true;
+        }
+
+        // Assicurati che i valori siano tra 0.0 e 1.0
+        newHValue = Math.max(0.0, Math.min(1.0, newHValue));
+        newVValue = Math.max(0.0, Math.min(1.0, newVValue));
+
+        if (needsHorizontalScroll) {
+            drawingScrollPane.setHvalue(newHValue);
+        }
+        if (needsVerticalScroll) {
+            drawingScrollPane.setVvalue(newVValue);
+        }
+    }
+
 
     /**
      * Gestisce l'azione di Annulla (Undo).
@@ -1078,6 +1227,7 @@ public class DrawingController {
             fileOperationContext.executeSave();
         } }
 
+
     @FXML private void handleZoom25() { if (zoomHandler != null) zoomHandler.setZoom25(); }
     @FXML private void handleZoom50() { if (zoomHandler != null) zoomHandler.setZoom50(); }
     @FXML private void handleZoom75() { if (zoomHandler != null) zoomHandler.setZoom75(); }
@@ -1182,6 +1332,8 @@ public class DrawingController {
         Button okButton = new Button("OK");
         okButton.setOnAction(e -> {
             int numVertici = spinner.getValue();
+            // TODO: Qui dovresti passare il numVertici alla tua PolygonFactory quando la implementerai
+            // initializeShapeSelection(new PolygonFactory(numVertici), false, false);
             popupStage.close();
         });
 

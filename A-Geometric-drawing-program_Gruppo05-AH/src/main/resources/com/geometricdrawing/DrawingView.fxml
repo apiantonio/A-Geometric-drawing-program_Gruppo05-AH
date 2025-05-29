@@ -11,6 +11,7 @@
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.RadioMenuItem?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.Spinner?>
@@ -25,38 +26,12 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
 <AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
-      <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
-         <Canvas fx:id="drawingCanvas" />
-         <Label fx:id="cutCopyLabel" alignment="CENTER" layoutX="405.0" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;" text="Elemento copiato negli appunti!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
-            <font>
-               <Font size="16.0" />
-            </font>
-            <graphic>
-               <ImageView fitHeight="32.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
-                  <image>
-                     <Image url="@../../icons/check.png" />
-                  </image>
-               </ImageView>
-            </graphic>
-         </Label>
-         <Label fx:id="emptyClipboardLabel" alignment="CENTER" prefHeight="29.0" prefWidth="217.0" style="-fx-background-radius: 10; -fx-background-color: #fff1d6;" text="Sezione appunti svuotata" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
-            <font>
-               <Font size="16.0" />
-            </font>
-            <graphic>
-               <ImageView fitHeight="29.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
-                  <image>
-                     <Image url="@../../icons/empty.png" />
-                  </image>
-               </ImageView>
-            </graphic>
-         </Label>
-      </AnchorPane>
       <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
             <MenuBar>
@@ -460,5 +435,45 @@
             </TabPane>
          </children>
       </VBox>
+
+      <StackPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
+         <ScrollPane fx:id="drawingScrollPane" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
+            <AnchorPane fx:id="canvasContainer" minHeight="0.0" minWidth="0.0" prefHeight="4000.0" prefWidth="4000.0" style="-fx-background-color: white;">
+               <Canvas fx:id="drawingCanvas" />
+            </AnchorPane>
+         </ScrollPane>
+         <Label fx:id="cutCopyLabel" alignment="CENTER" contentDisplay="CENTER" text="Elemento copiato negli appunti!" visible="false" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="32.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/check.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+            <StackPane.margin>
+               <Insets bottom="20.0" />
+            </StackPane.margin>
+            <StackPane.alignment>BOTTOM_CENTER</StackPane.alignment>
+         </Label>
+         <Label fx:id="emptyClipboardLabel" alignment="CENTER" contentDisplay="CENTER" text="Sezione appunti svuotata" visible="false" style="-fx-background-radius: 10; -fx-background-color: #fff1d6;">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="29.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/empty.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+            <StackPane.margin>
+               <Insets bottom="20.0" />
+            </StackPane.margin>
+            <StackPane.alignment>BOTTOM_CENTER</StackPane.alignment>
+         </Label>
+      </StackPane>
    </children>
 </AnchorPane>
