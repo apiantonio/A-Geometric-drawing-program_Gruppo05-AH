@@ -1,0 +1,546 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam groupInheritance 1
+left to right direction
+
+' =========================
+' PACKAGE: model
+' =========================
+package model {
+
+  abstract class AbstractShape <<Serializable>> {
+    - x: double
+    - y: double
+    - z: int
+    - width: double
+    - height: double
+    + AbstractShape(x: double, y: double, width: double, height: double)
+    + moveTo(newX: double, newY: double): void
+    + moveBy(deltaX: double, deltaY: double): void
+    + containsPoint(x: double, y: double): boolean
+    + {abstract} draw(gc: GraphicsContext): void
+    + getX(): double
+    + getY(): double
+    + setX(x: double): void
+    + setY(y: double): void
+    + getZ(): double
+    + setZ(z: int): void
+    + getWidth(): double
+    + setWidth(width: double): void
+    + getHeight(): double
+  }
+
+  class Rectangle extends AbstractShape {
+    + Rectangle(x: double, y: double, width: double, height: double)
+    + draw(gc: GraphicsContext): void
+  }
+
+  class Ellipse extends AbstractShape {
+    + Ellipse(x: double, y: double, radiusX: double, radiusY: double)
+    + draw(gc: GraphicsContext): void
+  }
+
+  class Line extends AbstractShape {
+    + Line(startX: double, startY: double, endX: double, endY: double)
+    + draw(gc: GraphicsContext): void
+    + getLenght(): double
+    + moveBy(deltaX: double, deltaY: double): void
+    + getEndX(): double
+    + setEndX(endX: double): void
+    + getEndY(): double
+    + setEndY(endY: double): void
+  }
+
+  class DrawingModel {
+    - shapes: ObservableList<AbstractShape>
+    + DrawingModel()
+    + addShape(s: AbstractShape): void
+    + removeShape(s: AbstractShape): void
+    + getShapes(): ObservableList<Shape>
+    + setShapeWidth(shape: AbstractShape, width: double): void
+    + setShapeheight(shape: AbstractShape, height: double): void
+    + moveShapeTo(shape: AbstractShape, double: newX, double: newY): void
+    + getShapes(): ObservableList<AbstractShape>
+    + getShapesOrderedByZ(): ObservableList<AbstractShape>
+    + clear(): void
+    + saveToFile(file: File): void
+    + loadFromFile(file: File): void
+  }
+
+}
+
+' =========================
+' Desing pattern: Decorator
+' =========================
+package decorator {
+
+  abstract class ShapeDecorator extends model.AbstractShape {
+    # decoratedShape: AbstractShape
+    + ShapeDecorator(shape: AbstractShape)
+    + getInnerShape(): AbstractShape
+    + draw(gc: GraphicsContext): void
+    # {abstract} decorateShape(gc: GraphicsContext): void
+    + containsPoint(x: double, y: double): boolean
+    + getX(): double
+    + getY(): double
+    + setX(x: double): void
+    + setY(y: double): void
+    + getZ(): double
+    + setZ(z: int): void
+    + getWidth(): double
+    + setWidth(width: double): void
+    + getHeight(): double
+  }
+
+  class FillColorDecorator extends ShapeDecorator {
+    - fillColor: Color
+    - red: double
+    - green: double
+    - blue: double
+    - alpha: double
+    + FillColorDecorator(shape: Shape, color: Color)
+    + decorateShape(gc: GraphicsContext): void
+  }
+
+  class BorderColorDecorator extends ShapeDecorator {
+    - borderColor: Color
+    - red: double
+    - green: double
+    - blue: double
+    - alpha: double
+    + BorderColorDecorator(shape: Shape, color: Color)
+    + decorateShape(gc: GraphicsContext): void
+  }
+}
+
+' =========================
+' Desing pattern: Factory
+' =========================
+package factory {
+  abstract class ShapeFactory {
+    - ShapeFactory()
+    + {abstract} createShape(x: double, y: double): AbstractShape
+  }
+
+  class RectangleFactory extends ShapeFactory {
+    + createShape(x: double, y: double): Shape
+  }
+
+  class EllipseFactory extends ShapeFactory {
+    + createShape(x: double, y: double): Shape
+  }
+
+  class LineFactory extends ShapeFactory {
+    + createShape(x: double, y: double): Shape
+  }
+}
+
+' =========================
+' Desing pattern: Command
+' =========================
+package command {
+  interface Command {
+    + execute(): void
+    + undo(): void
+  }
+
+  class CommandManager {
+    - undoStack: Stack<Command>
+    + executeCommand(cmd: Command): void
+    + undo(): void
+  }
+
+  class AddShapeCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShapeShape
+    + AddShapeCommand(model: DrawingModel, shape: AbstractShape)
+    + execute(): void
+    + undo(): void
+  }
+
+  class MoveShapeCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    - newX: double
+    - newY: double
+    - oldX: double
+    - oldY: double
+    + MoveShapeCommand(model: DrawingModel, shape: Shape, newX: double, newY: double)
+    + execute(): void
+    + undo(): void
+  }
+
+  class DeleteShapeCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    + DeleteShapeCommand(model: DrawingModel, shape: AbstractShape)
+    + execute(): void
+    + undo(): void
+  }
+
+  class ChangeWidthCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    - newWidth: double
+    + ChangeWidthCommand(model: DrawingModel, shape: AbstractShape, newWidth: double)
+    + execute(): void
+    + undo(): void
+  }
+
+  class ChangeHeightCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    - newHeight: double
+    + ChangeHeightCommand(gc: GraphicsContext, shape: AbstractShape, newHeight: double)
+    + execute(): void
+    + undo(): void
+  }
+
+  class BringToBackgroundCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    - oldZ: double
+    + BringToBackgroundCommand(model: DrawingModel, shape: AbstractShape)
+    + execute(): void
+    + undo(): void
+  }
+
+  class BringToForegroundCommand implements Command {
+    - model: DrawingModel
+    - shape: AbstractShape
+    - oldZ: double
+    + BringToForegroundCommand(model: DrawingModel, shape: AbstractShape)
+    + execute(): void
+    + undo(): void
+  }
+
+  class ChangeBorderColorCommand implements Command {
+    - decorator: BorderColorDecorator
+    - oldColor: Color
+    - newColor: Color
+    - model: DrawingModel
+    + ChangeBorderColorCommand(model: DrawingModel, decorator: BorderColorDecorator, newColor: Color)
+    + execute(); void
+    + undo(): void
+  }
+
+  class ChangeFillColorCommand implements Command {
+    - decorator: BorderColorDecorator
+    - oldColor: Color
+    - newColor: Color
+    - model: DrawingModel
+    + ChangeBorderColorCommand(model: DrawingModel, decorator: FillColorDecorator, newColor: Color)
+    + execute(); void
+    + undo(): void
+  }
+
+  class ClipboardManager {
+    - clipboardShape: AbstractShape
+    + ClipboardManager()
+    + copyToClipboard(shape: AbstractShape): void
+    + getFromClipboard(): AbstractShape
+    + clearClipboard(): void
+    + hasContent(): boolean
+
+  }
+
+  class CopyShapeCommand implements Command {
+    + shapeToCopy: AbstractShape
+    + clipboardManager: ClipboardManager
+    + operationPerformed: boolean
+    + CopyShapeCommand(shapeToCopy: AbstractShape, clipboardManager: ClipboardManager)
+    + execute(): void
+    + undo(): void
+  }
+
+  class CutShapeCommand implements Command {
+    + model: DrawingModel
+    + shapeToCut: AbstractShape
+    + shapePreviouslyInClipboard: AbstractShape
+    + clipboardManager: ClipboardManager
+    + shapeWasRemovedFromModel: boolean
+    + CutShapeCommand(model: DrawingModel, shapeToCut: AbstractShape, clipboardManager: ClipboardManager)
+    + execute(): void
+    + undo(): void
+  }
+
+  class PasteShapeCommand implements Command {
+    + model: DrawingModel
+    + pastedShape: AbstractShape
+    + shapePreviouslyInClipboard: AbstractShape
+    + clipboardManager: ClipboardManager
+    + targetX: double
+    + targetY: double
+    + useAbsoluteCoordinates: boolean
+    + CopyShapeCommand(model: DrawingModel, clipboardManager: ClipboardManager)
+    + CopyShapeCommand(model: DrawingModel, clipboardManager: ClipboardManager, targetX: double, targetY: double)
+    + execute(): void
+    + undo(): void
+  }
+}
+
+' =========================
+' controller
+' =========================
+class DrawingController {
+  - shapeMenu: ContextMenu
+  - model: DrawingModel
+  - currentShapeFactory: ShapeFactory
+  - commandManager: CommandManager
+  - currentShape: AbstractShape
+  - gc: GraphicsContext
+  - canvasContextMenu: ContextMenu
+  - clipboardManager: ClipboardManager
+  - fileOperationContext: FileOperationContext
+  - zoomHandler: ZoomHandler
+  - dragOffsetX: double
+  - dragOffsetY: double
+  - startDragX: double
+  - startDragY: double
+  - lastCanvasMouseX: double
+  - lastCanvasMouseY: double
+  + initialize(): void
+  + setModel(model: DrawingModel)
+  + onRootKeyPressed(key: KeyEvent): void
+  + handleDimensionChange(boolean: isWidth, newValue: double): void
+  + handleDeleteShape(event: ActionEvent): void
+  + handleChangeBorderColor(event: ActionEvent): void
+  + handlePasteShape(event: ActionEvent): void
+  + handleCopyShape(event: ActionEvent): void
+  + handleCutShape(event: ActionEvent): void
+  + handleZoom(): void
+  + handleBackgroundShape(event: ActionEvent): void
+  + handleForegroundShape(event: ActionEvent): void
+  + handleChangeBorderColor(color: Color): void
+  + handleChangeFillColor(color: Color): void
+  + handleNewWorkspace(event: ActionEvent): void
+  + selecteShapeAt(x: double, y: double): AbstractShape
+  + redrawCanvas(): void
+  - handleSaveSerialized(): void
+  - handleLoadSerialized(): void
+  - handleSaveAsPng(): void
+  - handleSaveAsPdf(): void
+}
+
+' =========================
+' classe per lo zoom
+' =========================
+class ZoomHandler {
+  - currentZoomFactor: double
+  - controller: DrawingController
+  + ZoomHandler(controller: DrawingController)
+  + setZoomLevel(zoomFactor: double): void
+}
+
+' =========================
+' classe per l'exit dall'app
+' =========================
+class Exit {
+  - controller: DrawingController
+  + Exit(controller: DrawingController)
+  + exit(): void
+}
+
+' =========================
+' classe per nuovo foglio di lavoro
+' =========================
+class NewWorkspace {
+  - controller: DrawingController
+  + NewWorkspace(controller: DrawingController)
+  + handleNewWorkspace(): void
+  + createNewWorkspace(): void
+  + showConfirmationDialog(): void
+}
+
+' =========================
+' template method MouseHandler
+' =========================
+package templateMethod {
+  class AbstractMouseHandler {
+    - canvas: Canvas
+    - currentShape: AbstractShape
+    - controller: DrawingController
+    - dragOffsetX: double
+    - dragOffsetY: double
+    + AbstractMouseHandler(canvas: Canvas, controller: DrawingController)
+    # handleMouseEvent(event: MouseEvent): void
+    # {abstract} preProcess(event: MouseEvent): void
+    # {abstract} processEvent(event: MouseEvent): void
+    # postProcess(event: MouseEvent): void
+  }
+
+  class MouseClicledHandler extends AbstractMouseHandler {
+    - worldX: double
+    - worldY: double
+    - currentShapeFactory: ShapeFactory
+    - border: Color
+    - fill: Color
+    - MouseClicledHandler(canvas: Canvas, controller: DrawingController)
+    # preProcess(event: MouseEvent): void
+    # processEvent(event: MouseEvent): void
+    # postProcess(event: MouseEvent): void
+  }
+
+  class MouseDraggedHandler extends AbstractMouseHandler {
+    - shapwWidth: double
+    - shapeHeight: double
+    - MouseDraggedHandler(canvas: Canvas, controller: DrawingController)
+    # preProcess(event: MouseEvent): void
+    # processEvent(event: MouseEvent): void
+  }
+
+  class MouseMovedHandler extends AbstractMouseHandler {
+    - worldX: double
+    - worldY: double
+    - isOverShape: boolean
+    - MouseMovededHandler(canvas: Canvas, controller: DrawingController)
+    # preProcess(event: MouseEvent): void
+    # processEvent(event: MouseEvent): void
+  }
+
+  class MousePressedHandler extends AbstractMouseHandler {
+    - worldX: double
+    - worldY: double
+    - MouseClicledHandler(canvas: Canvas, controller: DrawingController)
+    # preProcess(event: MouseEvent): void
+    # processEvent(event: MouseEvent): void
+    # postProcess(event: MouseEvent): void
+  }
+
+  class MouseReleasedHandler extends AbstractMouseHandler {
+    - worldX: double
+    - worldY: double
+    - MouseClicledHandler(canvas: Canvas, controller: DrawingController)
+    # preProcess(event: MouseEvent): void
+    # processEvent(event: MouseEvent): void
+    # postProcess(event: MouseEvent): void
+  }
+
+}
+
+' =========================
+' pattern strategy
+' =========================
+package strategy {
+
+  class FileOperationContext {
+    - controller: DrawingController
+    + FileOperationContext(controller: DrawingController)
+    + executeSave(): void
+    + executeLoad(): void
+    + setStrategySave(saveStrategy: SaveStrategy): void
+    + setStrategyLoad(loadStrategy: LoadStrategy): void
+  }
+
+  interface LoadStrategy {
+    + load(file: File, model: DrawingModel): void
+    + getExtensionFilter(): ExtensionFilter
+    + getDialogTitle(): String
+  }
+
+  interface SaveStrategy {
+    + save(file: File, model: DrawingModel): void
+    + getExtensionFilter(): ExtensionFilter
+    + getDialogTitle(): String
+  }
+
+  class PdfSaveStrategy extends SaveStrategy {
+    + save(file: File, model: DrawingModel): void
+    + getExtensionFilter(): ExtensionFilter
+    + getDialogTitle(): String
+  }
+
+  class PngSaveStrategy extends SaveStrategy {
+    + save(file: File, model: DrawingModel): void
+    + getExtensionFilter(): ExtensionFilter
+    + getDialogTitle(): String
+  }
+
+  class SerializedSaveStrategy extends SaveStrategy {
+    + save(file: File, model: DrawingModel): void
+    + getExtensionFilter(): ExtensionFilter
+    + getDialogTitle(): String
+  }
+
+  class SerializedLoadStrategy extends LoadStrategy {
+    + load(file: File, model: DrawingModel): void
+    + getExtensionFilter(): ExtensionFilter
+    + getDialogTitle(): String
+  }
+
+}
+
+' =========================
+' view
+' =========================
+class GeometricDrawingApp <<Application>> {
+  + start(primaryStage: Stage): void
+  + main(args: String[]): void
+}
+
+class DrawingView.fxml << (F,orange) File>> {
+}
+
+
+' =========================
+' RELATIONSHIPS
+' =========================
+
+' Decorator relations
+decorator.ShapeDecorator o-right-> model.AbstractShape : decorates >
+
+' Factory relations
+factory.ShapeFactory ..> model.AbstractShape : creates >
+
+' Controller usa Model, Factory, Command, ZoomHandler, Exit, NewWorkspace
+DrawingController --> model.DrawingModel
+DrawingController --> factory.ShapeFactory
+DrawingController --> command.CommandManager
+DrawingController --> command.Command
+DrawingController --> command.ClipboardManager
+DrawingController --> ZoomHandler
+DrawingController --> Exit
+DrawingController --> NewWorkspace
+
+' Template method MouseHandler
+DrawingController ..> MouseMovedHandler
+DrawingController ..> MouseReleasedHandler
+DrawingController ..> MousePressedHandler
+DrawingController ..> MouseDraggedHandler
+DrawingController ..> MouseClicledHandler
+
+' Strategy SabeStrategy e LoadStrategy
+DrawingController ..> SerializedLoadStrategy
+DrawingController ..> PngSaveStrategy
+DrawingController ..> PdfSaveStrategy
+DrawingController ..> SerializedSaveStrategy
+DrawingController --> FileOperationContext : strategy context >
+SerializedLoadStrategy .up.> fxml : carica >
+PngSaveStrategy .up.> fxml : salva >
+PdfSaveStrategy .up.> fxml : salva >
+SerializedSaveStrategy .up.> fxml : salva >
+FileOperationContext --> SaveStrategy
+FileOperationContext --> LoadStrategy
+
+' Commands relations
+command.CommandManager --> command.Command : esegue  >
+command.AddShapeCommand --> model.DrawingModel : receiver >
+command.MoveShapeCommand --> model.DrawingModel : receiver >
+command.DeleteShapeCommand --> model.DrawingModel : receiver >
+command.ChangeHeightCommand --> model.DrawingModel : receiver >
+command.ChangeWidthCommand --> model.DrawingModel : receiver >
+command.PasteShapeCommand --> model.DrawingModel : receiver >
+command.PasteShapeCommand --> command.ClipboardManager
+command.CutShapeCommand --> model.DrawingModel : receiver >
+command.CutShapeCommand --> command.ClipboardManager
+command.CopyShapeCommand --> command.ClipboardManager : receiver >
+command.ChangeFillColorCommand --> model.DrawingModel : receiver >
+command.ChangeBorderColorCommand --> model.DrawingModel : receiver >
+command.BringToForegroundCommand --> model.DrawingModel : receiver >
+command.BringToBackgroundCommand --> model.DrawingModel : receiver >
+
+' View relations
+GeometricDrawingApp --> DrawingController
+GeometricDrawingApp --> DrawingView.fxml
+
+@enduml

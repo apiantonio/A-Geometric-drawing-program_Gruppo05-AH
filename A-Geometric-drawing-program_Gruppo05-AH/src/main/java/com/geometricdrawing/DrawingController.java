@@ -10,12 +10,13 @@ import com.geometricdrawing.factory.RectangleFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
-import javafx.application.Platform;
 import javafx.animation.PauseTransition;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -30,15 +31,16 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
 import com.geometricdrawing.model.DrawingModel;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
 
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -66,9 +68,14 @@ public class DrawingController {
     @FXML private Label cutCopyLabel;
     @FXML private Label emptyClipboardLabel;
 
+    @FXML private CheckMenuItem toggleGrid; // Menu per mostrare/nascondere la griglia
+    @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
+
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
     private boolean firstTime = true;   // per gestire la non comparsa della label appunti svuotati all'avvio
+    private Stage stage;
+    private Grid grid;
 
     // Costanti per la selezione e l'evidenziazione
     private static final double HANDLE_RADIUS = 3.0; // Raggio maniglie di selezione
@@ -85,6 +92,7 @@ public class DrawingController {
     private FileOperationContext fileOperationContext; // Contesto per operazioni su file (salva/carica)
     private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
     private NewWorkspace newWorkspace;
+    private Exit exit;
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -96,7 +104,6 @@ public class DrawingController {
     private double lastCanvasMouseX;
     private double lastCanvasMouseY;
 
-    private Stage stage;
     public void setModel(DrawingModel model) {
         this.model = model;
         // Listener per ridisegnare il canvas quando le figure nel modello cambiano
@@ -126,7 +133,9 @@ public class DrawingController {
 
             this.fileOperationContext = new FileOperationContext(this);
             this.zoomHandler = new ZoomHandler(this);
+            this.grid = new Grid(this); // per inizializzare la griglia
             this.newWorkspace = new NewWorkspace(this);
+            this.exit = new Exit(this);
 
             // Imposta i gestori per gli eventi del mouse sul canvas
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
@@ -222,7 +231,9 @@ public class DrawingController {
 
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
         updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
-        redrawCanvas(); // Primo disegno del canvas
+
+        // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
+        onToggleGrid();
     }
 
     /**
@@ -672,7 +683,6 @@ public class DrawingController {
             }
         }
 
-
         if (shapeMenu != null) {
             shapeMenu.getItems().stream()
                     .filter(item -> "Taglia".equals(item.getText()))
@@ -757,6 +767,14 @@ public class DrawingController {
             BringToBackgroundCommand cmd = new BringToBackgroundCommand(model, currentShape);
             commandManager.executeCommand(cmd);
             redrawCanvas();
+        }
+    }
+
+    // metodo di supporto per creare un nuovo workspace
+    public void clearCommands() {
+        if (commandManager != null) {
+            commandManager.clear(); // Svuota lo stack dei comandi
+            clipboardManager.clearClipboard();
         }
     }
 
@@ -877,23 +895,6 @@ public class DrawingController {
         this.newWorkspace.handleNewWorkspace(); // Chiama il metodo per creare una nuova area di lavoro
     }
 
-//    /**
-//     * Crea una nuova area di lavoro vuota
-//     */
-//    private void createNewWorkspace() {
-//        // Resetta il modello
-//        model.clear();
-//
-//        // Resetta lo stato del controller
-//        setCurrentShape(null);
-//        setCurrentShapeFactory(null);
-//
-//        // Aggiorna l'interfaccia
-//        updateControlState(null);
-//        updateSpinners(null);
-//        redrawCanvas();
-//    }
-
     /**
      * Seleziona la figura alle coordinate del mondo specificate (worldX, worldY).
      * @return La figura selezionata, o null se nessuna figura è trovata.
@@ -981,6 +982,11 @@ public class DrawingController {
 
         // Pulisce il canvas
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
+
+        // Disegna la griglia se attiva
+        if (grid != null && grid.isGridVisible()) {
+            grid.drawGrid();
+        }
 
         gc.save(); // Salva lo stato corrente del GraphicsContext (es. trasformazioni)
         zoomHandler.applyZoomTransformation(gc); // Applica la scala per lo zoom
@@ -1079,7 +1085,6 @@ public class DrawingController {
 
     @FXML
     private void handleCloseFile() {
-        Exit exit = new Exit(this);
         exit.exit();
     }
 
@@ -1158,4 +1163,67 @@ public class DrawingController {
             }
         });
     }
+
+    @FXML
+    private void handleSelectPoligono(ActionEvent event) {
+        // Viene creato il popup per ospitare lo spinner per la selezione del numero di vertici
+        Stage popupStage = new Stage();
+        // finchè c'è il popup nessuna azione si può effettuare sullo stage principale
+        popupStage.initModality(Modality.APPLICATION_MODAL);
+        popupStage.setTitle("Numero di vertici");
+
+        // Spinner numerico
+        Spinner<Integer> spinner = new Spinner<>(3, 12, 1);
+        spinner.setEditable(true);
+
+        // Bottone di conferma
+        Button okButton = new Button("OK");
+        okButton.setOnAction(e -> {
+            int numVertici = spinner.getValue();
+            popupStage.close();
+        });
+
+        // Per il layout del popup
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(60));
+        layout.setAlignment(Pos.CENTER);
+        layout.getChildren().addAll(new Label("Inserisci numero di vertici:"), spinner, okButton);
+
+        // Mostra la scena
+        Scene scene = new Scene(layout);
+        popupStage.setScene(scene);
+        popupStage.showAndWait();
+    }
+
+
+    @FXML
+    private void handleGrid10() {
+        if (grid != null) {
+            grid.setGridSizeSmall();
+        }
+    }
+
+    @FXML
+    private void handleGrid20() {
+        if (grid != null) {
+            grid.setGridSizeMedium();
+        }
+    }
+
+    @FXML
+    private void handleGrid50() {
+        if (grid != null) {
+            grid.setGridSizeBig();
+        }
+    }
+
+    @FXML
+    private void onToggleGrid() {
+        if (grid != null) {
+            grid.toggleGrid(toggleGrid.isSelected());
+            gridOptions.setDisable(!toggleGrid.isSelected());
+            redrawCanvas(); // Forza il ridisegno per mostrare/nascondere la griglia
+        }
+    }
+
 }

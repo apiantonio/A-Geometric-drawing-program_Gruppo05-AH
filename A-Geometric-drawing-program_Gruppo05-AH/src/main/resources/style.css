@@ -1,16 +1,16 @@
 /*
 **  BOTTONI, COLOR-PICKER, MENU-BUTTON STYLE
 */
-.button, #new_shape, .color-picker {
+.button, #new_shape, #grid_options, .color-picker {
     -fx-background-color: None;
 }
 
-.button:hover , #new_shape:hover, .color-picker:hover {
+.button:hover , #new_shape:hover, #grid_options:hover, .color-picker:hover {
     -fx-background-color: #e0e0e0; /* grigio chiaro */
 }
 
 /* Click (quando premuto) */
-.button:armed, #new_shape:armed, .color-picker:armed {
+.button:armed, #new_shape:armed, #grid_options:armed, .color-picker:armed {
     -fx-background-color: #c0c0c0; /* grigio più scuro */
 }
 

@@ -67,6 +67,8 @@ public class NewWorkspace {
     protected void createNewWorkspace() {
         // Resetta il modello
         controller.getModel().clear();
+        controller.clearCommands();
+
 
         // Resetta lo stato del controller
         controller.setCurrentShape(null);

@@ -22,13 +22,15 @@ L'intero processo di sviluppo è stato organizzato seguendo la metodologia **SC
 - Tracciamento del progresso con **burndown chart**
 - Report documentali a fine di ogni sprint
 
-🔗 **Link alla board Trello**: [Trello - A Geometric Drawing Program_Gruppo05-AH](https://trello.com/b/0w6cHMnX/a-geometric-drawing-programgruppo05-ah)
+🔗 **Link alla board Trello**: [Trello - A Geometric Drawing Program_Gruppo05-AH](https://trello.com/b/0w6cHMnX/a-geometric-drawing-programgruppo05-ah)
+
+📉 **Project Burndown Chart**: [Project-Burndown-Chart_Google-Sheets](https://docs.google.com/spreadsheets/d/1kJT7qo4cVrXMrsM7m9WUPv1n_o2t5he3/edit?gid=1413461336#gid=1413461336)
 
 **Tecnologie utilizzate**
 
 - **Linguaggio**: Java
-- **Interfaccia grafica**: JavaFX
-- **Testing**: JUnit
+- **Interfaccia grafica**: JavaFX + SceneBuilder
+- **Testing**: JUnit + Mockito
 - **Version Control**: Git + GitHub
 
 **Struttura della repository**
@@ -42,9 +44,9 @@ La repository è organizzata per riflettere le varie fasi di sviluppo:
 │       Definition_of_Done.pdf
 │       Environment_configuration.pdf
 │       presentazione_1week.pptx
-│       README.md
 │       Scelte_di_Design.pdf
 │       Week1_PreGame.pdf
+│       README.md
 │
 ├───Sprint1
 |       Class Diagram.pdf
@@ -58,6 +60,14 @@ La repository è organizzata per riflettere le varie fasi di sviluppo:
 │       README.md
 │
 ├───Sprint2
+│       Class Diagram-2.pdf
+│       presentazioneSprint2.pptx
+│       Product e Sprint Backlog - sprint 2.pdf
+│       PROJECT BURNDOWN (2).pdf
+│       Sprint Review.pdf
+│       Sprint_Retrospective.pdf
+│       Test Funzionali.pdf
+│       Updated Mockup.pdf
 │       README.md
 │
 └───Sprint3
@@ -91,7 +101,7 @@ L'applicazione è un programma di disegno geometrico che consente all’utente d
 
 **Autori: Gruppo 05 AH**
 
-- [Apicella Antonio](https://github.com/apiantonio)
-- [Celano Benedetta Pia](https://github.com/BeneCelano)
+- [Apicella Antonio](https://github.com/apiantonio) ![Static Badge](https://img.shields.io/badge/Scrum_Master-blue)
+- [Celano Benedetta Pia](https://github.com/BeneCelano) ![Static Badge](https://img.shields.io/badge/Product_Owner-violet)
 - [Cuomo Carmine](https://github.com/sickcarmine)
 - [Guerra Simone](https://github.com/simoneGuerra0)
