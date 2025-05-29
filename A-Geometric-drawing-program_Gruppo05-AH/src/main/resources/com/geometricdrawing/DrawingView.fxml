@@ -125,11 +125,7 @@
                               <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom75" text="75%" toggleGroup="$zoomGroup" />
                               <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom100" selected="true" text="100%" toggleGroup="$zoomGroup" />
                               <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom150" text="150%" toggleGroup="$zoomGroup" />
-                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom200" text="200%">
-                                 <toggleGroup>
-                                    <ToggleGroup fx:id="zoomGroup1" />
-                                 </toggleGroup>
-                              </RadioMenuItem>
+                              <RadioMenuItem mnemonicParsing="false" onAction="#handleZoom200" text="200%" toggleGroup="$zoomGroup" />
                            </items>
                         </Menu>
                         <SeparatorMenuItem mnemonicParsing="false" />

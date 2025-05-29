@@ -16,6 +16,7 @@ public class ZoomHandler {
     public static final double ZOOM_75 = 0.75;
     public static final double ZOOM_100 = 1.0; // Default
     public static final double ZOOM_150 = 1.50;
+    public static final double ZOOM_200 = 2.0;
 
     private double currentZoomFactor = ZOOM_100;
     private final DrawingController drawingController;
@@ -64,9 +65,12 @@ public class ZoomHandler {
         setZoomLevel(ZOOM_100);
     }
 
-
     public void setZoom150() {
         setZoomLevel(ZOOM_150);
+    }
+
+    public void setZoom200() {
+        setZoomLevel(ZOOM_200);
     }
 
     /**
