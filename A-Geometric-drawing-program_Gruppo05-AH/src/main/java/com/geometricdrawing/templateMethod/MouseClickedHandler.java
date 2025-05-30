@@ -1,3 +1,4 @@
+
 package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
@@ -14,6 +15,7 @@ import com.geometricdrawing.model.Polygon;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
@@ -53,17 +55,37 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
     @Override
     protected void processEvent(MouseEvent event) {
-        if (currentShapeFactory == null) {
+        if (controller.isDrawingPolygon()) {
+            handlePolygonCreation();
+        } else if (currentShapeFactory != null) {
+            handleRegularShapeCreation();
+        } else {
             currentShape = controller.selectShapeAt(this.worldX, this.worldY);
-            return;
+        }
+    }
+
+    @Override
+    protected void postProcess(MouseEvent event) {
+        if (!controller.isDrawingPolygon()) {
+            controller.setCurrentShape(currentShape);
+            controller.updateControlState(currentShape);
+            controller.updateSpinners(currentShape);
+
+            // Reset della factory per figure non poligoni
+            if (currentShapeFactory != null && !(currentShapeFactory instanceof PolygonFactory)) {
+                canvas.setCursor(Cursor.DEFAULT);
+                controller.setCurrentShapeFactory(null);
+                System.out.println("DEBUG: Factory resettata nel ClickHandler.");
+            }
+        } else {
+            // Durante il disegno del poligono, aggiorna SOLO il canvas, NON lo stato UI
+            System.out.println("DEBUG: Disegno poligono in corso, aggiornamento canvas.");
         }
 
-        // Gestione speciale per il poligono
-        if (currentShapeFactory instanceof PolygonFactory) {
-            handlePolygonClick();
-            return;
-        }
+        super.postProcess(event); // Aggiorna il canvas
+    }
 
+    private void handleRegularShapeCreation() {
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
 
         if (controller.isTooClose(newShape, this.worldX, this.worldY)) {
@@ -78,49 +100,47 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         controller.getCommandManager().executeCommand(addCmd);
     }
 
-    @Override
-    protected void postProcess(MouseEvent event) {
-        controller.setCurrentShape(currentShape);
-
-        // Aggiorna l'interfaccia
-        controller.updateControlState(currentShape);
-        controller.updateSpinners(currentShape);
-
-        // Reset della factory solo se la figura è stata effettivamente creata
-        if (currentShape != null && currentShapeFactory != null) {
-            controller.setCurrentShapeFactory(null);
+    private void handlePolygonCreation() {
+        if (controller.getTempPolygonPoints().isEmpty()) {
+            System.out.println("DEBUG: Inizio del disegno di un poligono.");
         }
 
-        super.postProcess(event); // Aggiorna il canvas
-    }
+        if (controller.isDrawingPolygon() && currentShapeFactory instanceof PolygonFactory polygonFactory) {
+            System.out.println("DEBUG: Controller sta disegnando un poligono");
 
-    private void handlePolygonClick() {
-        if (!controller.isDrawingPolygon()) {
-            // Primo click: inizia un nuovo poligono
-            controller.setTempPolygonPoints(new ArrayList<>());
-            controller.getTempPolygonPoints().add(new Point2D(worldX, worldY));
-            controller.setIsDrawingPolygon(true);
-        } else {
-            // Click successivi: aggiungi vertici
-            Point2D firstPoint = controller.getTempPolygonPoints().getFirst();
+            Point2D point = new Point2D(worldX, worldY);
+            controller.getTempPolygonPoints().add(point);
 
-            // Se il click è vicino al punto iniziale, chiudi il poligono
-            if (isCloseToFirstPoint(worldX, worldY, firstPoint)) {
-                finishPolygon();
-            } else {
-                // Aggiungi un nuovo vertice
-                controller.getTempPolygonPoints().add(new Point2D(worldX, worldY));
-                controller.redrawCanvas();
+            System.out.println("DEBUG: Aggiunto punto al poligono: " + point + " (totale: " + controller.getTempPolygonPoints().size() + ")");
+
+            // Se abbiamo raggiunto il numero di punti richiesto per il poligono
+            if (controller.getTempPolygonPoints().size() == polygonFactory.getMaxPoints()) {
+                // Crea e aggiunge il poligono
+                AbstractShape polygon = currentShapeFactory.createShape(worldX, worldY);
+                ((Polygon) polygon).setVertices(new ArrayList<>(controller.getTempPolygonPoints()));
+
+                // Imposta i colori dal ColorPicker
+                currentShape = applyDecorations(polygon);
+
+                AddShapeCommand cmd = new AddShapeCommand(controller.getModel(), currentShape);
+                controller.getCommandManager().executeCommand(cmd);
+
+                // Reset completo dello stato del poligono
+                controller.setIsDrawingPolygon(false);
+                controller.getTempPolygonPoints().clear();
+
+                // Reset della factory e del cursore per completare il ciclo
+                controller.setCurrentShapeFactory(null);
+                canvas.setCursor(Cursor.DEFAULT);
+
+                System.out.println("DEBUG: Poligono completato e stato resettato.");
+
+                // poligono è completo, aggiorna lo stato UI
+                controller.setCurrentShape(currentShape);
+                controller.updateControlState(currentShape);
+                controller.updateSpinners(currentShape);
             }
         }
-    }
-
-    private boolean isCloseToFirstPoint(double x, double y, Point2D firstPoint) {
-        double distance = Math.sqrt(
-                Math.pow(x - firstPoint.getX(), 2) +
-                Math.pow(y - firstPoint.getY(), 2)
-        );
-        return distance < 5.0; // 5.0 è la soglia di distanza in pixel
     }
 
     private AbstractShape applyDecorations(AbstractShape shape) {
@@ -135,30 +155,6 @@ public class MouseClickedHandler extends AbstractMouseHandler {
             styledShape = new BorderColorDecorator(styledShape, border);
         }
 
-       return styledShape;
-    }
-
-    private void finishPolygon() {
-        if (controller.getTempPolygonPoints().size() >= 3) {
-            Polygon polygon = new Polygon(
-                    controller.getTempPolygonPoints().getFirst().getX(),
-                    controller.getTempPolygonPoints().getFirst().getY()
-            );
-            polygon.setVertices(controller.getTempPolygonPoints());
-
-            // Applica decoratori come per altre figure
-            AbstractShape styledPolygon = applyDecorations(polygon);
-
-            AddShapeCommand addCmd = new AddShapeCommand(controller.getModel(), styledPolygon);
-            controller.getCommandManager().executeCommand(addCmd);
-
-            controller.setCurrentShape(styledPolygon);
-        }
-
-        // Reset dello stato
-        controller.setIsDrawingPolygon(false);
-        controller.setTempPolygonPoints(null);
-        controller.setCurrentShapeFactory(null);
-        controller.redrawCanvas();
+        return styledShape;
     }
 }

@@ -3,11 +3,15 @@ package com.geometricdrawing.model;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.geometry.Point2D;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Polygon extends AbstractShape {
-    private List<Point2D> vertices;
+    private transient ArrayList<Point2D> vertices;
 
     public Polygon(double x, double y) {
         super(x, y, 0.0, 0.0); // inizializza con larghezza e altezza 0
@@ -68,10 +72,18 @@ public class Polygon extends AbstractShape {
 
     @Override
     public boolean containsPoint(double x, double y, double tolerance) {
-        if (!super.containsPoint(x, y, tolerance)) {
-            return false;
+        // Aumenta il bounding box per la selezione
+        double expandedX = this.x - tolerance;
+        double expandedY = this.y - tolerance;
+        double expandedWidth = this.width + (2 * tolerance);
+        double expandedHeight = this.height + (2 * tolerance);
+
+        // Verifica prima il bounding box espanso
+        if (x >= expandedX && x <= expandedX + expandedWidth &&
+                y >= expandedY && y <= expandedY + expandedHeight) {
+            return isPointInPolygon(x, y);
         }
-        return isPointInPolygon(x, y);
+        return false;
     }
 
     /**
@@ -118,18 +130,6 @@ public class Polygon extends AbstractShape {
     }
 
     @Override
-    public void moveTo(double newX, double newY) {
-        double deltaX = newX - getX();
-        double deltaY = newY - getY();
-        moveBy(deltaX, deltaY);
-        for (int i = 0; i < vertices.size(); i++) {
-            Point2D vertex = vertices.get(i);
-            vertices.set(i, new Point2D(vertex.getX() + deltaX, vertex.getY() + deltaY));
-        }
-        updateBounds();
-    }
-
-    @Override
     public void moveBy(double deltaX, double deltaY) {
         for (int i = 0; i < vertices.size(); i++) {
             Point2D vertex = vertices.get(i);
@@ -142,8 +142,34 @@ public class Polygon extends AbstractShape {
         return vertices;
     }
 
-    public void setVertices(List<Point2D> vertices) {
+    public void setVertices(ArrayList<Point2D> vertices) {
         this.vertices = vertices;
+        updateBounds();
+    }
+
+    /* Metodi per la serializzazione necessari perché Point2D non è Serializable */
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+
+        // vertices come coordinate double che sono serializzabili
+        out.writeInt(vertices.size());
+        for (Point2D point : vertices) {
+            out.writeDouble(point.getX());
+            out.writeDouble(point.getY());
+        }
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        int size = in.readInt();
+        vertices = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            vertices.add(new Point2D(x, y));
+        }
     }
 
 }

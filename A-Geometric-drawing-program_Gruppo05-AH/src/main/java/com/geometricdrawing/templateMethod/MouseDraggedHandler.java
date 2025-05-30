@@ -1,7 +1,6 @@
 package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
-import com.geometricdrawing.command.MoveShapeCommand;
 import com.geometricdrawing.ZoomHandler;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
@@ -25,9 +24,6 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
 
         shapeWidth = currentShape.getWidth();
         shapeHeight = currentShape.getHeight();
-
-        // Imposta il cursore a mano chiusa
-//        canvas.setCursor(javafx.scene.Cursor.CLOSED_HAND);
     }
 
     @Override

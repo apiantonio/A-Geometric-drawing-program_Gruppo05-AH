@@ -48,45 +48,35 @@ public class MousePressedHandler extends AbstractMouseHandler {
     protected void processEvent(MouseEvent event) {
         // currentShape qui si riferisce alla variabile di istanza di MousePressedHandler,
         // che è stata impostata in preProcess.
-        if (currentShape != null && currentShape.containsPoint(worldX, worldY, SELECTION_THRESHOLD)) { //
+        if (currentShape != null && currentShape.containsPoint(worldX, worldY, SELECTION_THRESHOLD)) {
             // Il clic è su una forma esistente (o quella appena selezionata in preProcess)
             // currentShape è già stato determinato in preProcess e trasformato in coordinate del mondo
-                controller.setInitialDragShapeX_world(currentShape.getX());
-                controller.setInitialDragShapeY_world(currentShape.getY());
+            controller.setInitialDragShapeX_world(currentShape.getX());
+            controller.setInitialDragShapeY_world(currentShape.getY());
 
-                dragOffsetX = this.worldX - currentShape.getX();
-                controller.setDragOffsetX(dragOffsetX);
-                dragOffsetY = this.worldY - currentShape.getY();
-                controller.setDragOffsetY(dragOffsetY);
-                canvas.setCursor(Cursor.CLOSED_HAND);
+            dragOffsetX = this.worldX - currentShape.getX();
+            controller.setDragOffsetX(dragOffsetX);
+            dragOffsetY = this.worldY - currentShape.getY();
+            controller.setDragOffsetY(dragOffsetY);
+            canvas.setCursor(Cursor.CLOSED_HAND);
 
-                controller.getRootPane().requestFocus();
-                if (event.getButton() == MouseButton.SECONDARY) {
-                    controller.showContextMenu(event);
-                }
-                // Calcola l'offset per il trascinamento
-                dragOffsetX = worldX - currentShape.getX(); //
-                controller.setDragOffsetX(dragOffsetX); //
-                dragOffsetY = worldY - currentShape.getY(); //
-                controller.setDragOffsetY(dragOffsetY); //
-                canvas.setCursor(Cursor.CLOSED_HAND); //
+            controller.getRootPane().requestFocus();
+            if (event.getButton() == MouseButton.SECONDARY) {
+                controller.showContextMenu(event);
+            }
+            // Calcola l'offset per il trascinamento
+            dragOffsetX = worldX - currentShape.getX();
+            controller.setDragOffsetX(dragOffsetX);
+            dragOffsetY = worldY - currentShape.getY();
+            controller.setDragOffsetY(dragOffsetY);
+            canvas.setCursor(Cursor.CLOSED_HAND);
 
-                controller.getRootPane().requestFocus(); //
+            controller.getRootPane().requestFocus();
 
-                // Se è un clic con il pulsante secondario, mostra il menu contestuale della forma
-                if (event.getButton() == MouseButton.SECONDARY) { //
-                    // Memorizza le coordinate del clic destro, potrebbero servire per "Incolla qui" dal menu della forma
-                    // controller.setLastContextMousePosition(x, y); // Se vuoi usare questo per il menu delle forme
-                    controller.showContextMenu(event); //
-                }
-             else {
-                // Deseleziona la forma corrente nel controller
-                //currentShape = null; // Aggiorna la copia locale
-                //controller.setCurrentShape(null);
-                // updateSpinners e updateControlState verranno chiamati in postProcess
-                // Aggiorna la forma corrente nel controller con quella identificata
-                //controller.setCurrentShape(currentShape);
-
+            // Se è un clic con il pulsante secondario, mostra il menu contestuale della forma
+            if (event.getButton() == MouseButton.SECONDARY) {
+                // Memorizza le coordinate del clic destro, potrebbero servire per "Incolla qui" dal menu della forma
+                controller.showContextMenu(event);
             }
         }
     }

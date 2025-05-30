@@ -2,13 +2,14 @@ package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
 import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.model.AbstractShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
 
 public class MouseMovedHandler extends AbstractMouseHandler {
-    private double worldX; // Coordinate del mondo
+    private double worldX;
     private double worldY;
     private boolean isOverShape;
 
@@ -40,7 +41,7 @@ public class MouseMovedHandler extends AbstractMouseHandler {
         if (isOverShape) {
             canvas.setCursor(Cursor.HAND);  //cambia il cursore in una mano
         } else {
-            canvas.setCursor(Cursor.DEFAULT);   //Ripristina il cursore predefinito
+            canvas.setCursor(Cursor.DEFAULT);
         }
     }
     // postProcess è ereditato da AbstractMouseHandler (chiama redrawCanvas)

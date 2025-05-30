@@ -4,10 +4,7 @@ import com.geometricdrawing.command.*;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
-import com.geometricdrawing.factory.EllipseFactory;
-import com.geometricdrawing.factory.LineFactory;
-import com.geometricdrawing.factory.RectangleFactory;
-import com.geometricdrawing.factory.ShapeFactory;
+import com.geometricdrawing.factory.*;
 import com.geometricdrawing.model.Polygon;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
@@ -110,8 +107,8 @@ public class DrawingController {
     private double lastCanvasMouseY;
 
     // Punti temporanei per la creazione di poligoni
-    private List<Point2D> tempPolygonPoints;
-    private boolean isDrawingPolygon = false;
+    private transient ArrayList<Point2D> tempPolygonPoints;
+    private boolean isDrawingPolygon;
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -155,6 +152,9 @@ public class DrawingController {
 
             createShapeContextMenu(); // Crea il menu contestuale per le figure
             createCanvasContextMenu(); // Crea il menu contestuale per il canvas (es. "Incolla qui")
+
+            isDrawingPolygon = false;
+            tempPolygonPoints = new ArrayList<>(); // Inizializza la lista dei punti temporanei per i poligoni
 
             // Gestore per mostrare il menu contestuale del canvas (click destro su area vuota)
             drawingCanvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
@@ -407,24 +407,24 @@ public class DrawingController {
      * Prepara il controller per la creazione di una nuova figura.
      * @param factory La factory per il tipo di figura da creare.
      * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
-     * @param disableBorderPickerForFactory Se il border picker deve essere disabilitato per questa factory.
+     * @param disableBorderPicker Se il border picker deve essere disabilitato per questa factory.
      */
-    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPickerForFactory) {
-        currentShape = null; // Deseleziona figura corrente
+    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
+        setCurrentShape(null); // Deseleziona figura corrente
         updateControlState(null); // Aggiorna stato UI
-        redrawCanvas(); // Rimuove evidenziazione precedente
 
         // Disabilita/Abilita picker in base al tipo di figura in creazione
         fillPicker.setDisable(disableFillPicker);
         if (factory instanceof LineFactory) { // Per la Linea, il bordo è sempre possibile
             borderPicker.setDisable(false);
-        } else if (factory instanceof RectangleFactory || factory instanceof EllipseFactory) { // Per Rettangolo/Ellisse, il bordo è possibile
-            borderPicker.setDisable(false);
+        } else {
+            borderPicker.setDisable(disableBorderPicker);
         }
         // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
 
         currentShapeFactory = factory; // Imposta la factory attiva
         if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
+        redrawCanvas(); // Rimuove evidenziazione precedente
     }
 
     // Gestori per i bottoni di selezione tipo figura
@@ -441,6 +441,37 @@ public class DrawingController {
     @FXML
     public void handleSelectEllisse(ActionEvent event) {
         initializeShapeSelection(new EllipseFactory(), false, false); // Ellisse: sì fill, sì border
+    }
+
+    @FXML
+    private void handleSelectPoligono(ActionEvent event) {
+        Stage popupStage = new Stage();
+        popupStage.initModality(Modality.APPLICATION_MODAL);
+        popupStage.setTitle("Numero di vertici");
+
+        Spinner<Integer> spinner = new Spinner<>(3, 12, 1);
+        spinner.setEditable(true);
+
+        Button okButton = new Button("OK");
+        okButton.setOnAction(e -> {
+            int numVertici = spinner.getValue();
+            // Reset dello stato del poligono
+            isDrawingPolygon = true;
+            tempPolygonPoints = new ArrayList<>(numVertici);
+            initializeShapeSelection(new PolygonFactory(numVertici), false, false);
+            popupStage.close();
+            System.out.println("DEBUG: temp points polygon: " + tempPolygonPoints);
+            System.out.println("DEBUG: Numero di vertici impostato a " + numVertici);
+        });
+
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(60));
+        layout.setAlignment(Pos.CENTER);
+        layout.getChildren().addAll(new Label("Inserisci numero di vertici:"), spinner, okButton);
+
+        Scene scene = new Scene(layout);
+        popupStage.setScene(scene);
+        popupStage.showAndWait();
     }
 
     /**
@@ -1000,6 +1031,8 @@ public class DrawingController {
         gc.save(); // Salva lo stato corrente del GraphicsContext (es. trasformazioni)
         zoomHandler.applyZoomTransformation(gc); // Applica la scala per lo zoom
 
+        drawTempPolygon(); // Disegna il poligono temporaneo se esiste
+
         // Disegna tutte le figure nel modello (l'ordine di disegno influisce sulla sovrapposizione visiva)
         // model.getShapes() di solito è in ordine di inserimento. Per un controllo Z-order più fine,
         // si potrebbe usare model.getShapesOrderedByZ() se l'ordine di disegno deve seguire Z.
@@ -1010,26 +1043,6 @@ public class DrawingController {
                 if (shape == currentShape) { // Se la figura è quella selezionata
                     drawHighlightBorder(shape); // Disegna il bordo di evidenziazione
                 }
-            }
-        }
-
-        // Se stiamo disegnando un poligono, mostra i punti temporanei
-        if (isDrawingPolygon && tempPolygonPoints != null && !tempPolygonPoints.isEmpty()) {
-            gc.setStroke(Color.GRAY);
-            gc.setLineWidth(1.0);
-
-            // Disegna linee tra i punti
-            for (int i = 0; i < tempPolygonPoints.size() - 1; i++) {
-                Point2D p1 = tempPolygonPoints.get(i);
-                Point2D p2 = tempPolygonPoints.get(i + 1);
-                gc.strokeLine(p1.getX(), p1.getY(), p2.getX(), p2.getY());
-            }
-
-            // Disegna linea dal ultimo punto al mouse se ci sono almeno 2 punti
-            if (tempPolygonPoints.size() >= 2) {
-                Point2D lastPoint = tempPolygonPoints.getLast();
-                gc.strokeLine(lastPoint.getX(), lastPoint.getY(),
-                        this.lastCanvasMouseX, this.lastCanvasMouseY);
             }
         }
 
@@ -1195,43 +1208,44 @@ public class DrawingController {
         });
     }
 
-    @FXML
-    private void handleSelectPoligono(ActionEvent event) {
-        // Viene creato il popup per ospitare lo spinner per la selezione del numero di vertici
-        Stage popupStage = new Stage();
-        // finchè c'è il popup nessuna azione si può effettuare sullo stage principale
-        popupStage.initModality(Modality.APPLICATION_MODAL);
-        popupStage.setTitle("Numero di vertici");
+    public void drawTempPolygon() {
+        if (isDrawingPolygon && tempPolygonPoints != null && currentShapeFactory instanceof PolygonFactory) {
+            gc.save();
+            zoomHandler.applyZoomTransformation(gc);
 
-        // Spinner numerico
-        Spinner<Integer> spinner = new Spinner<>(3, 12, 1);
-        spinner.setEditable(true);
+            // Imposta stile per punti e linee temporanee
+            gc.setFill(Color.DARKGRAY);
+            gc.setStroke(Color.DARKGRAY);
+            gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
 
-        // Bottone di conferma
-        Button okButton = new Button("OK");
-        okButton.setOnAction(e -> {
-            int numVertici = spinner.getValue();
-            startPolygonDrawing(numVertici); // Avvia la creazione del poligono con il numero di vertici selezionato
-            popupStage.close();
-        });
+            // Disegna i punti
+            double handleSize = 6.0 / zoomHandler.getZoomFactor();
 
-        // Per il layout del popup
-        VBox layout = new VBox(15);
-        layout.setPadding(new Insets(60));
-        layout.setAlignment(Pos.CENTER);
-        layout.getChildren().addAll(new Label("Inserisci numero di vertici:"), spinner, okButton);
+            // Disegna i punti esistenti
+            for (Point2D point : tempPolygonPoints) {
+                gc.setFill(Color.DARKGRAY);
+                gc.fillOval(point.getX() - handleSize/2, point.getY() - handleSize/2, handleSize, handleSize);
+                gc.strokeOval(point.getX() - handleSize/2, point.getY() - handleSize/2, handleSize, handleSize);
+            }
 
-        // Mostra la scena
-        Scene scene = new Scene(layout);
-        popupStage.setScene(scene);
-        popupStage.showAndWait();
-    }
+            // Disegna le linee tra i punti
+            if (tempPolygonPoints.size() > 1) {
+                for (int i = 0; i < tempPolygonPoints.size() - 1; i++) {
+                    Point2D current = tempPolygonPoints.get(i);
+                    Point2D next = tempPolygonPoints.get(i + 1);
+                    gc.strokeLine(current.getX(), current.getY(), next.getX(), next.getY());
+                }
 
-    private void startPolygonDrawing(int numVertices) {
-        isDrawingPolygon = true;
-        tempPolygonPoints = new ArrayList<>();
-        currentShape = null;
-        drawingCanvas.setCursor(Cursor.CROSSHAIR);
+                // Chiude il poligono disegnando una linea tra l'ultimo e il primo punto
+                if (tempPolygonPoints.size() >= ((PolygonFactory) currentShapeFactory).getMaxPoints()) {
+                    Point2D first = tempPolygonPoints.getFirst();
+                    Point2D last = tempPolygonPoints.getLast();
+                    gc.strokeLine(last.getX(), last.getY(), first.getX(), first.getY());
+                }
+            }
+
+            gc.restore(); // Ripristina lo stato del GraphicsContext
+        }
     }
 
     public boolean isDrawingPolygon() {
@@ -1276,11 +1290,11 @@ public class DrawingController {
         this.tempPolygonPoints = arrayList;
     }
 
-    public List<Point2D> getTempPolygonPoints() {
+    public ArrayList<Point2D> getTempPolygonPoints() {
         return this.tempPolygonPoints;
     }
 
-    public void setIsDrawingPolygon(boolean b) {
-        this.isDrawingPolygon = b;
+    public void setIsDrawingPolygon(boolean isDrawingPolygon) {
+        this.isDrawingPolygon = isDrawingPolygon;
     }
 }
