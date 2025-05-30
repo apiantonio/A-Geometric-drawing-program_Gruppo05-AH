@@ -1,8 +1,6 @@
 package com.geometricdrawing;
 
 import com.geometricdrawing.DrawingController;
-import javafx.beans.property.DoubleProperty; // Importa DoubleProperty
-import javafx.beans.property.SimpleDoubleProperty; // Importa SimpleDoubleProperty
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -20,7 +18,7 @@ public class ZoomHandler {
     public static final double ZOOM_150 = 1.50;
     public static final double ZOOM_200 = 2.0;
 
-    private DoubleProperty currentZoomFactor = new SimpleDoubleProperty(ZOOM_100); // Usa DoubleProperty
+    private double currentZoomFactor = ZOOM_100;
     private final DrawingController drawingController;
 
     /**
@@ -43,9 +41,11 @@ public class ZoomHandler {
             System.err.println("Fattore di zoom non valido: " + zoomFactor);
             return;
         }
-        this.currentZoomFactor.set(zoomFactor); // Imposta il valore della proprietà
-        // Non richiamare redrawCanvas qui, sarà il listener nel controller a farlo.
-        // this.drawingController.redrawCanvas(); // Rimosso: il listener su currentZoomFactor lo farà.
+        this.currentZoomFactor = zoomFactor;
+        // Richiede un ridisegno del canvas attraverso il controller
+        if (this.drawingController != null) {
+            this.drawingController.redrawCanvas();
+        }
     }
 
     // Metodi pubblici per impostare livelli di zoom predefiniti
@@ -77,11 +77,6 @@ public class ZoomHandler {
      * @return Il fattore di zoom corrente.
      */
     public double getZoomFactor() {
-        return currentZoomFactor.get();
-    }
-
-    // NUOVO: Getter per la proprietà zoomFactor
-    public DoubleProperty zoomFactorProperty() {
         return currentZoomFactor;
     }
 
@@ -93,18 +88,7 @@ public class ZoomHandler {
      * @return Un oggetto Point2D con le coordinate del mondo.
      */
     public Point2D screenToWorld(double screenX, double screenY) {
-        return new Point2D(screenX / currentZoomFactor.get(), screenY / currentZoomFactor.get());
-    }
-
-    /**
-     * NUOVO: Converte le coordinate dallo spazio del mondo logico del canvas
-     * allo spazio dello schermo (visualizzazione).
-     * @param worldX Coordinata X del mondo.
-     * @param worldY Coordinata Y del mondo.
-     * @return Un oggetto Point2D con le coordinate dello schermo.
-     */
-    public Point2D worldToScreen(double worldX, double worldY) {
-        return new Point2D(worldX * currentZoomFactor.get(), worldY * currentZoomFactor.get());
+        return new Point2D(screenX / currentZoomFactor, screenY / currentZoomFactor);
     }
 
     /**
@@ -114,7 +98,7 @@ public class ZoomHandler {
      */
     public void applyZoomTransformation(GraphicsContext gc) {
         if (gc != null) {
-            gc.scale(currentZoomFactor.get(), currentZoomFactor.get());
+            gc.scale(currentZoomFactor, currentZoomFactor);
         }
     }
 }
