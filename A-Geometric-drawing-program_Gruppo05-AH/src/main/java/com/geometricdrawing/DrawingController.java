@@ -682,6 +682,14 @@ public class DrawingController {
                 enableHeight = true;
                 enableFillPicker = true;
             }
+
+            if (shape.getZ() == 0){
+                enableBackground = false;
+            }
+
+            if (shape.getZ() == model.getShapes().size() -1) {
+                enableForeground = false;
+            }
         } else {
             enableCutUi = false;
             // La figura non è selezionata, ma stai procedendo alla creazione di una nuova figura
@@ -794,6 +802,7 @@ public class DrawingController {
 
             BringToForegroundCommand cmd = new BringToForegroundCommand(model, currentShape);
             commandManager.executeCommand(cmd);
+            updateControlState(currentShape);
             redrawCanvas();
         }
     }
@@ -805,6 +814,7 @@ public class DrawingController {
 
             BringToBackgroundCommand cmd = new BringToBackgroundCommand(model, currentShape);
             commandManager.executeCommand(cmd);
+            updateControlState(currentShape);
             redrawCanvas();
         }
     }

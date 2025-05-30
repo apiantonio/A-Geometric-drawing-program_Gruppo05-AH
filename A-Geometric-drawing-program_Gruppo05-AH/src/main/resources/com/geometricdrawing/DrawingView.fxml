@@ -28,9 +28,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1149.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
-      <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="372.0" prefWidth="804.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
+      <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="420.0" prefWidth="1149.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
          <Label fx:id="cutCopyLabel" alignment="CENTER" layoutX="405.0" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;" text="Elemento copiato negli appunti!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
             <font>
@@ -391,7 +391,7 @@
                                        </children>
                                     </VBox>
                                     <Separator layoutX="398.0" layoutY="10.0" orientation="VERTICAL" prefHeight="145.0" prefWidth="0.0" />
-                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="364.0">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="373.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="213.0">
                                              <VBox.margin>
@@ -423,8 +423,43 @@
                                                       </Button>
                                                    </children>
                                                 </VBox>
-                                                <Spinner fx:id="rotationSpinner" />
-                                                <MenuButton id="grid_options" fx:id="gridOptions" contentDisplay="TOP" mnemonicParsing="false" prefHeight="90.0" prefWidth="92.0" stylesheets="@../../style.css" text="Opzioni&#10;Griglia" textAlignment="CENTER">
+                                                <VBox prefHeight="98.0" prefWidth="134.0">
+                                                   <children>
+                                                      <Label text="Ruota (°C)">
+                                                         <graphic>
+                                                            <ImageView fitHeight="37.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                                                               <image>
+                                                                  <Image url="@../../icons/ruota.png" />
+                                                               </image>
+                                                            </ImageView>
+                                                         </graphic>
+                                                      </Label>
+                                                      <Spinner fx:id="rotationSpinner" stylesheets="@../../style.css" />
+                                                      <MenuButton mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" text="Capovolgi">
+                                                        <items>
+                                                          <MenuItem mnemonicParsing="false" text="Action 1" />
+                                                          <MenuItem mnemonicParsing="false" text="Action 2" />
+                                                        </items>
+                                                         <VBox.margin>
+                                                            <Insets top="10.0" />
+                                                         </VBox.margin>
+                                                         <graphic>
+                                                            <ImageView fitHeight="22.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                                               <image>
+                                                                  <Image url="@../../icons/capovolgi.png" />
+                                                               </image>
+                                                            </ImageView>
+                                                         </graphic>
+                                                      </MenuButton>
+                                                   </children>
+                                                   <opaqueInsets>
+                                                      <Insets right="6.0" />
+                                                   </opaqueInsets>
+                                                   <HBox.margin>
+                                                      <Insets right="6.0" />
+                                                   </HBox.margin>
+                                                </VBox>
+                                                <MenuButton id="grid_options" fx:id="gridOptions" contentDisplay="TOP" mnemonicParsing="false" prefHeight="90.0" prefWidth="68.0" stylesheets="@../../style.css" text="Opzioni&#10;Griglia" textAlignment="CENTER">
                                                    <graphic>
                                                       <ImageView fitHeight="45.0" fitWidth="42.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
