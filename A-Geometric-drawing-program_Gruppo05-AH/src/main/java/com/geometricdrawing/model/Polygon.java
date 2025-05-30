@@ -46,10 +46,10 @@ public class Polygon extends AbstractShape {
             maxY = Math.max(maxY, p.getY());
         }
 
-        setX(minX);
-        setY(minY);
-        setWidth(maxX - minX);
-        setHeight(maxY - minY);
+        this.x = minX;
+        this.y = minY;
+        this.width = maxX - minX;
+        this.height = maxY - minY;
     }
 
     @Override
@@ -71,12 +71,12 @@ public class Polygon extends AbstractShape {
     }
 
     @Override
-    public boolean containsPoint(double x, double y, double tolerance) {
+    public boolean containsPoint(double x, double y, double threshold) {
         // Aumenta il bounding box per la selezione
-        double expandedX = this.x - tolerance;
-        double expandedY = this.y - tolerance;
-        double expandedWidth = this.width + (2 * tolerance);
-        double expandedHeight = this.height + (2 * tolerance);
+        double expandedX = this.x - threshold;
+        double expandedY = this.y - threshold;
+        double expandedWidth = this.width + threshold;
+        double expandedHeight = this.height + threshold;
 
         // Verifica prima il bounding box espanso
         if (x >= expandedX && x <= expandedX + expandedWidth &&
@@ -135,6 +135,62 @@ public class Polygon extends AbstractShape {
             Point2D vertex = vertices.get(i);
             vertices.set(i, new Point2D(vertex.getX() + deltaX, vertex.getY() + deltaY));
         }
+        updateBounds();
+    }
+
+    @Override
+    public void setWidth(double newWidth) {
+        if (vertices.isEmpty() || this.width <= 0) {
+            this.width = newWidth;
+            return;
+        }
+
+        // fattore di scala per la larghezza
+        double scaleX = newWidth / this.width;
+        resizeVertices(scaleX, 1.0);
+    }
+
+    @Override
+    public void setHeight(double newHeight) {
+        if (vertices.isEmpty() || this.height <= 0) {
+            this.height = newHeight;
+            return;
+        }
+
+        // fattore di scala per l'altezza
+        double scaleY = newHeight / this.height;
+        resizeVertices(1.0, scaleY);
+    }
+
+    /**
+     * Ridimensiona i vertici del poligono applicando i fattori di scala specificati
+     * @param scaleX Fattore di scala per l'asse X
+     * @param scaleY Fattore di scala per l'asse Y
+     */
+    private void resizeVertices(double scaleX, double scaleY) {
+        if (vertices.isEmpty()) {
+            return;
+        }
+
+        // il punto di riferimento è l'angolo superiore sinistro del bounding box
+        double refX = this.x;
+        double refY = this.y;
+
+        ArrayList<Point2D> newVertices = new ArrayList<>();
+        for (Point2D vertex : vertices) {
+            // Posizione relativa rispetto al punto di riferimento
+            double relativeX = vertex.getX() - refX;
+            double relativeY = vertex.getY() - refY;
+
+            double newX = refX + (relativeX * scaleX);
+            double newY = refY + (relativeY * scaleY);
+
+            newVertices.add(new Point2D(newX, newY));
+        }
+
+        // Imposta i nuovi vertici
+        vertices = newVertices;
+
         updateBounds();
     }
 
