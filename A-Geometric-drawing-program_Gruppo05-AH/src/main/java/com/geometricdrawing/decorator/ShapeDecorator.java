@@ -2,8 +2,11 @@ package com.geometricdrawing.decorator;
 
 import com.geometricdrawing.model.AbstractShape;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Classe astratta per i decoratori delle forme
+ */
 public abstract class ShapeDecorator extends AbstractShape {
     protected final AbstractShape decoratedShape;
 
