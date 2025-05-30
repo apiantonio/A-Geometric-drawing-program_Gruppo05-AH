@@ -17,11 +17,11 @@ public abstract class ShapeDecorator extends AbstractShape {
 
     @Override
     public final void drawShape(GraphicsContext gc) {
-        gc.save();
+        //gc.save();
         // il metodo successivo è quello usato per settare colore di riempimento e di bordo
         decorateShape(gc);
         decoratedShape.draw(gc);            //redraw della forma addobbata
-        gc.restore();
+        //gc.restore();
     }
 
     protected abstract void decorateShape(GraphicsContext gc);
