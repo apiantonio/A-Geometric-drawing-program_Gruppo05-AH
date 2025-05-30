@@ -17,6 +17,7 @@
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.image.Image?>
@@ -73,7 +74,7 @@
                            <graphic>
                               <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@../../icons/sala come.png" />
+                                    <Image url="@../../icons/salva come.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -201,14 +202,14 @@
                                        </children>
                                     </VBox>
                                     <Separator orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
-                                    <VBox alignment="CENTER">
+                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="228.0">
                                        <children>
-                                          <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
+                                          <HBox alignment="CENTER" prefHeight="98.0" prefWidth="228.0">
                                              <VBox.margin>
                                                 <Insets bottom="2.0" />
                                              </VBox.margin>
                                              <children>
-                                                <MenuButton id="new_shape" contentDisplay="TOP" mnemonicParsing="false" stylesheets="@../../style.css" text="Forme">
+                                                <MenuButton id="new_shape" contentDisplay="TOP" mnemonicParsing="false" prefHeight="72.0" prefWidth="54.0" stylesheets="@../../style.css" text="Forme">
                                                    <graphic>
                                                       <ImageView fitHeight="48.0" fitWidth="43.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
@@ -255,6 +256,21 @@
                                                       </MenuItem>
                                                    </items>
                                                 </MenuButton>
+                                                <Button contentDisplay="TOP" mnemonicParsing="false" stylesheets="@../../style.css" text="Testo">
+                                                   <graphic>
+                                                      <ImageView fitHeight="46.0" fitWidth="39.0" pickOnBounds="true" preserveRatio="true">
+                                                         <image>
+                                                            <Image url="@../../icons/text.png" />
+                                                         </image>
+                                                      </ImageView>
+                                                   </graphic>
+                                                </Button>
+                                                <VBox alignment="CENTER" prefHeight="98.0" prefWidth="84.0" spacing="10.0">
+                                                   <children>
+                                                      <TextField promptText="Scrivi qui..." />
+                                                      <Spinner stylesheets="@../../style.css" />
+                                                   </children>
+                                                </VBox>
                                              </children>
                                           </HBox>
                                           <Label alignment="CENTER" contentDisplay="CENTER" text="Inserisci">
@@ -411,6 +427,14 @@
                                                             </image>
                                                          </ImageView>
                                                       </graphic>
+                                                      <Label text="Ruota (deg)">
+                                                         <graphic>
+                                                            <ImageView fitHeight="37.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                                                               <image>
+                                                                  <Image url="@../../icons/ruota.png" />
+                                                               </image>
+                                                            </ImageView>
+                                                         </graphic>
                                                       </Label>
                                                       <Spinner fx:id="rotationSpinner" stylesheets="@../../style.css" />
                                                       <MenuButton mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" text="Capovolgi">
@@ -418,6 +442,11 @@
                                                             <MenuItem mnemonicParsing="false" text="Action 1" />
                                                             <MenuItem mnemonicParsing="false" text="Action 2" />
                                                          </items>
+                                                      <MenuButton id="mirror" fx:id="mirrorMenu" mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" stylesheets="@../../style.css" text="Capovolgi">
+                                                        <items>
+                                                          <MenuItem fx:id="mirrorHorizontal" mnemonicParsing="false" onAction="#handleMirrorHorizontalShape" text="Capovolgi orizzontalmente" />
+                                                          <MenuItem fx:id="mirrorVertical" mnemonicParsing="false" onAction="#handleMirrorVerticalShape" text="Capovolgi verticalmente" />
+                                                        </items>
                                                          <VBox.margin>
                                                             <Insets top="10.0" />
                                                          </VBox.margin>

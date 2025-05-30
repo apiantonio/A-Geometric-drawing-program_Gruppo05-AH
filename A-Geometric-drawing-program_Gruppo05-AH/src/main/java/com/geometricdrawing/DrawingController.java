@@ -35,7 +35,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
-import javafx.scene.input.ScrollEvent;
 
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -78,6 +77,9 @@ public class DrawingController {
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
 
     @FXML private Spinner<Double> rotationSpinner;
+    @FXML private MenuItem mirrorHorizontal;
+    @FXML private MenuItem mirrorVertical;
+    @FXML private MenuButton mirrorMenu; // Menu per le opzioni di mirroring
 
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
@@ -172,6 +174,11 @@ public class DrawingController {
 
             createShapeContextMenu();
             createCanvasContextMenu();
+            mirrorHorizontal.setOnAction(this::handleMirrorHorizontalShape);
+            mirrorVertical.setOnAction(this::handleMirrorVerticalShape);
+
+            createShapeContextMenu(); // Crea il menu contestuale per le figure
+            createCanvasContextMenu(); // Crea il menu contestuale per il canvas (es. "Incolla qui")
 
             drawingCanvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 if (event.getButton() == MouseButton.SECONDARY) {
@@ -204,6 +211,7 @@ public class DrawingController {
                 }
             });
 
+            // Colori iniziali per i color picker
             fillPicker.setValue(Color.LIGHTGREEN);
             borderPicker.setValue(Color.ORANGE);
 
@@ -352,6 +360,25 @@ public class DrawingController {
             redrawCanvas();
         }
     }
+
+    @FXML
+    private void handleMirrorHorizontalShape(ActionEvent event) {
+        if (currentShape != null) {
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, true);
+            commandManager.executeCommand(mscmd);
+            redrawCanvas();
+        }
+    }
+
+    @FXML
+    private void handleMirrorVerticalShape(ActionEvent event) {
+        if (currentShape != null) {
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, false);
+            commandManager.executeCommand(mscmd);
+            redrawCanvas();
+        }
+    }
+
 
     /**
      * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).
@@ -636,6 +663,7 @@ public class DrawingController {
         boolean enableForeground = false;
         boolean enableBackground = false;
         boolean enableRotation = false;
+        boolean enableMirroring = false;
 
         currentShape = shape;
 
@@ -666,10 +694,29 @@ public class DrawingController {
             enableForeground = true;
             enableBorderPicker = true;
             enableRotation = true;
+            enableMirroring = true;
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
                 enableFillPicker = true;
+                AbstractShape fillSearch = shape;
+                while (fillSearch instanceof ShapeDecorator) {
+                    if (fillSearch instanceof FillColorDecorator) {
+                        fillPicker.setValue(((FillColorDecorator) fillSearch).getFillColor());
+                        break;
+                    }
+                    fillSearch = ((ShapeDecorator) fillSearch).getInnerShape();
+                }
+            }
+
+            // Cerca BorderColorDecorator nella catena
+            AbstractShape borderSearch = shape;
+            while (borderSearch instanceof ShapeDecorator) {
+                if (borderSearch instanceof BorderColorDecorator) {
+                    borderPicker.setValue(((BorderColorDecorator) borderSearch).getBorderColor());
+                    break;
+                }
+                borderSearch = ((ShapeDecorator) borderSearch).getInnerShape();
             }
 
             if (shape.getZ() == 0){
@@ -707,6 +754,7 @@ public class DrawingController {
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
         if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
+        if (mirrorMenu != null) mirrorMenu.setDisable(!enableMirroring);
 
         // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
@@ -971,7 +1019,7 @@ public class DrawingController {
             widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
 
             isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
-            rotationSpinner.getValueFactory().setValue(shape.getRotationAngle()); // Imposta angolo di rotazione
+            rotationSpinner.getValueFactory().setValue(shape.getRotationAngle());
             isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
 
             if (baseShape instanceof Line) {
@@ -1077,11 +1125,21 @@ public class DrawingController {
 
         // Trasla e ruota rispetto al centro della forma nelle coordinate del mondo
         gc.translate(centerX, centerY);
+        // Applica le trasformazioni di mirroring
+        if (shape.getScaleX() == -1) {
+            gc.scale(-1, 1);
+        }
+        if (shape.getScaleY() == -1) {
+            gc.scale(1, -1);
+        }
+        gc.rotate(angle); // Applica la rotazione
         gc.rotate(angle);
 
         gc.setStroke(Color.SKYBLUE);
         gc.setLineWidth(worldLineWidth); // Apparirà come lineWidthOnScreen sullo schermo
         gc.setLineDashes(5 * worldLineWidth);
+        gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
+        gc.setLineDashes(5.0 / zoomHandler.getZoomFactor());
 
         if (baseShape instanceof Line line) {
             // Coordinate relative al centro della forma (che ora è l'origine di questo gc locale)

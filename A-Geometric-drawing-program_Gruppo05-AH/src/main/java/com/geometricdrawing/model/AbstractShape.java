@@ -4,9 +4,16 @@ import javafx.scene.canvas.GraphicsContext;
 import java.io.*;
 
 public abstract class AbstractShape implements Serializable{
-    protected double x; // Posizione x (es. angolo sup-sx, o startX per linea)
-    protected double y; // Posizione y (es. angolo sup-sx, o startY per linea)
+    protected double x; // Posizione x sul Canvas (angolo in alto a sx, o startX per linea)
+    protected double y; // Posizione y sul Canvas (angolo in alto a sx, o startY per linea)
     protected int z;    // Livello di profondità della figura
+
+    /*
+      attributi di tipo intero per scalare la figura (utili per effettuare mirroring).
+      di default non c'è mirroring nè orizzontale, nè verticale quindi impostati a 1
+    */
+    protected int scaleX = 1;
+    protected int scaleY = 1;
 
     protected double rotationAngle = 0.0; // Angolo di rotazione della figura espresso in gradi
 
@@ -31,7 +38,8 @@ public abstract class AbstractShape implements Serializable{
         double centerY = y + height / 2;
 
         gc.translate(centerX, centerY); // l'origine del context adesso è impostato come il centro della figura
-        gc.rotate(rotationAngle);
+        gc.scale(scaleX, scaleY);   // applica mirroring (specchiatura) orizzontale o verticale. DEVE NECESSARIAMENTE ESSERE SOPRA LA ROTAZIONE
+        gc.rotate(rotationAngle);   // effettua la rotazione con l'angolo specificato
 
         drawShape(gc);
 
@@ -92,6 +100,16 @@ public abstract class AbstractShape implements Serializable{
 
     public void setZ(int z) {
         this.z = z;
+    }
+
+    public int getScaleX() { return scaleX; }
+
+    public void setScaleX(int scaleX) { this.scaleX = scaleX; }
+
+    public int getScaleY() { return scaleY;}
+
+    public void setScaleY(int scaleY) {
+        this.scaleY = scaleY;
     }
 
     // sposta la figura a una nuova posizione (newX, newY)

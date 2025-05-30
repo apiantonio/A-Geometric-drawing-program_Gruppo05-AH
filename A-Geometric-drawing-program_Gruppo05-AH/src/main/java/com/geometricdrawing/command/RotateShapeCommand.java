@@ -4,6 +4,10 @@ import com.geometricdrawing.command.Command;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Classe per il comando di rotazione di una forma
+ */
 public class RotateShapeCommand implements Command {
     private final AbstractShape shape;
     private final double deltaAngle;

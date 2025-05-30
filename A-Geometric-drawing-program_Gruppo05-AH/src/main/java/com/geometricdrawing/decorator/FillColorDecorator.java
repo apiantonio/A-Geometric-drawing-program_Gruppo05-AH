@@ -9,7 +9,6 @@ import java.io.*;
 /**
  * La classe decoratore per il colore del riempimento implementa Serializable
  * per consentire l'esportazione e importazione.
- * Versione corretta per aggiornare i campi RGBA nel setter.
  */
 public class FillColorDecorator extends ShapeDecorator {
     private transient Color fillColor;
