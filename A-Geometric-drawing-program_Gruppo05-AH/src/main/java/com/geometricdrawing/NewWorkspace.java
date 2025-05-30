@@ -6,10 +6,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 
-/**
- * Classe responsabile della gestione della creazione di una nuova area di lavoro.
- * Implementa la logica per verificare se ci sono modifiche non salvate e gestire il salvataggio.
- */
+
 public class NewWorkspace {
     private final DrawingController controller;
 
@@ -17,23 +14,14 @@ public class NewWorkspace {
         this.controller = controller;
     }
 
-    /**
-     * Gestisce la richiesta di creazione di una nuova area di lavoro.
-     * Se ci sono figure nel modello, chiede all'utente se vuole salvare prima di procedere.
-     */
     public void handleNewWorkspace() {
-        // Verifica se ci sono figure nel modello corrente
-        if (!controller.getModel().getShapes().isEmpty()) {
+        if (controller.getModel() != null && !controller.getModel().getShapes().isEmpty()) { // Aggiunto controllo per model != null
             showConfirmationDialog();
         } else {
-            // Se non ci sono figure, crea direttamente una nuova area di lavoro
             createNewWorkspace();
         }
     }
 
-    /**
-     * Mostra il dialogo di conferma per salvare il lavoro corrente.
-     */
     private void showConfirmationDialog() {
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("Nuova Area di Lavoro");
@@ -48,36 +36,41 @@ public class NewWorkspace {
 
         confirmAlert.showAndWait().ifPresent(result -> {
             if (result == buttonTypeSave) {
-                // Salva il lavoro corrente come serializzato
                 FileOperationContext foc =  controller.getFileOperationContext();
-                foc.setStrategySave(new SerializedSaveStrategy());
-                foc.executeSave();
-                // Procede con la creazione della nuova area solo se il salvataggio è andato a buon fine
-                createNewWorkspace();
+                if (foc != null) {
+                    foc.setStrategySave(new SerializedSaveStrategy());
+                    if (foc.executeSave()) { // Procedi solo se il salvataggio ha avuto successo
+                        createNewWorkspace();
+                    }
+                    // Se il salvataggio fallisce o viene annullato, non creare una nuova area.
+                } else {
+                    createNewWorkspace(); // Fallback o gestisci errore se foc è critico
+                }
             } else if (result == buttonTypeNoSave) {
-                // Procede direttamente con la creazione della nuova area
                 createNewWorkspace();
             }
+            // Se Annulla, non fare nulla.
         });
     }
 
-    /**
-     * Crea una nuova area di lavoro vuota
-     */
     protected void createNewWorkspace() {
-        // Resetta il modello
-        controller.getModel().clear();
-        controller.clearCommands();
+        if (controller.getModel() != null) {
+            controller.getModel().clear(); // Questo attiverà i listener nel DrawingController
+        }
+        controller.clearCommands();    // Questo ora chiama anche updateScrollBars
 
-
-        // Resetta lo stato del controller
         controller.setCurrentShape(null);
         controller.setCurrentShapeFactory(null);
 
-        // Aggiorna l'interfaccia
         controller.updateControlState(null);
         controller.updateSpinners(null);
-        controller.redrawCanvas();
+
+        // Assicura che le scrollbar siano resettate per una nuova area di lavoro che inizia da (0,0)
+        if (controller.getHorizontalScrollBar() != null) controller.getHorizontalScrollBar().setValue(0);
+        if (controller.getVerticalScrollBar() != null) controller.getVerticalScrollBar().setValue(0);
+
+        controller.updateScrollBars(); // Chiamata esplicita per lo stato fresco
+        controller.redrawCanvas();     // Ridisegna il canvas vuoto
     }
 
     public DrawingController getDrawingController() {

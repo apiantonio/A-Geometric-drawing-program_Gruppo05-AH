@@ -4,6 +4,7 @@ import com.geometricdrawing.DrawingController;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.ScrollBar;
 
 /**
  * Gestisce i livelli di zoom per un Canvas in un'applicazione JavaFX.
@@ -42,9 +43,9 @@ public class ZoomHandler {
             return;
         }
         this.currentZoomFactor = zoomFactor;
-        // Richiede un ridisegno del canvas attraverso il controller
         if (this.drawingController != null) {
-            this.drawingController.redrawCanvas();
+            this.drawingController.updateScrollBars(); // Aggiorna le scrollbar PRIMA di ridisegnare
+            this.drawingController.redrawCanvas();     // Poi ridisegna
         }
     }
 
@@ -80,15 +81,34 @@ public class ZoomHandler {
         return currentZoomFactor;
     }
 
-    /**
-     * Converte le coordinate dallo spazio dello schermo (visualizzazione)
-     * allo spazio del mondo logico del canvas (scalato).
-     * @param screenX Coordinata X dello schermo.
-     * @param screenY Coordinata Y dello schermo.
-     * @return Un oggetto Point2D con le coordinate del mondo.
-     */
     public Point2D screenToWorld(double screenX, double screenY) {
-        return new Point2D(screenX / currentZoomFactor, screenY / currentZoomFactor);
+        if (drawingController == null) { // Controllo di sicurezza
+            return new Point2D(screenX / currentZoomFactor, screenY / currentZoomFactor);
+        }
+        ScrollBar hBar = drawingController.getHorizontalScrollBar();
+        ScrollBar vBar = drawingController.getVerticalScrollBar();
+
+        double scrollXWorld = (hBar != null && hBar.isVisible()) ? hBar.getValue() : 0;
+        double scrollYWorld = (vBar != null && vBar.isVisible()) ? vBar.getValue() : 0;
+
+        double worldX = (screenX / currentZoomFactor) + scrollXWorld;
+        double worldY = (screenY / currentZoomFactor) + scrollYWorld;
+        return new Point2D(worldX, worldY);
+    }
+
+    public Point2D worldToScreen(double worldX, double worldY) {
+        if (drawingController == null) {
+            return new Point2D(worldX * currentZoomFactor, worldY * currentZoomFactor);
+        }
+        ScrollBar hBar = drawingController.getHorizontalScrollBar();
+        ScrollBar vBar = drawingController.getVerticalScrollBar();
+
+        double scrollXWorld = (hBar != null && hBar.isVisible()) ? hBar.getValue() : 0;
+        double scrollYWorld = (vBar != null && vBar.isVisible()) ? vBar.getValue() : 0;
+
+        double screenX = (worldX - scrollXWorld) * currentZoomFactor;
+        double screenY = (worldY - scrollYWorld) * currentZoomFactor;
+        return new Point2D(screenX, screenY);
     }
 
     /**

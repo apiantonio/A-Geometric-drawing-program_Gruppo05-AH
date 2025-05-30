@@ -11,6 +11,7 @@
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.RadioMenuItem?>
+<?import javafx.scene.control.ScrollBar?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.Spinner?>
@@ -28,36 +29,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
-      <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="420.0" prefWidth="1149.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
-         <Canvas fx:id="drawingCanvas" />
-         <Label fx:id="cutCopyLabel" alignment="CENTER" layoutX="405.0" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;" text="Elemento copiato negli appunti!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
-            <font>
-               <Font size="16.0" />
-            </font>
-            <graphic>
-               <ImageView fitHeight="32.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
-                  <image>
-                     <Image url="@../../icons/check.png" />
-                  </image>
-               </ImageView>
-            </graphic>
-         </Label>
-         <Label fx:id="emptyClipboardLabel" alignment="CENTER" prefHeight="29.0" prefWidth="217.0" style="-fx-background-radius: 10; -fx-background-color: #fff1d6;" text="Sezione appunti svuotata" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
-            <font>
-               <Font size="16.0" />
-            </font>
-            <graphic>
-               <ImageView fitHeight="29.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
-                  <image>
-                     <Image url="@../../icons/empty.png" />
-                  </image>
-               </ImageView>
-            </graphic>
-         </Label>
-      </AnchorPane>
-      <VBox prefHeight="200.0" prefWidth="821.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox prefHeight="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
             <MenuBar>
                <menus>
@@ -70,7 +44,8 @@
                                     <Image url="@../../icons/nuovo.png" />
                                  </image>
                               </ImageView>
-                           </graphic></MenuItem>
+                           </graphic>
+                        </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleLoadSerialized" text="Carica">
                            <graphic>
                               <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
@@ -78,7 +53,8 @@
                                     <Image url="@../../icons/carica.png" />
                                  </image>
                               </ImageView>
-                           </graphic></MenuItem>
+                           </graphic>
+                        </MenuItem>
                         <SeparatorMenuItem mnemonicParsing="false" />
                         <MenuItem mnemonicParsing="false" onAction="#handleSaveSerialized" text="Salva">
                            <graphic>
@@ -87,7 +63,8 @@
                                     <Image url="@../../icons/salva.png" />
                                  </image>
                               </ImageView>
-                           </graphic></MenuItem>
+                           </graphic>
+                        </MenuItem>
                         <Menu mnemonicParsing="false" text="Salva come">
                            <items>
                               <MenuItem mnemonicParsing="false" onAction="#handleSaveAsPng" text="PNG" />
@@ -96,7 +73,7 @@
                            <graphic>
                               <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@../../icons/sala%20come.png" />
+                                    <Image url="@../../icons/sala come.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -109,7 +86,8 @@
                                     <Image url="@../../icons/chiudi.png" />
                                  </image>
                               </ImageView>
-                           </graphic></MenuItem>
+                           </graphic>
+                        </MenuItem>
                      </items>
                   </Menu>
                   <Menu mnemonicParsing="false" text="Visualizza">
@@ -139,13 +117,13 @@
                   </Menu>
                </menus>
             </MenuBar>
-            <TabPane prefHeight="190.0" prefWidth="800.0" tabClosingPolicy="UNAVAILABLE">
+            <TabPane prefHeight="190.0" tabClosingPolicy="UNAVAILABLE">
                <tabs>
                   <Tab text="Home">
                      <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="139.0" prefWidth="915.0">
                            <children>
-                              <ToolBar layoutX="-1.0" layoutY="1.0" prefHeight="168.0" prefWidth="821.0" AnchorPane.bottomAnchor="-9.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <ToolBar AnchorPane.bottomAnchor="-9.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                  <items>
                                     <VBox alignment="CENTER" prefHeight="145.0" prefWidth="231.0">
                                        <children>
@@ -181,7 +159,8 @@
                                                                   <Image url="@../../icons/taglia1.png" />
                                                                </image>
                                                             </ImageView>
-                                                         </graphic></Button>
+                                                         </graphic>
+                                                      </Button>
                                                    </children>
                                                 </VBox>
                                                 <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0">
@@ -425,21 +404,20 @@
                                                 </VBox>
                                                 <VBox prefHeight="98.0" prefWidth="134.0">
                                                    <children>
-                                                      <Label text="Ruota (°C)">
-                                                         <graphic>
-                                                            <ImageView fitHeight="37.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
-                                                               <image>
-                                                                  <Image url="@../../icons/ruota.png" />
-                                                               </image>
-                                                            </ImageView>
-                                                         </graphic>
+                                                      <Label text="Ruota (°)"> <graphic>
+                                                         <ImageView fitHeight="37.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                                                            <image>
+                                                               <Image url="@../../icons/ruota.png" />
+                                                            </image>
+                                                         </ImageView>
+                                                      </graphic>
                                                       </Label>
                                                       <Spinner fx:id="rotationSpinner" stylesheets="@../../style.css" />
                                                       <MenuButton mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" text="Capovolgi">
-                                                        <items>
-                                                          <MenuItem mnemonicParsing="false" text="Action 1" />
-                                                          <MenuItem mnemonicParsing="false" text="Action 2" />
-                                                        </items>
+                                                         <items>
+                                                            <MenuItem mnemonicParsing="false" text="Action 1" />
+                                                            <MenuItem mnemonicParsing="false" text="Action 2" />
+                                                         </items>
                                                          <VBox.margin>
                                                             <Insets top="10.0" />
                                                          </VBox.margin>
@@ -463,7 +441,7 @@
                                                    <graphic>
                                                       <ImageView fitHeight="45.0" fitWidth="42.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
-                                                            <Image url="@../../icons/Griglia.png" />
+                                                            <Image url="@../../icons/griglia.png" />
                                                          </image>
                                                       </ImageView>
                                                    </graphic>
@@ -496,5 +474,45 @@
             </TabPane>
          </children>
       </VBox>
+
+      <AnchorPane fx:id="canvasContainer"
+                  AnchorPane.topAnchor="200.0"
+                  AnchorPane.leftAnchor="0.0"
+                  AnchorPane.rightAnchor="20.0"  AnchorPane.bottomAnchor="20.0"> <Canvas fx:id="drawingCanvas" />
+         <Label fx:id="cutCopyLabel" alignment="CENTER" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;" text="Elemento copiato negli appunti!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="32.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/check.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+         </Label>
+         <Label fx:id="emptyClipboardLabel" alignment="CENTER" prefHeight="29.0" prefWidth="217.0" style="-fx-background-radius: 10; -fx-background-color: #fff1d6;" text="Sezione appunti svuotata" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="29.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/empty.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+         </Label>
+      </AnchorPane>
+
+      <ScrollBar fx:id="horizontalScrollBar" orientation="HORIZONTAL" visible="true"
+                 AnchorPane.leftAnchor="0.0"
+                 AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="0.0"
+                 prefHeight="20.0"/>
+
+      <ScrollBar fx:id="verticalScrollBar" orientation="VERTICAL" visible="true"
+                 AnchorPane.topAnchor="200.0" AnchorPane.rightAnchor="0.0"
+                 AnchorPane.bottomAnchor="20.0" prefWidth="20.0"/>
+
    </children>
 </AnchorPane>
