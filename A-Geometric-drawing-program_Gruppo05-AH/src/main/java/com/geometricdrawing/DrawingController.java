@@ -506,7 +506,7 @@ public class DrawingController {
      * Prepara il controller per la creazione di una nuova figura.
      * @param factory La factory per il tipo di figura da creare.
      * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
-     * @param disableBorderPickerForFactory Se il border picker deve essere disabilitato per questa factory.
+     * @param disableBorderPicker Se il border picker deve essere disabilitato per questa factory.
      */
     private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
         currentShape = null; // Deseleziona figura corrente
@@ -1421,6 +1421,112 @@ public class DrawingController {
         exit.exit();
     }
 
+    @FXML
+    private void handleGrid10() {
+        if (grid != null) {
+            grid.setGridSizeSmall();
+        }
+    }
+
+    @FXML
+    private void handleGrid20() {
+        if (grid != null) {
+            grid.setGridSizeMedium();
+        }
+    }
+
+    @FXML
+    private void handleGrid50() {
+        if (grid != null) {
+            grid.setGridSizeBig();
+        }
+    }
+
+    @FXML
+    private void onToggleGrid() {
+        if (grid != null) {
+            grid.toggleGrid(toggleGrid.isSelected());
+            gridOptions.setDisable(!toggleGrid.isSelected());
+            redrawCanvas(); // Forza il ridisegno per mostrare/nascondere la griglia
+        }
+    }
+
+    private void handleFontSizeChange(Integer newSize) {
+        if (currentShape == null || newSize == null || model == null || commandManager == null) {
+            return;
+        }
+        AbstractShape baseShape = getBaseShape(currentShape);
+        if (baseShape instanceof TextShape) {
+            TextShape textShape = (TextShape) baseShape;
+            if (textShape.getFontSize() != newSize) {
+                ChangeFontSizeCommand cmd = new ChangeFontSizeCommand(model, textShape, newSize);
+                commandManager.executeCommand(cmd);
+                redrawCanvas();
+            }
+        }
+    }
+
+    @FXML
+    public void handleSelectText(ActionEvent event) {
+        initializeShapeSelection(new TextFactory(), false, false);
+        textField.setDisable(false);
+        if (textField != null) textField.requestFocus();
+    }
+
+    @FXML
+    public void handleChangeTextContentAction(ActionEvent event) {
+        if (currentShape != null) {
+            AbstractShape baseShape = getBaseShape(currentShape);
+            if (baseShape instanceof TextShape textShape) {
+                String newTextContent = textField.getText();
+                if (!textShape.getText().equals(newTextContent)) {
+                    ChangeTextContentCommand cmd = new ChangeTextContentCommand(model, textShape, newTextContent);
+                    commandManager.executeCommand(cmd);
+                    redrawCanvas();
+                }
+            }
+        }
+    }
+
+    public void drawTempPolygon() {
+        if (isDrawingPolygon && tempPolygonPoints != null && currentShapeFactory instanceof PolygonFactory) {
+            gc.save();
+
+            // Imposta stile per punti e linee temporanee
+            gc.setFill(Color.DARKGRAY);
+            gc.setStroke(Color.DARKGRAY);
+            gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
+
+            // Disegna i punti
+            double handleSize = 6.0 / zoomHandler.getZoomFactor();
+
+            // Disegna i punti esistenti
+            for (Point2D point : tempPolygonPoints) {
+                gc.setFill(Color.DARKGRAY);
+                gc.fillOval(point.getX() - handleSize/2, point.getY() - handleSize/2, handleSize, handleSize);
+                gc.strokeOval(point.getX() - handleSize/2, point.getY() - handleSize/2, handleSize, handleSize);
+            }
+
+            // Disegna le linee tra i punti
+            if (tempPolygonPoints.size() > 1) {
+                for (int i = 0; i < tempPolygonPoints.size() - 1; i++) {
+                    Point2D current = tempPolygonPoints.get(i);
+                    Point2D next = tempPolygonPoints.get(i + 1);
+                    gc.strokeLine(current.getX(), current.getY(), next.getX(), next.getY());
+                }
+
+                // Chiude il poligono disegnando una linea tra l'ultimo e il primo punto
+                if (tempPolygonPoints.size() >= ((PolygonFactory) currentShapeFactory).getMaxPoints()) {
+                    Point2D first = tempPolygonPoints.getFirst();
+                    Point2D last = tempPolygonPoints.getLast();
+                    gc.strokeLine(last.getX(), last.getY(), first.getX(), first.getY());
+                }
+            }
+
+            gc.restore(); // Ripristina lo stato del GraphicsContext
+        }
+    }
+
     // --- Metodi Getter e Setter usati principalmente dai gestori eventi o per test ---
     public Window getWindow() { return (drawingCanvas != null && drawingCanvas.getScene() != null) ? drawingCanvas.getScene().getWindow() : null; }
 
@@ -1497,78 +1603,11 @@ public class DrawingController {
         });
     }
 
-    public void drawTempPolygon() {
-        if (isDrawingPolygon && tempPolygonPoints != null && currentShapeFactory instanceof PolygonFactory) {
-            gc.save();
-
-            // Imposta stile per punti e linee temporanee
-            gc.setFill(Color.DARKGRAY);
-            gc.setStroke(Color.DARKGRAY);
-            gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
-
-            // Disegna i punti
-            double handleSize = 6.0 / zoomHandler.getZoomFactor();
-
-            // Disegna i punti esistenti
-            for (Point2D point : tempPolygonPoints) {
-                gc.setFill(Color.DARKGRAY);
-                gc.fillOval(point.getX() - handleSize/2, point.getY() - handleSize/2, handleSize, handleSize);
-                gc.strokeOval(point.getX() - handleSize/2, point.getY() - handleSize/2, handleSize, handleSize);
-            }
-
-            // Disegna le linee tra i punti
-            if (tempPolygonPoints.size() > 1) {
-                for (int i = 0; i < tempPolygonPoints.size() - 1; i++) {
-                    Point2D current = tempPolygonPoints.get(i);
-                    Point2D next = tempPolygonPoints.get(i + 1);
-                    gc.strokeLine(current.getX(), current.getY(), next.getX(), next.getY());
-                }
-
-                // Chiude il poligono disegnando una linea tra l'ultimo e il primo punto
-                if (tempPolygonPoints.size() >= ((PolygonFactory) currentShapeFactory).getMaxPoints()) {
-                    Point2D first = tempPolygonPoints.getFirst();
-                    Point2D last = tempPolygonPoints.getLast();
-                    gc.strokeLine(last.getX(), last.getY(), first.getX(), first.getY());
-                }
-            }
-
-            gc.restore(); // Ripristina lo stato del GraphicsContext
-        }
-    }
 
     public boolean isDrawingPolygon() {
         return isDrawingPolygon;
     }
 
-    @FXML
-    private void handleGrid10() {
-        if (grid != null) {
-            grid.setGridSizeSmall();
-        }
-    }
-
-    @FXML
-    private void handleGrid20() {
-        if (grid != null) {
-            grid.setGridSizeMedium();
-        }
-    }
-
-    @FXML
-    private void handleGrid50() {
-        if (grid != null) {
-            grid.setGridSizeBig();
-        }
-    }
-
-    @FXML
-    private void onToggleGrid() {
-        if (grid != null) {
-            grid.toggleGrid(toggleGrid.isSelected());
-            gridOptions.setDisable(!toggleGrid.isSelected());
-            redrawCanvas(); // Forza il ridisegno per mostrare/nascondere la griglia
-        }
-    }
     public double getInitialDragShapeX_world() { return initialDragShapeX_world; }
     public void setInitialDragShapeX_world(double initialDragShapeX_world) { this.initialDragShapeX_world = initialDragShapeX_world; }
     public double getInitialDragShapeY_world() { return initialDragShapeY_world; }
@@ -1585,40 +1624,7 @@ public class DrawingController {
     public void setIsDrawingPolygon(boolean isDrawingPolygon) {
         this.isDrawingPolygon = isDrawingPolygon;
     }
-    private void handleFontSizeChange(Integer newSize) {
-        if (currentShape == null || newSize == null || model == null || commandManager == null) {
-            return;
-        }
-        AbstractShape baseShape = getBaseShape(currentShape);
-        if (baseShape instanceof TextShape) {
-            TextShape textShape = (TextShape) baseShape;
-            if (textShape.getFontSize() != newSize) {
-                ChangeFontSizeCommand cmd = new ChangeFontSizeCommand(model, textShape, newSize);
-                commandManager.executeCommand(cmd);
-                redrawCanvas();
-            }
-        }
-    }
-    @FXML
-    public void handleSelectText(ActionEvent event) {
-        initializeShapeSelection(new TextFactory(), false, false);
-        textField.setDisable(false);
-        if (textField != null) textField.requestFocus();
-    }
-    @FXML
-    public void handleChangeTextContentAction(ActionEvent event) {
-        if (currentShape != null) {
-            AbstractShape baseShape = getBaseShape(currentShape);
-            if (baseShape instanceof TextShape textShape) {
-                String newTextContent = textField.getText();
-                if (!textShape.getText().equals(newTextContent)) {
-                    ChangeTextContentCommand cmd = new ChangeTextContentCommand(model, textShape, newTextContent);
-                    commandManager.executeCommand(cmd);
-                    redrawCanvas();
-                }
-            }
-        }
-    }
+
     public String getTextField() {
         return this.textField.getText();
     }

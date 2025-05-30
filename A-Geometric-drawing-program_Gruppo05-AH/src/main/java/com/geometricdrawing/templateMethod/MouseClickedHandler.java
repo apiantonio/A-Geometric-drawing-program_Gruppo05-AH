@@ -89,6 +89,13 @@ public class MouseClickedHandler extends AbstractMouseHandler {
     private void handleRegularShapeCreation() {
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
 
+        if (newShape instanceof TextShape && currentShapeFactory instanceof TextFactory) {
+            if (controller.getTextField() != null) {
+                String userText = controller.getTextField();
+                ((TextShape) newShape).setText(userText); // Set the text from the TextField
+            }
+        }
+
         AbstractShape styledShape = applyDecorations(newShape);
         currentShape = styledShape;
 
