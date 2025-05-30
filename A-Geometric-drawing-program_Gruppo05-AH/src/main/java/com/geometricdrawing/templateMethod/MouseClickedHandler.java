@@ -7,10 +7,12 @@ import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.factory.PolygonFactory;
 import com.geometricdrawing.factory.ShapeFactory;
+import com.geometricdrawing.factory.TextFactory;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.ZoomHandler;
 import com.geometricdrawing.model.Polygon;
+import com.geometricdrawing.model.TextShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
@@ -47,9 +49,9 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         this.worldX = worldCoords.getX();
         this.worldY = worldCoords.getY();
 
-        currentShapeFactory = controller.getCurrentShapeFactory();
-        border = controller.getBorderPicker().getValue();
-        fill = controller.getFillPicker().getValue();
+        this.currentShapeFactory = controller.getCurrentShapeFactory();
+        this.border = controller.getBorderPicker().getValue();
+        this.fill = controller.getFillPicker().getValue();
     }
 
     @Override

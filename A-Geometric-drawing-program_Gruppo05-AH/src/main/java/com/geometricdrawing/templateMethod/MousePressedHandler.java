@@ -83,8 +83,10 @@ public class MousePressedHandler extends AbstractMouseHandler {
 
     @Override
     protected void postProcess(MouseEvent event) {
-        controller.updateControlState(controller.getCurrentShape());
-        controller.updateSpinners(controller.getCurrentShape());
+        if (controller.getCurrentShapeFactory() == null) {
+            controller.updateControlState(controller.getCurrentShape());
+            controller.updateSpinners(controller.getCurrentShape());
+        }else controller.updateControlState(controller.getCurrentShape());
         super.postProcess(event); // Questo chiama redrawCanvas
     }
 }

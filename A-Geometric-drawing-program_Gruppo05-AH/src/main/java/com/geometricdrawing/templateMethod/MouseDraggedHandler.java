@@ -25,6 +25,9 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
 
         shapeWidth = currentShape.getWidth();
         shapeHeight = currentShape.getHeight();
+
+        // Imposta il cursore a mano chiusa
+//        canvas.setCursor(javafx.scene.Cursor.CLOSED_HAND);
     }
 
     @Override

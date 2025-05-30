@@ -30,7 +30,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <VBox prefHeight="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
@@ -256,7 +256,7 @@
                                                       </MenuItem>
                                                    </items>
                                                 </MenuButton>
-                                                <Button contentDisplay="TOP" mnemonicParsing="false" stylesheets="@../../style.css" text="Testo">
+                                                <Button contentDisplay="TOP" mnemonicParsing="false" onAction="#handleSelectText" stylesheets="@../../style.css" text="Testo">
                                                    <graphic>
                                                       <ImageView fitHeight="46.0" fitWidth="39.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
@@ -267,8 +267,8 @@
                                                 </Button>
                                                 <VBox alignment="CENTER" prefHeight="98.0" prefWidth="84.0" spacing="10.0">
                                                    <children>
-                                                      <TextField promptText="Scrivi qui..." />
-                                                      <Spinner stylesheets="@../../style.css" />
+                                                      <TextField fx:id="textField" onAction="#handleChangeTextContentAction" promptText="Scrivi qui..." />
+                                                      <Spinner fx:id="fontSizeSpinner" stylesheets="@../../style.css" />
                                                    </children>
                                                 </VBox>
                                              </children>
@@ -494,10 +494,7 @@
          </children>
       </VBox>
 
-      <AnchorPane fx:id="canvasContainer"
-                  AnchorPane.topAnchor="200.0"
-                  AnchorPane.leftAnchor="0.0"
-                  AnchorPane.rightAnchor="20.0"  AnchorPane.bottomAnchor="20.0"> <Canvas fx:id="drawingCanvas" />
+      <AnchorPane fx:id="canvasContainer" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="200.0"> <Canvas fx:id="drawingCanvas" />
          <Label fx:id="cutCopyLabel" alignment="CENTER" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;" text="Elemento copiato negli appunti!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
             <font>
                <Font size="16.0" />
@@ -524,14 +521,9 @@
          </Label>
       </AnchorPane>
 
-      <ScrollBar fx:id="horizontalScrollBar" orientation="HORIZONTAL" visible="true"
-                 AnchorPane.leftAnchor="0.0"
-                 AnchorPane.rightAnchor="20.0" AnchorPane.bottomAnchor="0.0"
-                 prefHeight="20.0"/>
+      <ScrollBar fx:id="horizontalScrollBar" orientation="HORIZONTAL" prefHeight="20.0" visible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" />
 
-      <ScrollBar fx:id="verticalScrollBar" orientation="VERTICAL" visible="true"
-                 AnchorPane.topAnchor="200.0" AnchorPane.rightAnchor="0.0"
-                 AnchorPane.bottomAnchor="20.0" prefWidth="20.0"/>
+      <ScrollBar fx:id="verticalScrollBar" orientation="VERTICAL" prefWidth="20.0" visible="true" AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0" />
 
    </children>
 </AnchorPane>
