@@ -53,18 +53,25 @@ public class Polygon extends AbstractShape {
     }
 
     @Override
-    public void draw(GraphicsContext gc) {
+    public void drawShape(GraphicsContext gc) {
         if (vertices.size() < 3) {
             return; // il poligono deve avere almeno 3 punti
         }
 
+        // Calcola il centro del bounding box della forma
+        double centerX = this.x + this.width / 2;
+        double centerY = this.y + this.height / 2;
+
+
         double[] xVertices = new double[vertices.size()];
         double[] yVertices = new double[vertices.size()];
 
+        // Converti le coordinate assolute dei vertici in coordinate relative al centro
         for (int i = 0; i < vertices.size(); i++) {
-            xVertices[i] = vertices.get(i).getX();
-            yVertices[i] = vertices.get(i).getY();
+            xVertices[i] = vertices.get(i).getX() - centerX;
+            yVertices[i] = vertices.get(i).getY() - centerY;
         }
+
 
         gc.fillPolygon(xVertices, yVertices, vertices.size());
         gc.strokePolygon(xVertices, yVertices, vertices.size());

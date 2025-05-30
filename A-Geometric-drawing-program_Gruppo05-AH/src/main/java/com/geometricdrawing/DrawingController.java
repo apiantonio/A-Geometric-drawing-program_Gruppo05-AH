@@ -182,7 +182,6 @@ public class DrawingController {
             mirrorHorizontal.setOnAction(this::handleMirrorHorizontalShape);
             mirrorVertical.setOnAction(this::handleMirrorVerticalShape);
 
-
             isDrawingPolygon = false;
             tempPolygonPoints = new ArrayList<>(); // Inizializza la lista dei punti temporanei per i poligoni
 
@@ -266,6 +265,20 @@ public class DrawingController {
             });
             configureSpinnerFocusListener(widthSpinner);
             configureNumericTextFormatter(widthSpinner);
+        }
+
+        if(rotationSpinner != null) {
+            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-360, 360, 0, 1); //
+            rotationSpinner.setValueFactory(rotationValueFactory); //
+            rotationSpinner.setEditable(true); //
+            rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { //
+                if (!isUpdatedRotateSpinner && oldValue != null && newValue != null) { //
+                    double deltaAngle = newValue - oldValue; //
+                    handleRotation(deltaAngle); //
+                }
+            });
+            configureSpinnerFocusListener(rotationSpinner); //
+            configureNumericTextFormatter(rotationSpinner); //
         }
 
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
@@ -471,7 +484,7 @@ public class DrawingController {
      * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
      * @param disableBorderPickerForFactory Se il border picker deve essere disabilitato per questa factory.
      */
-    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPickerForFactory) {
+    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
         currentShape = null; // Deseleziona figura corrente
         updateControlState(null); // Aggiorna stato UI
         redrawCanvas(); // Rimuove evidenziazione precedente
@@ -480,8 +493,8 @@ public class DrawingController {
         fillPicker.setDisable(disableFillPicker);
         if (factory instanceof LineFactory) { // Per la Linea, il bordo è sempre possibile
             borderPicker.setDisable(false);
-        } else if (factory instanceof RectangleFactory || factory instanceof EllipseFactory) { // Per Rettangolo/Ellisse, il bordo è possibile
-            borderPicker.setDisable(false);
+        } else { // Per Rettangolo/Ellisse, il bordo è possibile
+            borderPicker.setDisable(disableBorderPicker);
         }
         // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
 
@@ -1139,9 +1152,6 @@ public class DrawingController {
             grid.drawGrid(gc, scrollXWorld, scrollYWorld, viewPortWorldWidth, viewPortWorldHeight);
         }
 
-        gc.save(); // Salva lo stato corrente del GraphicsContext (es. trasformazioni)
-        zoomHandler.applyZoomTransformation(gc); // Applica la scala per lo zoom
-
         drawTempPolygon(); // Disegna il poligono temporaneo se esiste
 
         // Disegna tutte le figure nel modello (l'ordine di disegno influisce sulla sovrapposizione visiva)
@@ -1429,7 +1439,6 @@ public class DrawingController {
     public void drawTempPolygon() {
         if (isDrawingPolygon && tempPolygonPoints != null && currentShapeFactory instanceof PolygonFactory) {
             gc.save();
-            zoomHandler.applyZoomTransformation(gc);
 
             // Imposta stile per punti e linee temporanee
             gc.setFill(Color.DARKGRAY);

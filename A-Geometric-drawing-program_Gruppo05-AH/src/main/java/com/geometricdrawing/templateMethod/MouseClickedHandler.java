@@ -54,9 +54,12 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
     @Override
     protected void processEvent(MouseEvent event) {
-        if (currentShapeFactory == null) {
+        if (controller.isDrawingPolygon()) {
+            handlePolygonCreation();
+        } else if (currentShapeFactory != null) {
+            handleRegularShapeCreation();
+        } else {
             currentShape = controller.selectShapeAt(this.worldX, this.worldY);
-            return;
         }
     }
 
@@ -83,11 +86,6 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
     private void handleRegularShapeCreation() {
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
-
-        if (controller.isTooClose(newShape, this.worldX, this.worldY)) {
-            currentShape = controller.selectShapeAt(this.worldX, this.worldY);
-            return;
-        }
 
         AbstractShape styledShape = applyDecorations(newShape);
         currentShape = styledShape;
@@ -137,6 +135,7 @@ public class MouseClickedHandler extends AbstractMouseHandler {
                 controller.updateSpinners(currentShape);
             }
         }
+    }
 
     private AbstractShape applyDecorations(AbstractShape shape) {
         AbstractShape styledShape = shape;
