@@ -245,7 +245,7 @@ public class DrawingController {
             rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
                 if (!isUpdatedRotateSpinner && oldValue != null && newValue != null) {
                     double deltaAngle = newValue - oldValue;
-                    handleRotation(deltaAngle);
+                    handleRotation(-deltaAngle);
                 }
             });
             configureSpinnerFocusListener(rotationSpinner);
@@ -681,6 +681,24 @@ public class DrawingController {
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
                 enableFillPicker = true;
+                AbstractShape fillSearch = shape;
+                while (fillSearch instanceof ShapeDecorator) {
+                    if (fillSearch instanceof FillColorDecorator) {
+                        fillPicker.setValue(((FillColorDecorator) fillSearch).getFillColor());
+                        break;
+                    }
+                    fillSearch = ((ShapeDecorator) fillSearch).getInnerShape();
+                }
+            }
+
+            // Cerca BorderColorDecorator nella catena
+            AbstractShape borderSearch = shape;
+            while (borderSearch instanceof ShapeDecorator) {
+                if (borderSearch instanceof BorderColorDecorator) {
+                    borderPicker.setValue(((BorderColorDecorator) borderSearch).getBorderColor());
+                    break;
+                }
+                borderSearch = ((ShapeDecorator) borderSearch).getInnerShape();
             }
 
             if (shape.getZ() == 0){
@@ -985,7 +1003,8 @@ public class DrawingController {
             widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
 
             isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
-            rotationSpinner.getValueFactory().setValue(shape.getRotationAngle()); // Imposta angolo di rotazione
+            double angle = shape.getRotationAngle();
+            rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
             isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
 
             if (baseShape instanceof Line) {
