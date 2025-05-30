@@ -355,7 +355,7 @@ public class DrawingController {
     @FXML
     public void handleRotation(double deltaAngle) {
         if (currentShape != null && rotationSpinner.getValue() != null) {
-            RotateShapeCommand cmd = new RotateShapeCommand(model, currentShape, deltaAngle);
+            RotateShapeCommand cmd = new RotateShapeCommand(model, currentShape, -deltaAngle);
             commandManager.executeCommand(cmd);
             redrawCanvas();
         }
@@ -1019,7 +1019,8 @@ public class DrawingController {
             widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
 
             isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
-            rotationSpinner.getValueFactory().setValue(shape.getRotationAngle());
+            double angle = shape.getRotationAngle();
+            rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
             isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
 
             if (baseShape instanceof Line) {
@@ -1109,21 +1110,18 @@ public class DrawingController {
     }
 
     private void drawHighlightBorder(AbstractShape shape) {
-        // Questa funzione disegna nel sistema di coordinate del mondo già trasformato da scroll e zoom.
-        // Le trasformazioni locali della forma (rotazione, traslazione al suo centro) vengono applicate DOPO.
-        AbstractShape baseShape = getBaseShape(shape);
+        AbstractShape baseShape = getBaseShape(shape); // Ottiene la forma base (non decorata)
 
         double centerX = baseShape.getX() + baseShape.getWidth() / 2;
         double centerY = baseShape.getY() + baseShape.getHeight() / 2;
         double angle = baseShape.getRotationAngle();
 
+        // Impostazioni per il bordo di selezione
         double lineWidthOnScreen = 1.0;
-        // worldLineWidth deve essere calcolato in base allo zoom corrente per un aspetto coerente sullo schermo
         double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor();
 
-        gc.save(); // Salva lo stato del gc (già scalato e scrollato) prima delle trasformazioni locali della forma
+        gc.save(); // Salva lo stato grafico prima della trasformazione
 
-        // Trasla e ruota rispetto al centro della forma nelle coordinate del mondo
         gc.translate(centerX, centerY);
         // Applica le trasformazioni di mirroring
         if (shape.getScaleX() == -1) {
@@ -1133,46 +1131,38 @@ public class DrawingController {
             gc.scale(1, -1);
         }
         gc.rotate(angle); // Applica la rotazione
-        gc.rotate(angle);
 
         gc.setStroke(Color.SKYBLUE);
-        gc.setLineWidth(worldLineWidth); // Apparirà come lineWidthOnScreen sullo schermo
-        gc.setLineDashes(5 * worldLineWidth);
         gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
         gc.setLineDashes(5.0 / zoomHandler.getZoomFactor());
 
         if (baseShape instanceof Line line) {
-            // Coordinate relative al centro della forma (che ora è l'origine di questo gc locale)
-            double startXRel = -line.getWidth() / 2; // linea.getX() - centerX;
-            double startYRel = -line.getHeight() / 2; // linea.getY() - centerY;
-            double endXRel = line.getWidth() / 2; // linea.getEndX() - centerX;
-            double endYRel = line.getHeight() / 2; // linea.getEndY() - centerY;
+            // Calcola estremi relativi al centro per rispettare la trasformazione
+            double startX = line.getX() - centerX;
+            double startY = line.getY() - centerY;
+            double endX = line.getEndX() - centerX;
+            double endY = line.getEndY() - centerY;
 
-            // Per le linee, è più semplice usare x,y e width,height per il punto iniziale e finale relativo al centro
-            startXRel = line.getX() - centerX;
-            startYRel = line.getY() - centerY;
-            endXRel = line.getEndX() - centerX;
-            endYRel = line.getEndY() - centerY;
-
-
-            gc.strokeLine(startXRel, startYRel, endXRel, endYRel);
-            drawHandle(startXRel, startYRel); // Passa coordinate relative
-            drawHandle(endXRel, endYRel);   // Passa coordinate relative
+            gc.strokeLine(startX, startY, endX, endY);
+            drawHandle(startX, startY);
+            drawHandle(endX, endY);
         } else {
-            // Coordinate del riquadro di delimitazione relative al centro della forma
-            double xRel = -baseShape.getWidth() / 2;
-            double yRel = -baseShape.getHeight() / 2;
+            // Rettangolo tratteggiato attorno alla bounding box ruotata
+            double x = baseShape.getX() - centerX;
+            double y = baseShape.getY() - centerY;
             double w = baseShape.getWidth();
             double h = baseShape.getHeight();
 
-            gc.strokeRect(xRel, yRel, w, h);
+            gc.strokeRect(x, y, w, h);
 
-            drawHandle(xRel, yRel);          // alto-sinistra relativo
-            drawHandle(xRel + w, yRel);      // alto-destra relativo
-            drawHandle(xRel, yRel + h);      // basso-sinistra relativo
-            drawHandle(xRel + w, yRel + h);  // basso-destra relativo
+            // Maniglie ai quattro angoli (coordinate relative al centro)
+            drawHandle(x, y); // top-left
+            drawHandle(x + w, y); // top-right
+            drawHandle(x, y + h); // bottom-left
+            drawHandle(x + w, y + h); // bottom-right
         }
-        gc.restore(); // Ripristina lo stato del gc (scalato e scrollato)
+
+        gc.restore(); // Ripristina il contesto grafico
     }
 
 

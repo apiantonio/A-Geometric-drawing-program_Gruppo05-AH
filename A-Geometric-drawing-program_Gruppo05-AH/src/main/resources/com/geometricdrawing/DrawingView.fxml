@@ -420,13 +420,6 @@
                                                 </VBox>
                                                 <VBox prefHeight="98.0" prefWidth="134.0">
                                                    <children>
-                                                      <Label text="Ruota (°)"> <graphic>
-                                                         <ImageView fitHeight="37.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
-                                                            <image>
-                                                               <Image url="@../../icons/ruota.png" />
-                                                            </image>
-                                                         </ImageView>
-                                                      </graphic>
                                                       <Label text="Ruota (deg)">
                                                          <graphic>
                                                             <ImageView fitHeight="37.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
@@ -437,11 +430,7 @@
                                                          </graphic>
                                                       </Label>
                                                       <Spinner fx:id="rotationSpinner" stylesheets="@../../style.css" />
-                                                      <MenuButton mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" text="Capovolgi">
-                                                         <items>
-                                                            <MenuItem mnemonicParsing="false" text="Action 1" />
-                                                            <MenuItem mnemonicParsing="false" text="Action 2" />
-                                                         </items>
+
                                                       <MenuButton id="mirror" fx:id="mirrorMenu" mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" stylesheets="@../../style.css" text="Capovolgi">
                                                         <items>
                                                           <MenuItem fx:id="mirrorHorizontal" mnemonicParsing="false" onAction="#handleMirrorHorizontalShape" text="Capovolgi orizzontalmente" />
@@ -458,6 +447,7 @@
                                                             </ImageView>
                                                          </graphic>
                                                       </MenuButton>
+
                                                    </children>
                                                    <opaqueInsets>
                                                       <Insets right="6.0" />
