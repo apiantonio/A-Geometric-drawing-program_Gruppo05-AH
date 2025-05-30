@@ -451,7 +451,7 @@
                                                          </graphic>
                                                       </Label>
                                                       <Spinner fx:id="rotationSpinner" stylesheets="@../../style.css" />
-                                                      <MenuButton mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" text="Capovolgi">
+                                                      <MenuButton id="mirror" fx:id="mirrorMenu" mnemonicParsing="false" prefHeight="27.0" prefWidth="117.0" stylesheets="@../../style.css" text="Capovolgi">
                                                         <items>
                                                           <MenuItem fx:id="mirrorHorizontal" mnemonicParsing="false" onAction="#handleMirrorHorizontalShape" text="Capovolgi orizzontalmente" />
                                                           <MenuItem fx:id="mirrorVertical" mnemonicParsing="false" onAction="#handleMirrorVerticalShape" text="Capovolgi verticalmente" />

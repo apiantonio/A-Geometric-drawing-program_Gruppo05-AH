@@ -75,6 +75,7 @@ public class DrawingController {
     @FXML private Spinner<Double> rotationSpinner;
     @FXML private MenuItem mirrorHorizontal;
     @FXML private MenuItem mirrorVertical;
+    @FXML private MenuButton mirrorMenu; // Menu per le opzioni di mirroring
 
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
@@ -671,6 +672,7 @@ public class DrawingController {
         boolean enableForeground = false;
         boolean enableBackground = false;
         boolean enableRotation = false;
+        boolean enableMirroring = false;
 
         currentShape = shape;
 
@@ -701,6 +703,7 @@ public class DrawingController {
             enableForeground = true;
             enableBorderPicker = true;
             enableRotation = true;
+            enableMirroring = true;
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
@@ -760,6 +763,7 @@ public class DrawingController {
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
         if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
+        if (mirrorMenu != null) mirrorMenu.setDisable(!enableMirroring);
 
         // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
