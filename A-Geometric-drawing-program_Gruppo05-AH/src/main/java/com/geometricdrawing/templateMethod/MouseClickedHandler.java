@@ -54,11 +54,6 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
 
-        if (controller.isTooClose(newShape, this.worldX, this.worldY)) {
-            currentShape = controller.selectShapeAt(this.worldX, this.worldY);
-            return;
-        }
-
         AbstractShape styledShape = newShape;
         //applica il colore di riempimento e il bordo se specificati
         if (newShape instanceof Line && border != null) {
