@@ -20,11 +20,9 @@ public abstract class ShapeDecorator extends AbstractShape {
 
     @Override
     public final void drawShape(GraphicsContext gc) {
-        //gc.save();
         // il metodo successivo è quello usato per settare colore di riempimento e di bordo
         decorateShape(gc);
         decoratedShape.draw(gc);            //redraw della forma addobbata
-        //gc.restore();
     }
 
     protected abstract void decorateShape(GraphicsContext gc);
@@ -58,6 +56,8 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public double getWidth()      { return decoratedShape.getWidth(); }
     @Override public double getHeight()     { return decoratedShape.getHeight(); }
     @Override public double getRotationAngle() { return decoratedShape.getRotationAngle();}
+    @Override public int getScaleX()    { return decoratedShape.getScaleX(); }
+    @Override public int getScaleY()    { return decoratedShape.getScaleY(); }
 
     @Override public void setX(double x)           { decoratedShape.setX(x); }
     @Override public void setY(double y)           { decoratedShape.setY(y); }
@@ -67,4 +67,7 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public void setWidth(double width)   { decoratedShape.setWidth(width); }
     @Override public void setHeight(double height) { decoratedShape.setHeight(height); }
     @Override public void setRotationAngle(double angle) { decoratedShape.setRotationAngle(angle);}
+    @Override public void setScaleY(int scaleY)    { decoratedShape.setScaleY(scaleY); }
+    @Override public void setScaleX(int scaleX)    { decoratedShape.setScaleX(scaleX); }
+
 }

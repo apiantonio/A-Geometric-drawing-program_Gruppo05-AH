@@ -73,6 +73,8 @@ public class DrawingController {
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
 
     @FXML private Spinner<Double> rotationSpinner;
+    @FXML private MenuItem mirrorHorizontal;
+    @FXML private MenuItem mirrorVertical;
 
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
@@ -150,6 +152,9 @@ public class DrawingController {
             drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent);
             drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent);
+
+            mirrorHorizontal.setOnAction(this::handleMirrorHorizontalShape);
+            mirrorVertical.setOnAction(this::handleMirrorVerticalShape);
 
             createShapeContextMenu(); // Crea il menu contestuale per le figure
             createCanvasContextMenu(); // Crea il menu contestuale per il canvas (es. "Incolla qui")
@@ -245,7 +250,7 @@ public class DrawingController {
             rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
                 if (!isUpdatedRotateSpinner && oldValue != null && newValue != null) {
                     double deltaAngle = newValue - oldValue;
-                    handleRotation(-deltaAngle);
+                    handleRotation(deltaAngle);
                 }
             });
             configureSpinnerFocusListener(rotationSpinner);
@@ -336,6 +341,25 @@ public class DrawingController {
             redrawCanvas();
         }
     }
+
+    @FXML
+    private void handleMirrorHorizontalShape(ActionEvent event) {
+        if (currentShape != null) {
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, true);
+            commandManager.executeCommand(mscmd);
+            redrawCanvas();
+        }
+    }
+
+    @FXML
+    private void handleMirrorVerticalShape(ActionEvent event) {
+        if (currentShape != null) {
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, false);
+            commandManager.executeCommand(mscmd);
+            redrawCanvas();
+        }
+    }
+
 
     /**
      * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).
@@ -1003,8 +1027,7 @@ public class DrawingController {
             widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
 
             isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
-            double angle = shape.getRotationAngle();
-            rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
+            rotationSpinner.getValueFactory().setValue(shape.getRotationAngle());
             isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
 
             if (baseShape instanceof Line) {
@@ -1094,11 +1117,18 @@ public class DrawingController {
         gc.save(); // Salva lo stato grafico prima della trasformazione
 
         gc.translate(centerX, centerY);
+        // Applica le trasformazioni di mirroring
+        if (shape.getScaleX() == -1) {
+            gc.scale(-1, 1);
+        }
+        if (shape.getScaleY() == -1) {
+            gc.scale(1, -1);
+        }
         gc.rotate(angle); // Applica la rotazione
 
         gc.setStroke(Color.SKYBLUE);
-        gc.setLineWidth(worldLineWidth);
-        gc.setLineDashes(5 * worldLineWidth);
+        gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
+        gc.setLineDashes(5.0 / zoomHandler.getZoomFactor());
 
         if (baseShape instanceof Line line) {
             // Calcola estremi relativi al centro per rispettare la trasformazione

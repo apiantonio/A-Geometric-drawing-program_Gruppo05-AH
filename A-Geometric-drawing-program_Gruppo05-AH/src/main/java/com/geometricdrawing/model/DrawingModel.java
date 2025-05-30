@@ -138,7 +138,17 @@ public class DrawingModel {
      */
     public void rotateShape(AbstractShape shape, double deltaAngle) {
         if (shape != null) {
-            shape.rotateBy(deltaAngle);  // già fa il % 360 e gestisce i negativi
+            shape.rotateBy(deltaAngle);
+        }
+    }
+
+    public void mirrorShape(AbstractShape shape, boolean horizontal) {
+        if (shape != null) {
+            if (horizontal) {
+                shape.setScaleX(-shape.getScaleX()); // Inverte sull'asse orizzontale
+            } else {
+                shape.setScaleY(-shape.getScaleY()); // Inverte sull'asse verticale
+            }
         }
     }
 
