@@ -5,9 +5,11 @@ import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.factory.ShapeFactory;
+import com.geometricdrawing.factory.TextFactory;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.model.TextShape;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
@@ -40,9 +42,9 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         this.worldX = worldCoords.getX();
         this.worldY = worldCoords.getY();
 
-        currentShapeFactory = controller.getCurrentShapeFactory();
-        border = controller.getBorderPicker().getValue();
-        fill = controller.getFillPicker().getValue();
+        this.currentShapeFactory = controller.getCurrentShapeFactory();
+        this.border = controller.getBorderPicker().getValue();
+        this.fill = controller.getFillPicker().getValue();
     }
 
     @Override
@@ -53,6 +55,12 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         }
 
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
+        if (newShape instanceof TextShape && currentShapeFactory instanceof TextFactory) {
+            if (controller.getTextField() != null) {
+                String userText = controller.getTextField();
+                ((TextShape) newShape).setText(userText); // Set the text from the TextField
+            }
+        }
 
         AbstractShape styledShape = newShape;
         //applica il colore di riempimento e il bordo se specificati
