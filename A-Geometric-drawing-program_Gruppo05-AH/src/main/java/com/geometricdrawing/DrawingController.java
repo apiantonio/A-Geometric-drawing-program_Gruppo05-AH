@@ -4,10 +4,8 @@ import com.geometricdrawing.command.*;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
-import com.geometricdrawing.factory.EllipseFactory;
-import com.geometricdrawing.factory.LineFactory;
-import com.geometricdrawing.factory.RectangleFactory;
-import com.geometricdrawing.factory.ShapeFactory;
+import com.geometricdrawing.factory.*;
+import com.geometricdrawing.model.TextShape;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
 import javafx.animation.PauseTransition;
@@ -42,6 +40,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
@@ -73,7 +72,10 @@ public class DrawingController {
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
 
     @FXML private Spinner<Double> rotationSpinner;
+    @FXML private Spinner<Integer> fontSizeSpinner;
+    @FXML private TextField textField;
 
+    // ... rest of the class
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
     private boolean firstTime = true;   // per gestire la non comparsa della label appunti svuotati all'avvio
@@ -135,7 +137,6 @@ public class DrawingController {
             if (this.model == null) this.model = new DrawingModel();
             if (this.commandManager == null) this.commandManager = new CommandManager();
             if (this.clipboardManager == null) this.clipboardManager = new ClipboardManager();
-
             setModel(this.model); // Imposta il modello e aggiunge listener
 
             this.fileOperationContext = new FileOperationContext(this);
@@ -173,7 +174,6 @@ public class DrawingController {
                         if (clipboardManager.hasContent()) { // Se c'è contenuto negli appunti
                             lastCanvasMouseX = event.getX(); // Memorizza coordinate X (locali al canvas)
                             lastCanvasMouseY = event.getY(); // Memorizza coordinate Y (locali al canvas)
-
                             if (canvasContextMenu != null) {
                                 updatePasteControlsState(); // Assicura che la voce "Incolla qui" sia abilitata/disabilitata correttamente
                                 canvasContextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY()); // Mostra menu
@@ -252,10 +252,19 @@ public class DrawingController {
             configureNumericTextFormatter(rotationSpinner);
         }
 
+        if (fontSizeSpinner != null) {
+            SpinnerValueFactory<Integer> fontSizeFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(6, 72, 12, 1); // Min, Max, Initial, Step
+            fontSizeSpinner.setValueFactory(fontSizeFactory);
+            fontSizeSpinner.setEditable(true);
+            fontSizeSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue != null && currentShape != null && getBaseShape(currentShape) instanceof TextShape) {
+                    handleFontSizeChange(newValue);
+                }
+            });
+        }
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
         updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
 
-        // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
         onToggleGrid();
     }
 
@@ -647,6 +656,8 @@ public class DrawingController {
         boolean enableForeground = false;
         boolean enableBackground = false;
         boolean enableRotation = false;
+        boolean enableTextField = false;
+        boolean enableFontSizeSpinner = false;
 
         currentShape = shape;
 
@@ -700,7 +711,14 @@ public class DrawingController {
                 }
                 borderSearch = ((ShapeDecorator) borderSearch).getInnerShape();
             }
-
+            if (baseShape instanceof TextShape) {
+                enableTextField = true;
+                enableFontSizeSpinner = true;
+                enableBorderPicker = false;
+            } else {
+                enableTextField = false;
+                enableFontSizeSpinner = false;
+            }
             if (shape.getZ() == 0){
                 enableBackground = false;
             }
@@ -715,12 +733,19 @@ public class DrawingController {
                 if (currentShapeFactory instanceof LineFactory) {
                     enableFillPicker = false;
                     enableBorderPicker = true;
-                } else {
+                } else if(currentShapeFactory instanceof TextFactory) {
+                    enableFillPicker = false; // Text shapes typically don't use the general fill picker
+                    enableBorderPicker = false; // Text shapes don't use the general border picker
+                    enableTextField = true; // Allow immediate text input for new text shape
+                    enableFontSizeSpinner = true;
+                }else{
                     enableFillPicker = true;
                     enableBorderPicker = true;
                 }
                 enableWidth = false;
                 enableHeight = false;
+                enableTextField = false;
+                enableFontSizeSpinner = false;
             }
         }
 
@@ -736,7 +761,14 @@ public class DrawingController {
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
         if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
-
+        if (textField != null) {
+            textField.setDisable(!enableTextField);
+            // If handleChangeTextContentAction is tied to a button, disable that button too.
+            // Example: if (changeTextButton != null) changeTextButton.setDisable(!enableTextField);
+        }
+        if (fontSizeSpinner != null) {
+            fontSizeSpinner.setDisable(!enableFontSizeSpinner);
+        }
         // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
             boolean wasEnabled = !pasteButton.isDisabled(); // com'era prima
@@ -793,6 +825,7 @@ public class DrawingController {
             commandManager.executeCommand(deleteCmd);
             setCurrentShape(null); // Deseleziona la figura
             updateControlState(null); // Aggiorna UI
+            updateSpinners(null);
             redrawCanvas();
         }
     }
@@ -1015,14 +1048,25 @@ public class DrawingController {
             } else { // Per Rettangolo o Ellisse
                 heightSpinner.getValueFactory().setValue(baseShape.getHeight()); // Imposta altezza
             }
-        } else { // Nessuna figura selezionata
-            // Resetta gli spinner ai valori di default della factory
+            if (baseShape instanceof TextShape textShapeInstance) { // Use pattern variable binding
+                fontSizeSpinner.getValueFactory().setValue(textShapeInstance.getFontSize());
+                textField.setText(textShapeInstance.getText());
+            } else {
+                // Reset/default for non-TextShapes
+                fontSizeSpinner.getValueFactory().setValue(12); // Default font size
+                textField.setText(""); // Clear text field
+            }
+
+        } else { // No shape selected
             widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
             heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
-            rotationSpinner.getValueFactory().setValue(0.0); // Imposta angolo di rotazione
-            // Gli spinner saranno disabilitati da updateControlState se nessuna figura è selezionata.
+            rotationSpinner.getValueFactory().setValue(0.0);
+            // Reset text controls as well
+            fontSizeSpinner.getValueFactory().setValue(12); // Default font size
+            textField.setText("");
         }
     }
+
 
     /**
      * Mostra il menu contestuale della figura (shapeMenu) alle coordinate dell'evento mouse.
@@ -1321,4 +1365,41 @@ public class DrawingController {
     public double getInitialDragShapeY_world() { return initialDragShapeY_world; }
     public void setInitialDragShapeY_world(double initialDragShapeY_world) { this.initialDragShapeY_world = initialDragShapeY_world; }
 
+    private void handleFontSizeChange(Integer newSize) {
+        if (currentShape == null || newSize == null || model == null || commandManager == null) {
+            return;
+        }
+        AbstractShape baseShape = getBaseShape(currentShape);
+        if (baseShape instanceof TextShape) {
+            TextShape textShape = (TextShape) baseShape;
+            if (textShape.getFontSize() != newSize) {
+                ChangeFontSizeCommand cmd = new ChangeFontSizeCommand(model, textShape, newSize);
+                commandManager.executeCommand(cmd);
+                redrawCanvas();
+            }
+        }
+    }
+    @FXML
+    public void handleSelectText(ActionEvent event) {
+        initializeShapeSelection(new TextFactory(), false, false);
+        textField.setDisable(false);
+        if (textField != null) textField.requestFocus();
+    }
+    @FXML
+    public void handleChangeTextContentAction(ActionEvent event) {
+        if (currentShape != null) {
+            AbstractShape baseShape = getBaseShape(currentShape);
+            if (baseShape instanceof TextShape textShape) {
+                String newTextContent = textField.getText();
+                if (!textShape.getText().equals(newTextContent)) {
+                    ChangeTextContentCommand cmd = new ChangeTextContentCommand(model, textShape, newTextContent);
+                    commandManager.executeCommand(cmd);
+                    redrawCanvas();
+                }
+            }
+        }
+    }
+    public String getTextField() {
+        return this.textField.getText();
+    }
 }

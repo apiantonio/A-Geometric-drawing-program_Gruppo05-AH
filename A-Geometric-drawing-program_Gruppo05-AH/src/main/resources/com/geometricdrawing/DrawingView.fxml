@@ -29,7 +29,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
+<AnchorPane fx:id="rootPane" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#onRootKeyPressed" prefHeight="620.0" prefWidth="1229.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.geometricdrawing.DrawingController">
    <children>
       <AnchorPane fx:id="canvasContainer" layoutX="17.0" prefHeight="420.0" prefWidth="1149.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0">
          <Canvas fx:id="drawingCanvas" />
@@ -277,9 +277,9 @@
                                                       </MenuItem>
                                                    </items>
                                                 </MenuButton>
-                                                <Button contentDisplay="TOP" mnemonicParsing="false" stylesheets="@../../style.css" text="Testo">
+                                                <Button fx:id="changeTextButton" contentDisplay="TOP" mnemonicParsing="false" onAction="#handleSelectText" stylesheets="@../../style.css" text="Testo">
                                                    <graphic>
-                                                      <ImageView fitHeight="46.0" fitWidth="39.0" pickOnBounds="true" preserveRatio="true">
+                                                      <ImageView fitHeight="46.0" fitWidth="39.0" onMouseClicked="#handleSelectText" pickOnBounds="true" preserveRatio="true">
                                                          <image>
                                                             <Image url="@../../icons/text.png" />
                                                          </image>
@@ -288,8 +288,8 @@
                                                 </Button>
                                                 <VBox alignment="CENTER" prefHeight="98.0" prefWidth="84.0" spacing="10.0">
                                                    <children>
-                                                      <TextField promptText="Scrivi qui..." />
-                                                      <Spinner stylesheets="@../../style.css" />
+                                                      <TextField fx:id="textField" onAction="#handleChangeTextContentAction" promptText="Scrivi qui..." />
+                                                      <Spinner fx:id="fontSizeSpinner" stylesheets="@../../style.css" />
                                                    </children>
                                                 </VBox>
                                              </children>

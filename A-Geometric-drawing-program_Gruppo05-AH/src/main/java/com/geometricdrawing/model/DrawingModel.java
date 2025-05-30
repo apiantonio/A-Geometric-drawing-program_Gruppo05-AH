@@ -190,5 +190,12 @@ public class DrawingModel {
             this.shapes = FXCollections.observableArrayList();
         }
     }
-
+    public void setText(TextShape text, String newText) {
+        if(text != null) {
+            text.setText(newText);
+        }
+    }
+    public void setFontSize(TextShape text, int size) {
+        text.setFontSize(size);
+    }
 }
