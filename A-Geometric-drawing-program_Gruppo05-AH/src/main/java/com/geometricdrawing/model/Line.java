@@ -11,8 +11,17 @@ public class Line extends AbstractShape {
     }
 
     @Override
-    public void draw(GraphicsContext gc) {
-        gc.strokeLine(x, y, getEndX(), getEndY());
+    public void drawShape(GraphicsContext gc) {
+        // Calcola il centro della linea
+        double centerX = x + width / 2;
+        double centerY = y + height / 2;
+        
+        double startXRel = x - centerX;
+        double startYRel = y - centerY;
+        double endXRel = getEndX() - centerX;
+        double endYRel = getEndY() - centerY;
+
+        gc.strokeLine(startXRel, startYRel, endXRel, endYRel);
     }
 
     public double getLength() {
