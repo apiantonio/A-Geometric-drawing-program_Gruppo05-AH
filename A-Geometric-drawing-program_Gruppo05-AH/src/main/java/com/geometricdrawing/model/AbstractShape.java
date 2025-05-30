@@ -4,9 +4,18 @@ import javafx.scene.canvas.GraphicsContext;
 import java.io.*;
 
 public abstract class AbstractShape implements Serializable{
-    protected double x; // Posizione x (es. angolo sup-sx, o startX per linea)
-    protected double y; // Posizione y (es. angolo sup-sx, o startY per linea)
+    protected double x; // Posizione x sul Canvas (angolo in alto a sx, o startX per linea)
+    protected double y; // Posizione y sul Canvas (angolo in alto a sx, o startY per linea)
     protected int z;    // Livello di profondità della figura
+
+    /*
+      attributi di tipo intero per scalare la figura (utili per effettuare mirroring).
+      di default non c'è mirroring nè orizzontale, nè verticale quindi impostati a 1
+    */
+    protected int scaleX = 1;
+    protected int scaleY = 1;
+
+    protected double rotationAngle = 0.0; // Angolo di rotazione della figura espresso in gradi
 
     // Dimensioni definite dalle factory per US-3
     protected double width;
@@ -22,12 +31,51 @@ public abstract class AbstractShape implements Serializable{
     // Costruttore di default
     protected AbstractShape() {}
 
-    // Metodo per disegnare la figura
-    public abstract void draw(GraphicsContext gc);
+    public void draw(GraphicsContext gc) {
+        gc.save();
 
+        double centerX = x + width / 2;
+        double centerY = y + height / 2;
+
+        gc.translate(centerX, centerY); // l'origine del context adesso è impostato come il centro della figura
+        gc.scale(scaleX, scaleY);   // applica mirroring (specchiatura) orizzontale o verticale. DEVE NECESSARIAMENTE ESSERE SOPRA LA ROTAZIONE
+        gc.rotate(rotationAngle);   // effettua la rotazione con l'angolo specificato
+
+        drawShape(gc);
+
+        gc.restore();
+    }
+
+    public abstract void drawShape(GraphicsContext gc); // ogni forma concreta implementa questo
+
+    /**
+     * Metodo che controlla se un punto di coordinate (x,y) è presente nella figura.
+     * Sono necessari controlli aggiuntivi per verificare che il punto sia nella figura
+     * specialmente se quest'ultima è stata in precedenza ruotata
+     * @param x coordinate lungo le ascisse
+     * @param y coordinate lungo le ordinate
+     * @param threshold distanza massima dalla figura per considerare il punto all'interno
+     * @return
+     */
     public boolean containsPoint(double x, double y, double threshold) {
-        return x >= this.x - threshold && x <= this.x + this.width + threshold &&
-               y >= this.y - threshold && y <= this.y + this.height + threshold;
+        // Poichè la rotazione avviene attorno al centro, lo calcolo
+        double centerX = this.x + this.width / 2;
+        double centerY = this.y + this.height / 2;
+
+        // Faccio in modo che il centro coincida con l'origine del sistema
+        double translatedX = x - centerX;
+        double translatedY = y - centerY;
+
+        double angleRad = Math.toRadians(-rotationAngle);   // la rotazione deve avvenire nel senso opposto
+        double cos = Math.cos(angleRad);
+        double sin = Math.sin(angleRad);
+
+        // Si applica la rotazione inversa per riportare il punto al sistema di riferimento originale
+        double unrotatedX = translatedX * cos - translatedY * sin + centerX;
+        double unrotatedY = translatedX * sin + translatedY * cos + centerY;
+
+        return unrotatedX >= this.x - threshold && unrotatedX <= this.x + this.width + threshold &&
+               unrotatedY >= this.y - threshold && unrotatedY <= this.y + this.height + threshold;
     }
 
     public double getX() {
@@ -52,6 +100,16 @@ public abstract class AbstractShape implements Serializable{
 
     public void setZ(int z) {
         this.z = z;
+    }
+
+    public int getScaleX() { return scaleX; }
+
+    public void setScaleX(int scaleX) { this.scaleX = scaleX; }
+
+    public int getScaleY() { return scaleY;}
+
+    public void setScaleY(int scaleY) {
+        this.scaleY = scaleY;
     }
 
     // sposta la figura a una nuova posizione (newX, newY)
@@ -99,6 +157,18 @@ public abstract class AbstractShape implements Serializable{
 
     public void setHeight(double height) {
         this.height = height;
+    }
+
+    public double getRotationAngle() {
+        return rotationAngle;
+    }
+
+    public void setRotationAngle(double angle) {
+        this.rotationAngle = angle;
+    }
+
+    public void rotateBy(double deltaAngle) {
+        this.rotationAngle += deltaAngle;
     }
 
     //Utilizzato per copiare la figura nella clipboard

@@ -2,8 +2,11 @@ package com.geometricdrawing.decorator;
 
 import com.geometricdrawing.model.AbstractShape;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 
+/**
+ * Autore: Gruppo05
+ * Scopo: Classe astratta per i decoratori delle forme
+ */
 public abstract class ShapeDecorator extends AbstractShape {
     protected final AbstractShape decoratedShape;
 
@@ -16,12 +19,10 @@ public abstract class ShapeDecorator extends AbstractShape {
     }
 
     @Override
-    public final void draw(GraphicsContext gc) {
-        gc.save();
+    public final void drawShape(GraphicsContext gc) {
         // il metodo successivo è quello usato per settare colore di riempimento e di bordo
         decorateShape(gc);
         decoratedShape.draw(gc);            //redraw della forma addobbata
-        gc.restore();
     }
 
     protected abstract void decorateShape(GraphicsContext gc);
@@ -30,6 +31,12 @@ public abstract class ShapeDecorator extends AbstractShape {
     public boolean containsPoint(double x, double y, double threshold) {
         return decoratedShape.containsPoint(x, y, threshold);
     }
+
+    @Override
+    public void rotateBy(double deltaAngle) {
+        decoratedShape.rotateBy(deltaAngle);
+    }
+
 
     @Override
     public void moveTo(double newX, double newY) {
@@ -48,6 +55,9 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public double getEndY()       { return decoratedShape.getEndY(); }
     @Override public double getWidth()      { return decoratedShape.getWidth(); }
     @Override public double getHeight()     { return decoratedShape.getHeight(); }
+    @Override public double getRotationAngle() { return decoratedShape.getRotationAngle();}
+    @Override public int getScaleX()    { return decoratedShape.getScaleX(); }
+    @Override public int getScaleY()    { return decoratedShape.getScaleY(); }
 
     @Override public void setX(double x)           { decoratedShape.setX(x); }
     @Override public void setY(double y)           { decoratedShape.setY(y); }
@@ -56,4 +66,8 @@ public abstract class ShapeDecorator extends AbstractShape {
     @Override public void setEndY(double y)        { decoratedShape.setEndY(y); }
     @Override public void setWidth(double width)   { decoratedShape.setWidth(width); }
     @Override public void setHeight(double height) { decoratedShape.setHeight(height); }
+    @Override public void setRotationAngle(double angle) { decoratedShape.setRotationAngle(angle);}
+    @Override public void setScaleY(int scaleY)    { decoratedShape.setScaleY(scaleY); }
+    @Override public void setScaleX(int scaleX)    { decoratedShape.setScaleX(scaleX); }
+
 }

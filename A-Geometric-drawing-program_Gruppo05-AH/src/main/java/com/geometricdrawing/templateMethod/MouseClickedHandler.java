@@ -1,4 +1,3 @@
-
 package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
@@ -55,12 +54,9 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
     @Override
     protected void processEvent(MouseEvent event) {
-        if (controller.isDrawingPolygon()) {
-            handlePolygonCreation();
-        } else if (currentShapeFactory != null) {
-            handleRegularShapeCreation();
-        } else {
+        if (currentShapeFactory == null) {
             currentShape = controller.selectShapeAt(this.worldX, this.worldY);
+            return;
         }
     }
 
@@ -141,7 +137,6 @@ public class MouseClickedHandler extends AbstractMouseHandler {
                 controller.updateSpinners(currentShape);
             }
         }
-    }
 
     private AbstractShape applyDecorations(AbstractShape shape) {
         AbstractShape styledShape = shape;

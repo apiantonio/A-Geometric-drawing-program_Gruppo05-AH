@@ -131,6 +131,27 @@ public class DrawingModel {
         }
     }
 
+    /**
+     * Metodo richiamato dal command che ruota una figura di un certo angolo
+     * @param shape figura da ruotare
+     * @param deltaAngle angol di rotazione rispetto alla posizione attuale della figura
+     */
+    public void rotateShape(AbstractShape shape, double deltaAngle) {
+        if (shape != null) {
+            shape.rotateBy(deltaAngle);
+        }
+    }
+
+    public void mirrorShape(AbstractShape shape, boolean horizontal) {
+        if (shape != null) {
+            if (horizontal) {
+                shape.setScaleX(-shape.getScaleX()); // Inverte sull'asse orizzontale
+            } else {
+                shape.setScaleY(-shape.getScaleY()); // Inverte sull'asse verticale
+            }
+        }
+    }
+
     public ObservableList<AbstractShape> getShapes() {
         return this.shapes;
     }

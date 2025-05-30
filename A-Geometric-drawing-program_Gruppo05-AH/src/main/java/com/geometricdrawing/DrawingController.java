@@ -5,7 +5,6 @@ import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
 import com.geometricdrawing.factory.*;
-import com.geometricdrawing.model.Polygon;
 import com.geometricdrawing.templateMethod.*;
 import com.geometricdrawing.strategy.*;
 import javafx.animation.PauseTransition;
@@ -38,10 +37,12 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.beans.PropertyEditor;
 import java.util.function.UnaryOperator;
 
 /**
@@ -53,6 +54,9 @@ public class DrawingController {
     @FXML private AnchorPane rootPane;
     @FXML private Canvas drawingCanvas;
     @FXML private AnchorPane canvasContainer;
+
+    @FXML private ScrollBar horizontalScrollBar;
+    @FXML private ScrollBar verticalScrollBar;
 
     @FXML private Button deleteButton;
     @FXML private Button copyButton;
@@ -71,6 +75,11 @@ public class DrawingController {
 
     @FXML private CheckMenuItem toggleGrid; // Menu per mostrare/nascondere la griglia
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
+
+    @FXML private Spinner<Double> rotationSpinner;
+    @FXML private MenuItem mirrorHorizontal;
+    @FXML private MenuItem mirrorVertical;
+    @FXML private MenuButton mirrorMenu; // Menu per le opzioni di mirroring
 
     private ContextMenu shapeMenu; // Menu contestuale per le figure
     private ContextMenu canvasContextMenu; // Menu contestuale per il canvas (es. "Incolla qui")
@@ -110,11 +119,17 @@ public class DrawingController {
     private transient ArrayList<Point2D> tempPolygonPoints;
     private boolean isDrawingPolygon;
 
+    private boolean isUpdatedRotateSpinner = false;     // serve perchè altrimenti il listener viene chiamato anche
+    // quando il valore dello spinner non è impostato dall'utente ma da codice
+
     public void setModel(DrawingModel model) {
         this.model = model;
         // Listener per ridisegnare il canvas quando le figure nel modello cambiano
         if (this.model != null && this.model.getShapes() != null) {
-            this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> redrawCanvas());
+            this.model.getShapes().addListener((ListChangeListener.Change<? extends AbstractShape> c) -> {
+                redrawCanvas();
+                updateScrollBars();
+            });
         }
     }
 
@@ -128,6 +143,19 @@ public class DrawingController {
      */
     @FXML
     public void initialize() {
+        if (horizontalScrollBar == null) {
+            System.err.println("ERRORE CRITICO: horizontalScrollBar NON è stato iniettato da FXML!");
+        } else {
+            horizontalScrollBar.valueProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
+            horizontalScrollBar.setVisible(true);
+        }
+        if (verticalScrollBar == null) {
+            System.err.println("ERRORE CRITICO: verticalScrollBar NON è stato iniettato da FXML!");
+        } else {
+            verticalScrollBar.valueProperty().addListener((obs, oldVal, newVal) -> redrawCanvas());
+            verticalScrollBar.setVisible(true);
+        }
+
         if (drawingCanvas != null) {
             gc = drawingCanvas.getGraphicsContext2D();
             // Inizializza componenti mancanti
@@ -143,15 +171,17 @@ public class DrawingController {
             this.newWorkspace = new NewWorkspace(this);
             this.exit = new Exit(this);
 
-            // Imposta i gestori per gli eventi del mouse sul canvas
-            drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent);
-            drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent);
-            drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent);
-            drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent);
-            drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent);
+            drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent); //
+            drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent); //
+            drawingCanvas.setOnMouseDragged(new MouseDraggedHandler(drawingCanvas, this)::handleMouseEvent); //
+            drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent); //
+            drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent); //
 
             createShapeContextMenu(); // Crea il menu contestuale per le figure
             createCanvasContextMenu(); // Crea il menu contestuale per il canvas (es. "Incolla qui")
+            mirrorHorizontal.setOnAction(this::handleMirrorHorizontalShape);
+            mirrorVertical.setOnAction(this::handleMirrorVerticalShape);
+
 
             isDrawingPolygon = false;
             tempPolygonPoints = new ArrayList<>(); // Inizializza la lista dei punti temporanei per i poligoni
@@ -311,6 +341,38 @@ public class DrawingController {
     }
 
     /**
+     * Gestisce la rotazione della figura
+     * @param deltaAngle rappresenta l'angolo di cui la figura selezionata va ruotata
+     */
+    @FXML
+    public void handleRotation(double deltaAngle) {
+        if (currentShape != null && rotationSpinner.getValue() != null) {
+            RotateShapeCommand cmd = new RotateShapeCommand(model, currentShape, -deltaAngle);
+            commandManager.executeCommand(cmd);
+            redrawCanvas();
+        }
+    }
+
+    @FXML
+    private void handleMirrorHorizontalShape(ActionEvent event) {
+        if (currentShape != null) {
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, true);
+            commandManager.executeCommand(mscmd);
+            redrawCanvas();
+        }
+    }
+
+    @FXML
+    private void handleMirrorVerticalShape(ActionEvent event) {
+        if (currentShape != null) {
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, false);
+            commandManager.executeCommand(mscmd);
+            redrawCanvas();
+        }
+    }
+
+
+    /**
      * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).
      * @param spinner Lo Spinner da configurare.
      */
@@ -407,24 +469,24 @@ public class DrawingController {
      * Prepara il controller per la creazione di una nuova figura.
      * @param factory La factory per il tipo di figura da creare.
      * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
-     * @param disableBorderPicker Se il border picker deve essere disabilitato per questa factory.
+     * @param disableBorderPickerForFactory Se il border picker deve essere disabilitato per questa factory.
      */
-    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
-        setCurrentShape(null); // Deseleziona figura corrente
+    private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPickerForFactory) {
+        currentShape = null; // Deseleziona figura corrente
         updateControlState(null); // Aggiorna stato UI
+        redrawCanvas(); // Rimuove evidenziazione precedente
 
         // Disabilita/Abilita picker in base al tipo di figura in creazione
         fillPicker.setDisable(disableFillPicker);
         if (factory instanceof LineFactory) { // Per la Linea, il bordo è sempre possibile
             borderPicker.setDisable(false);
-        } else {
-            borderPicker.setDisable(disableBorderPicker);
+        } else if (factory instanceof RectangleFactory || factory instanceof EllipseFactory) { // Per Rettangolo/Ellisse, il bordo è possibile
+            borderPicker.setDisable(false);
         }
         // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
 
         currentShapeFactory = factory; // Imposta la factory attiva
         if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
-        redrawCanvas(); // Rimuove evidenziazione precedente
     }
 
     // Gestori per i bottoni di selezione tipo figura
@@ -650,6 +712,8 @@ public class DrawingController {
         boolean enableCut = false;
         boolean enableForeground = false;
         boolean enableBackground = false;
+        boolean enableRotation = false;
+        boolean enableMirroring = false;
 
         currentShape = shape;
 
@@ -679,10 +743,38 @@ public class DrawingController {
             enableBackground = true;
             enableForeground = true;
             enableBorderPicker = true;
+            enableRotation = true;
+            enableMirroring = true;
 
             if (!(baseShape instanceof Line)) {
                 enableHeight = true;
                 enableFillPicker = true;
+                AbstractShape fillSearch = shape;
+                while (fillSearch instanceof ShapeDecorator) {
+                    if (fillSearch instanceof FillColorDecorator) {
+                        fillPicker.setValue(((FillColorDecorator) fillSearch).getFillColor());
+                        break;
+                    }
+                    fillSearch = ((ShapeDecorator) fillSearch).getInnerShape();
+                }
+            }
+
+            // Cerca BorderColorDecorator nella catena
+            AbstractShape borderSearch = shape;
+            while (borderSearch instanceof ShapeDecorator) {
+                if (borderSearch instanceof BorderColorDecorator) {
+                    borderPicker.setValue(((BorderColorDecorator) borderSearch).getBorderColor());
+                    break;
+                }
+                borderSearch = ((ShapeDecorator) borderSearch).getInnerShape();
+            }
+
+            if (shape.getZ() == 0){
+                enableBackground = false;
+            }
+
+            if (shape.getZ() == model.getShapes().size() -1) {
+                enableForeground = false;
             }
         } else {
             enableCutUi = false;
@@ -711,6 +803,8 @@ public class DrawingController {
         if (cutButton != null) cutButton.setDisable(!enableCut);
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
+        if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
+        if (mirrorMenu != null) mirrorMenu.setDisable(!enableMirroring);
 
         // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
@@ -795,6 +889,7 @@ public class DrawingController {
 
             BringToForegroundCommand cmd = new BringToForegroundCommand(model, currentShape);
             commandManager.executeCommand(cmd);
+            updateControlState(currentShape);
             redrawCanvas();
         }
     }
@@ -806,6 +901,7 @@ public class DrawingController {
 
             BringToBackgroundCommand cmd = new BringToBackgroundCommand(model, currentShape);
             commandManager.executeCommand(cmd);
+            updateControlState(currentShape);
             redrawCanvas();
         }
     }
@@ -816,6 +912,7 @@ public class DrawingController {
             commandManager.clear(); // Svuota lo stack dei comandi
             clipboardManager.clearClipboard();
         }
+        updateScrollBars(); // Aggiorna le scrollbar dopo aver pulito i comandi/modello
     }
 
     /**
@@ -955,12 +1052,6 @@ public class DrawingController {
         updateSpinners(selected);    // Aggiorna gli spinner con le dimensioni della figura
         updateControlState(selected); // Aggiorna lo stato generale dei controlli UI
 
-        // Output di debug (opzionale)
-        if (selected != null) {
-            System.out.println("DEBUG: Figura selezionata: " + selected + " z: " + selected.getZ());
-        } else {
-            System.out.println("DEBUG: Nessuna figura selezionata.");
-        }
         return selected; // Restituisce la figura selezionata (o null)
     }
 
@@ -973,7 +1064,13 @@ public class DrawingController {
 
         if (shape != null) { // Se una figura è selezionata
             AbstractShape baseShape = getBaseShape(shape);
-            widthSpinner.getValueFactory().setValue(baseShape.getWidth()); // Imposta larghezza
+            widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
+
+            isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
+            double angle = shape.getRotationAngle();
+            rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
+            isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
+
             if (baseShape instanceof Line) {
                 // Per la Linea, l'altezza non è direttamente modificabile.
                 // Lo spinner altezza mostrerà un valore di default (es. il suo minimo)
@@ -1016,16 +1113,30 @@ public class DrawingController {
      * Evidenzia la figura correntemente selezionata.
      */
     public void redrawCanvas() {
-        if (gc == null || drawingCanvas == null || model == null || zoomHandler == null) {
-            return; // Componenti non pronti
+        if (gc == null || drawingCanvas == null || model == null || zoomHandler == null || horizontalScrollBar == null || verticalScrollBar == null) {
+            System.err.println("redrawCanvas: Uno o più componenti non sono pronti.");
+            return;
         }
 
         // Pulisce il canvas
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
 
-        // Disegna la griglia se attiva
+        gc.save(); // Salva lo stato iniziale del gc
+
+        // Ottieni i valori di scroll (coordinate del mondo che dovrebbero essere in alto a sinistra)
+        double scrollXWorld = horizontalScrollBar.isVisible() ? horizontalScrollBar.getValue() : 0;
+        double scrollYWorld = verticalScrollBar.isVisible() ? verticalScrollBar.getValue() : 0;
+
+        // Applica prima lo zoom
+        zoomHandler.applyZoomTransformation(gc); // gc ora è scalato
+        // Poi trasla in modo che (scrollXWorld, scrollYWorld) del mondo diventi (0,0) nella vista zoomata
+        gc.translate(-scrollXWorld, -scrollYWorld); // gc ora è scalato E traslato per lo scroll
+
+        // Disegna la griglia: necessita di sapere la porzione visibile del mondo
         if (grid != null && grid.isGridVisible()) {
-            grid.drawGrid();
+            double viewPortWorldWidth = drawingCanvas.getWidth() / zoomHandler.getZoomFactor();
+            double viewPortWorldHeight = drawingCanvas.getHeight() / zoomHandler.getZoomFactor();
+            grid.drawGrid(gc, scrollXWorld, scrollYWorld, viewPortWorldWidth, viewPortWorldHeight);
         }
 
         gc.save(); // Salva lo stato corrente del GraphicsContext (es. trasformazioni)
@@ -1037,15 +1148,21 @@ public class DrawingController {
         // model.getShapes() di solito è in ordine di inserimento. Per un controllo Z-order più fine,
         // si potrebbe usare model.getShapesOrderedByZ() se l'ordine di disegno deve seguire Z.
         // Qui, si assume che l'ordine di model.getShapes() sia corretto per il disegno.
+        // Disegna le forme (usano le loro coordinate del mondo; la trasformazione del gc gestisce la visualizzazione)
         for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
-                shape.draw(gc); // Chiama il metodo draw() di ogni figura
-                if (shape == currentShape) { // Se la figura è quella selezionata
-                    drawHighlightBorder(shape); // Disegna il bordo di evidenziazione
+                shape.draw(gc); // Il metodo draw della forma gestisce la sua posizione e rotazione
+                // rispetto al gc già trasformato (scalato e scrollato)
+                if (shape == currentShape) {
+                    // drawHighlightBorder DEVE disegnare rispetto alle coordinate del mondo della forma,
+                    // ma il gc è già trasformato. La logica interna di drawHighlightBorder
+                    // deve tenerne conto o deve essere passata al gc prima delle trasformazioni locali della forma.
+                    // Per ora, assumiamo che drawHighlightBorder si aspetti un gc già pronto per disegnare
+                    // alle coordinate del mondo della forma.
+                    drawHighlightBorder(shape);
                 }
             }
         }
-
         gc.restore(); // Ripristina lo stato del GraphicsContext precedente allo save()
     }
 
@@ -1056,44 +1173,145 @@ public class DrawingController {
     private void drawHighlightBorder(AbstractShape shape) {
         AbstractShape baseShape = getBaseShape(shape); // Ottiene la forma base (non decorata)
 
-        // Impostazioni per il bordo di selezione (tratteggiato, colore specifico)
-        double lineWidthOnScreen = 1.0; // Spessore desiderato per la linea di selezione sullo schermo
-        double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor(); // Spessore in coordinate del mondo
+        double centerX = baseShape.getX() + baseShape.getWidth() / 2;
+        double centerY = baseShape.getY() + baseShape.getHeight() / 2;
+        double angle = baseShape.getRotationAngle();
 
-        gc.setStroke(Color.SKYBLUE); // Colore del bordo di selezione
-        gc.setLineWidth(worldLineWidth); // Spessore linea (scalato per zoom)
-        gc.setLineDashes(5 * worldLineWidth); // Linea tratteggiata (tratteggio scalato)
+        // Impostazioni per il bordo di selezione
+        double lineWidthOnScreen = 1.0;
+        double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor();
 
-        if (baseShape instanceof Line line) { // Se è una linea, evidenzia la linea stessa e le sue estremità
-            gc.strokeLine(line.getX(), line.getY(), line.getEndX(), line.getEndY());
-            drawHandle(line.getX(), line.getY()); // Maniglia all'inizio
-            drawHandle(line.getEndX(), line.getEndY()); // Maniglia alla fine
-        } else { // Se è un rettangolo o ellisse (o altra forma con bounding box)
-            // Disegna un rettangolo tratteggiato attorno al bounding box
-            gc.strokeRect(baseShape.getX(), baseShape.getY(), baseShape.getWidth(), baseShape.getHeight());
-            // Disegna maniglie agli angoli del bounding box
-            drawHandle(baseShape.getX(), baseShape.getY()); // Alto-sinistra
-            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY()); // Alto-destra
-            drawHandle(baseShape.getX(), baseShape.getY() + baseShape.getHeight()); // Basso-sinistra
-            drawHandle(baseShape.getX() + baseShape.getWidth(), baseShape.getY() + baseShape.getHeight()); // Basso-destra
-            // Opzionale: maniglie ai punti medi dei lati
+        gc.save(); // Salva lo stato grafico prima della trasformazione
+
+        gc.translate(centerX, centerY);
+        // Applica le trasformazioni di mirroring
+        if (shape.getScaleX() == -1) {
+            gc.scale(-1, 1);
         }
-        gc.setLineDashes(0); // Ripristina linea continua per disegni successivi
-        // gc.setLineWidth(1.0); // Opzionale: ripristina spessore linea default (in unità del mondo)
+        if (shape.getScaleY() == -1) {
+            gc.scale(1, -1);
+        }
+        gc.rotate(angle); // Applica la rotazione
+
+        gc.setStroke(Color.SKYBLUE);
+        gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
+        gc.setLineDashes(5.0 / zoomHandler.getZoomFactor());
+
+        if (baseShape instanceof Line line) {
+            // Calcola estremi relativi al centro per rispettare la trasformazione
+            double startX = line.getX() - centerX;
+            double startY = line.getY() - centerY;
+            double endX = line.getEndX() - centerX;
+            double endY = line.getEndY() - centerY;
+
+            gc.strokeLine(startX, startY, endX, endY);
+            drawHandle(startX, startY);
+            drawHandle(endX, endY);
+        } else {
+            // Rettangolo tratteggiato attorno alla bounding box ruotata
+            double x = baseShape.getX() - centerX;
+            double y = baseShape.getY() - centerY;
+            double w = baseShape.getWidth();
+            double h = baseShape.getHeight();
+
+            gc.strokeRect(x, y, w, h);
+
+            // Maniglie ai quattro angoli (coordinate relative al centro)
+            drawHandle(x, y); // top-left
+            drawHandle(x + w, y); // top-right
+            drawHandle(x, y + h); // bottom-left
+            drawHandle(x + w, y + h); // bottom-right
+        }
+
+        gc.restore(); // Ripristina il contesto grafico
     }
 
-    /**
-     * Disegna una maniglia di selezione (un piccolo cerchio) alle coordinate del mondo specificate.
-     * @param worldX Coordinata X (del mondo) del centro della maniglia.
-     * @param worldY Coordinata Y (del mondo) del centro della maniglia.
-     */
-    private void drawHandle(double worldX, double worldY) {
-        // HANDLE_RADIUS è il raggio desiderato sullo schermo. Converti in unità del mondo.
-        double handleRadiusWorld = HANDLE_RADIUS / zoomHandler.getZoomFactor();
-        gc.setFill(Color.SKYBLUE); // Colore della maniglia
-        // Disegna un cerchio (ovale con uguali raggioX e raggioY)
-        gc.fillOval(worldX - handleRadiusWorld, worldY - handleRadiusWorld,
-                handleRadiusWorld * 2, handleRadiusWorld * 2); // x, y, larghezza, altezza dell'ovale
+
+
+    private void drawHandle(double localX, double localY) {
+        // localX, localY sono relativi al centro ruotato della forma.
+        // HANDLE_RADIUS è il raggio desiderato sullo schermo. Converti nel raggio nello spazio trasformato corrente.
+        double handleRadiusInWorldSpace = HANDLE_RADIUS / zoomHandler.getZoomFactor(); // Raggio in unità "zoomate"
+        gc.setFill(Color.SKYBLUE);
+        gc.fillOval(localX - handleRadiusInWorldSpace, localY - handleRadiusInWorldSpace,
+                handleRadiusInWorldSpace * 2, handleRadiusInWorldSpace * 2);
+    }
+
+    public void updateScrollBars() {
+
+        if (drawingCanvas == null || zoomHandler == null || model == null || horizontalScrollBar == null || verticalScrollBar == null) {
+            return;
+        }
+
+        double canvasWidth = drawingCanvas.getWidth();
+        double canvasHeight = drawingCanvas.getHeight();
+        double zoom = zoomHandler.getZoomFactor();
+
+        if (canvasWidth <= 0 || canvasHeight <= 0 || zoom <= 0) {
+            // Imposta i range a zero in modo che il cursore riempia la traccia se le dimensioni non sono valide
+            horizontalScrollBar.setMin(0); horizontalScrollBar.setMax(0); horizontalScrollBar.setValue(0); horizontalScrollBar.setVisibleAmount(0);
+            verticalScrollBar.setMin(0); verticalScrollBar.setMax(0); verticalScrollBar.setValue(0); verticalScrollBar.setVisibleAmount(0);
+            return;
+        }
+
+        double viewPortWorldWidth = canvasWidth / zoom;
+        double viewPortWorldHeight = canvasHeight / zoom;
+
+        double contentMinX = 0, contentMinY = 0;
+        double contentMaxX = viewPortWorldWidth; // Default se non ci sono forme
+        double contentMaxY = viewPortWorldHeight; // Default se non ci sono forme
+
+        if (model != null && !model.getShapes().isEmpty()) {
+            contentMinX = model.getShapes().stream()
+                    .mapToDouble(AbstractShape::getX)
+                    .min().orElse(0);
+            contentMinY = model.getShapes().stream()
+                    .mapToDouble(AbstractShape::getY)
+                    .min().orElse(0);
+            contentMaxX = model.getShapes().stream()
+                    .mapToDouble(s -> s.getX() + s.getWidth())
+                    .max().orElse(viewPortWorldWidth);
+            contentMaxY = model.getShapes().stream()
+                    .mapToDouble(s -> s.getY() + s.getHeight())
+                    .max().orElse(viewPortWorldHeight);
+        } else {
+            System.out.println("  Modello vuoto.");
+        }
+
+        // Assicura che l'area scrollabile si estenda almeno per coprire la viewport corrente partendo da (0,0)
+        // e includa tutte le forme presenti.
+        contentMinX = Math.min(0, contentMinX); //
+        contentMinY = Math.min(0, contentMinY); //
+        contentMaxX = Math.max(viewPortWorldWidth, contentMaxX); //
+        contentMaxY = Math.max(viewPortWorldHeight, contentMaxY); //
+
+        // Configurazione ScrollBar Orizzontale
+        horizontalScrollBar.setMin(contentMinX); //
+        horizontalScrollBar.setMax(contentMaxX); //
+        horizontalScrollBar.setVisibleAmount(viewPortWorldWidth); //
+        double currentHVal = horizontalScrollBar.getValue(); //
+        double maxHValPossible = Math.max(contentMinX, contentMaxX - viewPortWorldWidth); //
+        double newHVal = Math.min(maxHValPossible, Math.max(contentMinX, currentHVal)); //
+        if (Double.isFinite(newHVal)) { // Controllo aggiuntivo per evitare NaN/Infinity
+            horizontalScrollBar.setValue(newHVal);
+        } else {
+            horizontalScrollBar.setValue(contentMinX);
+        }
+
+
+        // Configurazione ScrollBar Verticale
+        verticalScrollBar.setMin(contentMinY); //
+        verticalScrollBar.setMax(contentMaxY); //
+        verticalScrollBar.setVisibleAmount(viewPortWorldHeight); //
+        double currentVVal = verticalScrollBar.getValue(); //
+        double maxVValPossible = Math.max(contentMinY, contentMaxY - viewPortWorldHeight); //
+        double newVVal = Math.min(maxVValPossible, Math.max(contentMinY, currentVVal)); //
+        if (Double.isFinite(newVVal)) { // Controllo aggiuntivo
+            verticalScrollBar.setValue(newVVal);
+        } else {
+            verticalScrollBar.setValue(contentMinY);
+        }
+
     }
 
     // --- Gestori per i bottoni del menu File e Zoom ---
@@ -1297,4 +1515,12 @@ public class DrawingController {
     public void setIsDrawingPolygon(boolean isDrawingPolygon) {
         this.isDrawingPolygon = isDrawingPolygon;
     }
+    public ScrollBar getHorizontalScrollBar() {
+        return horizontalScrollBar;
+    }
+
+    public ScrollBar getVerticalScrollBar() {
+        return verticalScrollBar;
+    }
+
 }
