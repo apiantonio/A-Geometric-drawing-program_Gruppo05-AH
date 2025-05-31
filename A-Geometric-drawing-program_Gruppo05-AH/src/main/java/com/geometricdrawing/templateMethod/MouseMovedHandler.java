@@ -1,6 +1,7 @@
 package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.HandleType;
 import com.geometricdrawing.ZoomHandler;
 import com.geometricdrawing.model.AbstractShape;
 import javafx.geometry.Point2D;
@@ -11,7 +12,6 @@ import javafx.scene.input.MouseEvent;
 public class MouseMovedHandler extends AbstractMouseHandler {
     private double worldX;
     private double worldY;
-    private boolean isOverShape;
 
     public MouseMovedHandler(Canvas canvas, DrawingController controller) {
         super(canvas, controller);
@@ -19,30 +19,49 @@ public class MouseMovedHandler extends AbstractMouseHandler {
 
     @Override
     protected void preProcess(MouseEvent event) {
-        if (controller.getZoomHandler() == null || controller.getModel() == null) {
-            System.err.println("ZoomHandler o Model non inizializzato in MouseMovedHandler!");
+        ZoomHandler zoomHandler = controller.getZoomHandler();
+        if (zoomHandler == null) {
             this.worldX = event.getX();
             this.worldY = event.getY();
-            isOverShape = false;
         } else {
-            ZoomHandler zoomHandler = controller.getZoomHandler();
             Point2D worldCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
             this.worldX = worldCoords.getX();
             this.worldY = worldCoords.getY();
-
-            //controlla se il mouse é sopra una figura
-            isOverShape = controller.getModel().getShapesOrderedByZ().stream()
-                    .anyMatch(shape -> shape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD));
         }
     }
 
     @Override
     protected void processEvent(MouseEvent event) {
-        if (isOverShape) {
-            canvas.setCursor(Cursor.HAND);  //cambia il cursore in una mano
+        // se il mouse è in movimento ma non si sta trascinando o ridimensionando, aggiorna il cursore
+        if (controller.isDragging() || controller.getActiveResizeHandle() != null) {
+
+            return;
+        }
+
+        AbstractShape currentSelectedShape = controller.getCurrentShape();
+        HandleType handleUnderMouse = null;
+
+        if (currentSelectedShape != null) {
+            // Controlla se il mouse è sopra un handle della shape selezionata
+            handleUnderMouse = controller.getHandleAtScreenPoint(currentSelectedShape, event.getX(), event.getY());
+        }
+
+        if (handleUnderMouse != null) {
+            canvas.setCursor(controller.getCursorForHandle(handleUnderMouse, currentSelectedShape));
         } else {
-            canvas.setCursor(Cursor.DEFAULT);
+            // Se non c'è un handle sotto il mouse, controlla se il mouse è sopra una shape
+            boolean isOverAnyShape = false;
+            if (controller.getModel() != null) {
+                isOverAnyShape = controller.getModel().getShapesOrderedByZ().stream()
+                        .anyMatch(shape -> shape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD));
+            }
+
+            if (isOverAnyShape) {
+                canvas.setCursor(Cursor.HAND);
+            } else {
+                canvas.setCursor(Cursor.DEFAULT);
+            }
         }
     }
-    // postProcess è ereditato da AbstractMouseHandler (chiama redrawCanvas)
+
 }
