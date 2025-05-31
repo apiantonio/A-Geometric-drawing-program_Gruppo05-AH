@@ -39,6 +39,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import java.util.ArrayList;
 import java.util.function.UnaryOperator;
+import javafx.application.Platform;
 
 /**
  * @Autore: Gruppo05
@@ -1670,6 +1671,7 @@ public class DrawingController {
     private void handleGrid10() {
         if (grid != null) {
             grid.setGridSizeSmall();
+            Platform.runLater(this::redrawCanvas);    // Ridisegna il canvas dopo aver impostato la griglia
         }
     }
 
@@ -1677,6 +1679,7 @@ public class DrawingController {
     private void handleGrid20() {
         if (grid != null) {
             grid.setGridSizeMedium();
+            Platform.runLater(this::redrawCanvas);
         }
     }
 
@@ -1684,6 +1687,7 @@ public class DrawingController {
     private void handleGrid50() {
         if (grid != null) {
             grid.setGridSizeBig();
+            Platform.runLater(this::redrawCanvas);
         }
     }
 
