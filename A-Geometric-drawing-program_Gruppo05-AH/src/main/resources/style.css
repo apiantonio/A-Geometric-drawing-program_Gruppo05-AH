@@ -6,12 +6,12 @@
 }
 
 .button:hover , #new_shape:hover, #grid_options:hover, #mirror:hover, .color-picker:hover {
-    -fx-background-color: #e0e0e0; /* grigio chiaro */
+    -fx-background-color: #F4E9B3;
 }
 
 /* Click (quando premuto) */
 .button:armed, #new_shape:armed, #grid_options:armed, #mirror:armed, .color-picker:armed {
-    -fx-background-color: #c0c0c0; /* grigio più scuro */
+    -fx-background-color: #F8E09E;
 }
 
 /*
@@ -23,3 +23,40 @@
     -fx-border-color: transparent;
 }
 
+/*
+*   SET COLORI DELL'INTERFACCIA
+*/
+.menu-bar {
+    -fx-background-color: #91E3E6;
+}
+
+/* quando si passa col cursore sulle voci nel menu */
+.menu-bar .menu:hover, .menu-bar .menu:showing {
+    -fx-background-color: #01AFB6;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #F8E09E;
+}
+
+.tab:selected {
+    -fx-background-color: #FCF3D8;
+}
+
+.tab-pane:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.tool-bar {
+    -fx-background-color: #FCF3D8;
+}
+
+.menu-item:focused {
+    -fx-background-color: #01AFB6;
+}
+
+.separator .line {
+    -fx-border-color: #F8E09E;
+    -fx-border-width: 0.5px;
+}

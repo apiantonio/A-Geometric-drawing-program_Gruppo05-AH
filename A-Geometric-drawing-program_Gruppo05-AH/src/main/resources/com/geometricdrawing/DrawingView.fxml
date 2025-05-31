@@ -124,9 +124,9 @@
                      <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="139.0" prefWidth="915.0">
                            <children>
-                              <ToolBar AnchorPane.bottomAnchor="-9.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <ToolBar layoutY="-4.0" prefHeight="159.0" prefWidth="1229.0" AnchorPane.bottomAnchor="-9.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="-4.0">
                                  <items>
-                                    <VBox alignment="CENTER" prefHeight="145.0" prefWidth="231.0">
+                                    <VBox alignment="CENTER" prefHeight="115.0" prefWidth="231.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
                                              <children>
@@ -201,7 +201,7 @@
                                           </Label>
                                        </children>
                                     </VBox>
-                                    <Separator orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
+                                    <Separator maxHeight="-Infinity" orientation="VERTICAL" prefHeight="130.0" prefWidth="5.0" />
                                     <VBox alignment="CENTER" prefHeight="145.0" prefWidth="228.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="228.0">
@@ -255,6 +255,9 @@
                                                          </graphic>
                                                       </MenuItem>
                                                    </items>
+                                                   <HBox.margin>
+                                                      <Insets right="2.0" />
+                                                   </HBox.margin>
                                                 </MenuButton>
                                                 <Button contentDisplay="TOP" mnemonicParsing="false" onAction="#handleSelectText" stylesheets="@../../style.css" text="Testo">
                                                    <graphic>
@@ -264,6 +267,9 @@
                                                          </image>
                                                       </ImageView>
                                                    </graphic>
+                                                   <HBox.margin>
+                                                      <Insets right="3.0" />
+                                                   </HBox.margin>
                                                 </Button>
                                                 <VBox alignment="CENTER" prefHeight="98.0" prefWidth="84.0" spacing="10.0">
                                                    <children>
@@ -280,7 +286,7 @@
                                           </Label>
                                        </children>
                                     </VBox>
-                                    <Separator layoutX="114.0" layoutY="10.0" orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
+                                    <Separator layoutX="114.0" layoutY="10.0" maxHeight="-Infinity" orientation="VERTICAL" prefHeight="130.0" prefWidth="3.0" />
                                     <VBox alignment="CENTER" prefHeight="145.0" prefWidth="150.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="100.0">
@@ -321,7 +327,7 @@
                                           </Label>
                                        </children>
                                     </VBox>
-                                    <Separator layoutX="228.0" layoutY="10.0" orientation="VERTICAL" prefHeight="11.0" prefWidth="3.0" />
+                                    <Separator layoutX="228.0" layoutY="10.0" maxHeight="-Infinity" orientation="VERTICAL" prefHeight="130.0" prefWidth="3.0" />
                                     <VBox alignment="CENTER" prefHeight="145.0" prefWidth="231.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="204.0">
@@ -385,7 +391,7 @@
                                           </Label>
                                        </children>
                                     </VBox>
-                                    <Separator layoutX="398.0" layoutY="10.0" orientation="VERTICAL" prefHeight="145.0" prefWidth="0.0" />
+                                    <Separator layoutX="398.0" layoutY="10.0" maxHeight="-Infinity" orientation="VERTICAL" prefHeight="130.0" prefWidth="0.0" />
                                     <VBox alignment="CENTER" prefHeight="145.0" prefWidth="373.0">
                                        <children>
                                           <HBox alignment="CENTER" prefHeight="98.0" prefWidth="213.0">
@@ -493,7 +499,6 @@
             </TabPane>
          </children>
       </VBox>
-
       <AnchorPane fx:id="canvasContainer" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="200.0"> <Canvas fx:id="drawingCanvas" />
          <Label fx:id="cutCopyLabel" alignment="CENTER" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #e6f9e6; -fx-background-radius: 10;" text="Elemento copiato negli appunti!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
             <font>
@@ -520,10 +525,7 @@
             </graphic>
          </Label>
       </AnchorPane>
-
       <ScrollBar fx:id="horizontalScrollBar" orientation="HORIZONTAL" prefHeight="20.0" visible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" />
-
       <ScrollBar fx:id="verticalScrollBar" orientation="VERTICAL" prefWidth="20.0" visible="true" AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0" />
-
    </children>
 </AnchorPane>

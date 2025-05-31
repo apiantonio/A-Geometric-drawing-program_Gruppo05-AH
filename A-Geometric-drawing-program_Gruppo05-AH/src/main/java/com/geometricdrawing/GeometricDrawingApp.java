@@ -22,12 +22,12 @@ public class GeometricDrawingApp extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(GeometricDrawingApp.class.getResource("DrawingView.fxml"));
 
         AnchorPane root = fxmlLoader.load();
+        Scene scene = new Scene(root);
+        stage.setTitle("ShapeCraft - Geometric Drawing App");
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
 
         DrawingController controller = fxmlLoader.getController();
         controller.setStage(stage);
-
-        Scene scene = new Scene(root);
-        stage.setTitle("Geometric Drawing App");
 
         // setting di un minimo rimpicciolimento dello stage in altezza e larghezza
         stage.setMinWidth(500);
