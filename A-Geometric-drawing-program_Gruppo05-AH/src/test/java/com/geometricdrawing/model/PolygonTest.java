@@ -53,7 +53,7 @@ class PolygonTest {
     void removeVertexShouldUpdateVerticesAndBounds() {
         polygon.setVertices(testVertices);
 
-        polygon.removeVertex(1); // Rimuovi il secondo vertice (50, 20)
+        polygon.removeVertex(1); // rimuovo il secondo vertice (50, 20)
 
         assertEquals(2, polygon.getVertices().size());
         assertEquals(new Point2D(10, 20), polygon.getVertices().get(0));

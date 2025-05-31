@@ -8,10 +8,12 @@ import com.geometricdrawing.command.ChangeWidthCommand; // Keep for stream().any
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
+import com.geometricdrawing.factory.PolygonFactory;
 import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.model.*;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
@@ -51,7 +53,6 @@ public class ShapeInsertionIntegrationTest {
 
     private static final double CANVAS_WIDTH_FOR_TEST = 800;
     private static final double CANVAS_HEIGHT_FOR_TEST = 600;
-
 
     @BeforeAll
     public static void initFX() throws InterruptedException {
@@ -108,6 +109,7 @@ public class ShapeInsertionIntegrationTest {
                 rootPane.applyCss();
                 rootPane.layout();
 
+                // Componenti UI principali
                 fillColorPicker = new ColorPicker(Color.LIGHTGREEN);
                 borderColorPicker = new ColorPicker(Color.ORANGE);
 
@@ -126,6 +128,50 @@ public class ShapeInsertionIntegrationTest {
                 deleteButton = new Button("Elimina");
                 copyButton = new Button("Copia");
 
+                // ScrollBars
+                ScrollBar horizontalScrollBar = new ScrollBar();
+                horizontalScrollBar.setOrientation(Orientation.HORIZONTAL);
+                horizontalScrollBar.setMin(0.0);
+                horizontalScrollBar.setMax(100.0);
+                horizontalScrollBar.setValue(0.0);
+
+                ScrollBar verticalScrollBar = new ScrollBar();
+                verticalScrollBar.setOrientation(Orientation.VERTICAL);
+                verticalScrollBar.setMin(0.0);
+                verticalScrollBar.setMax(100.0);
+                verticalScrollBar.setValue(0.0);
+
+                // Altri componenti necessari per initialize()
+                Button pasteButton = new Button("Incolla");
+                Button undoButton = new Button("Annulla");
+                Button cutButton = new Button("Taglia");
+                Button foregroundButton = new Button("In primo piano");
+                Button backgroundButton = new Button("In secondo piano");
+
+                Label cutCopyLabel = new Label();
+                Label emptyClipboardLabel = new Label();
+
+                CheckMenuItem toggleGrid = new CheckMenuItem("Mostra griglia");
+                MenuButton gridOptions = new MenuButton("Griglia");
+
+                // Spinner per rotazione
+                Spinner<Double> rotationSpinner = new Spinner<>();
+                SpinnerValueFactory<Double> rotationFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(
+                        -360.0, 360.0, 0.0, 1.0);
+                rotationSpinner.setValueFactory(rotationFactory);
+
+                Spinner<Integer> fontSizeSpinner = new Spinner<>();
+                SpinnerValueFactory<Integer> fontSizeFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                        8, 72, 12, 1);
+                fontSizeSpinner.setValueFactory(fontSizeFactory);
+
+                TextField textField = new TextField();
+
+                MenuItem mirrorHorizontal = new MenuItem("Specchia Orizzontalmente");
+                MenuItem mirrorVertical = new MenuItem("Specchia Verticalmente");
+                MenuButton mirrorMenu = new MenuButton("Specchia");
+
+                // Imposta tutti i campi privati del controller
                 setPrivateField(controller, "drawingCanvas", drawingCanvas);
                 setPrivateField(controller, "canvasContainer", canvasContainer);
                 setPrivateField(controller, "rootPane", rootPane);
@@ -135,6 +181,23 @@ public class ShapeInsertionIntegrationTest {
                 setPrivateField(controller, "widthSpinner", widthSpinner);
                 setPrivateField(controller, "deleteButton", deleteButton);
                 setPrivateField(controller, "copyButton", copyButton);
+                setPrivateField(controller, "horizontalScrollBar", horizontalScrollBar);
+                setPrivateField(controller, "verticalScrollBar", verticalScrollBar);
+                setPrivateField(controller, "pasteButton", pasteButton);
+                setPrivateField(controller, "undoButton", undoButton);
+                setPrivateField(controller, "cutButton", cutButton);
+                setPrivateField(controller, "foregroundButton", foregroundButton);
+                setPrivateField(controller, "backgroundButton", backgroundButton);
+                setPrivateField(controller, "cutCopyLabel", cutCopyLabel);
+                setPrivateField(controller, "emptyClipboardLabel", emptyClipboardLabel);
+                setPrivateField(controller, "toggleGrid", toggleGrid);
+                setPrivateField(controller, "gridOptions", gridOptions);
+                setPrivateField(controller, "rotationSpinner", rotationSpinner);
+                setPrivateField(controller, "fontSizeSpinner", fontSizeSpinner);
+                setPrivateField(controller, "textField", textField);
+                setPrivateField(controller, "mirrorHorizontal", mirrorHorizontal);
+                setPrivateField(controller, "mirrorVertical", mirrorVertical);
+                setPrivateField(controller, "mirrorMenu", mirrorMenu);
 
                 controller.setModel(model);
                 controller.setCommandManager(commandManager);
@@ -202,6 +265,7 @@ public class ShapeInsertionIntegrationTest {
     }
     private AbstractShape insertAndGetSelectedShapeFromController(String shapeType, double x, double y) throws Exception {
         AtomicReference<AbstractShape> currentShapeRef = new AtomicReference<>(null);
+
         runOnFxThreadAndWait(() -> {
             if ("Rectangle".equalsIgnoreCase(shapeType)) {
                 controller.handleSelectRettangolo(new ActionEvent());
@@ -209,12 +273,39 @@ public class ShapeInsertionIntegrationTest {
                 controller.handleSelectEllisse(new ActionEvent());
             } else if ("Line".equalsIgnoreCase(shapeType)) {
                 controller.handleSelectLinea(new ActionEvent());
+            } else if ("Polygon".equalsIgnoreCase(shapeType)) {
+                controller.handleSelectPoligono(new ActionEvent());
+            } else {
+                throw new IllegalArgumentException("Tipo di forma non supportato: " + shapeType);
             }
-            MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED, x, y, x, y, MouseButton.PRIMARY, 1,
-                    false, false, false, false, true, false, false, true, false, false, null);
-            controller.getDrawingCanvas().fireEvent(clickEvent);
+
+            if ("Polygon".equalsIgnoreCase(shapeType)) {
+                // Per i poligoni, simula multipli click
+                PolygonFactory factory = (PolygonFactory) controller.getCurrentShapeFactory();
+                int maxPoints = factory.getMaxPoints();
+
+                // Simula i click necessari per completare il poligono
+                for (int i = 0; i < maxPoints; i++) {
+                    // Piccole variazioni per creare vertici distinti
+                    double clickX = x + (i * 10); // Offset orizzontale
+                    double clickY = y + (i * 10); // Offset verticale
+
+                    MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED,
+                            clickX, clickY, clickX, clickY, MouseButton.PRIMARY, 1,
+                            false, false, false, false, true, false, false, true, false, false, null);
+                    controller.getDrawingCanvas().fireEvent(clickEvent);
+                }
+            } else {
+                // Per le altre forme, un singolo click
+                MouseEvent clickEvent = new MouseEvent(MouseEvent.MOUSE_CLICKED,
+                        x, y, x, y, MouseButton.PRIMARY, 1,
+                        false, false, false, false, true, false, false, true, false, false, null);
+                controller.getDrawingCanvas().fireEvent(clickEvent);
+            }
+
             currentShapeRef.set((AbstractShape) getPrivateFieldNonFailing(controller, "currentShape"));
         });
+
         assertNotNull(currentShapeRef.get(), "Nessuna forma corrente selezionata dopo l'inserimento (letto da controller).");
         return currentShapeRef.get();
     }
@@ -228,8 +319,8 @@ public class ShapeInsertionIntegrationTest {
 
         AbstractShape decoratedShape = insertAndGetSelectedShapeFromController("Rectangle", clickX, clickY);
 
-        assertEquals(1, model.getShapes().size(), "Il modello dovrebbe contenere una forma.");
-        assertSame(decoratedShape, model.getShapes().get(0), "La forma nel controller e nel modello non corrispondono.");
+        assertEquals(1, model.getShapes().size(), "Il model dovrebbe contenere una forma.");
+        assertSame(decoratedShape, model.getShapes().get(0), "La forma nel controller e nel model non corrispondono.");
 
         assertTrue(decoratedShape instanceof BorderColorDecorator, "La forma dovrebbe essere decorata con BorderColorDecorator.");
         AbstractShape shapeAfterBorder = ((ShapeDecorator) decoratedShape).getInnerShape();
@@ -352,6 +443,44 @@ public class ShapeInsertionIntegrationTest {
         assertTrue(undoStack.stream().anyMatch(cmd -> cmd instanceof AddShapeCommand), "AddShapeCommand mancante per la linea.");
         // Non ci aspettiamo più un ChangeWidthCommand qui in automatico.
         assertFalse(undoStack.stream().anyMatch(cmd -> cmd instanceof ChangeWidthCommand), "ChangeWidthCommand NON dovrebbe essere presente dopo l'inserimento della Linea in questo scenario.");
+    }
+    @Test
+    @DisplayName("Inserimento Poligono con proprietà di default")
+    void testInsertPolygonWithDefaultProperties() throws Exception {
+        final double clickX = 150.0;
+        final double clickY = 200.0;
+
+        AbstractShape decoratedShape = insertAndGetSelectedShapeFromController("Polygon", clickX, clickY);
+
+        assertEquals(1, model.getShapes().size(), "Il model dovrebbe contenere una forma.");
+        assertSame(decoratedShape, model.getShapes().get(0), "La forma nel controller e nel model non corrispondono.");
+
+        assertTrue(decoratedShape instanceof BorderColorDecorator, "La forma dovrebbe essere decorata con BorderColorDecorator.");
+        AbstractShape shapeAfterBorder = ((ShapeDecorator) decoratedShape).getInnerShape();
+        assertTrue(shapeAfterBorder instanceof FillColorDecorator, "Dopo BorderColor, ci si aspetta FillColorDecorator.");
+        AbstractShape baseShape = getBaseShape(decoratedShape);
+
+        assertTrue(baseShape instanceof Polygon, "La forma base aggiunta dovrebbe essere un Poligono.");
+        assertEquals(clickX, baseShape.getX(), "La coordinata X non corrisponde.");
+        assertEquals(clickY, baseShape.getY(), "La coordinata Y non corrisponde.");
+        assertEquals(0, baseShape.getZ(), "Lo Z-order dovrebbe essere 0 per la prima forma.");
+
+        Stack<Command> undoStack = getUndoStack(commandManager);
+        assertEquals(1, undoStack.size(), "Solo AddShapeCommand dovrebbe essere nello stack undo.");
+        assertTrue(undoStack.get(0) instanceof AddShapeCommand, "Il comando dovrebbe essere AddShapeCommand.");
+
+        assertNull(getPrivateField(controller, "currentShapeFactory"), "currentShapeFactory dovrebbe essere resettata dopo l'inserimento.");
+        assertEquals(decoratedShape, getPrivateField(controller, "currentShape"), "La forma corrente nel controller non è corretta.");
+
+        assertFalse(widthSpinner.isDisabled(), "Width spinner dovrebbe essere abilitato.");
+        assertFalse(heightSpinner.isDisabled(), "Height spinner dovrebbe essere abilitato.");
+        assertFalse(deleteButton.isDisabled(), "Delete button dovrebbe essere abilitato.");
+        assertFalse(copyButton.isDisabled(), "Copy button dovrebbe essere abilitato.");
+        assertFalse(fillColorPicker.isDisabled(), "Fill picker dovrebbe essere ABILITATO quando un Poligono è selezionato.");
+        assertFalse(borderColorPicker.isDisabled(), "Border picker dovrebbe essere ABILITATO quando un Poligono è selezionato.");
+
+        assertEquals(baseShape.getWidth(), widthSpinner.getValueFactory().getValue(), "Spinner larghezza non aggiornato.");
+        assertEquals(baseShape.getHeight(), heightSpinner.getValueFactory().getValue(), "Spinner altezza non aggiornato.");
     }
 
     @Test

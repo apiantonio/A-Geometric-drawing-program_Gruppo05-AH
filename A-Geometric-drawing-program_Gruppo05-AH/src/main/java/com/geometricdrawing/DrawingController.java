@@ -545,7 +545,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleSelectPoligono(ActionEvent event) {
+    public void handleSelectPoligono(ActionEvent event) {
         Stage popupStage = new Stage();
         popupStage.initModality(Modality.APPLICATION_MODAL);
         popupStage.setTitle("Numero di vertici");
