@@ -99,7 +99,7 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         AbstractShape styledShape = applyDecorations(newShape);
         currentShape = styledShape;
 
-        AddShapeCommand addCmd = new AddShapeCommand(controller.getModel(), styledShape);
+        Command addCmd = new AddShapeCommand(controller.getModel(), styledShape);
         controller.getCommandManager().executeCommand(addCmd);
     }
 
@@ -116,32 +116,23 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
             System.out.println("DEBUG: Aggiunto punto al poligono: " + point + " (totale: " + controller.getTempPolygonPoints().size() + ")");
 
-            // Se abbiamo raggiunto il numero di punti richiesto per il poligono
+            // Se si è raggiunto il numero di punti richiesto per il poligono
             if (controller.getTempPolygonPoints().size() == polygonFactory.getMaxPoints()) {
-                // Crea e aggiunge il poligono
                 AbstractShape polygon = currentShapeFactory.createShape(worldX, worldY);
                 ((Polygon) polygon).setVertices(new ArrayList<>(controller.getTempPolygonPoints()));
 
-                // Imposta i colori dal ColorPicker
                 currentShape = applyDecorations(polygon);
 
-                AddShapeCommand cmd = new AddShapeCommand(controller.getModel(), currentShape);
+                Command cmd = new AddShapeCommand(controller.getModel(), currentShape);
                 controller.getCommandManager().executeCommand(cmd);
 
                 // Reset completo dello stato del poligono
                 controller.setIsDrawingPolygon(false);
                 controller.getTempPolygonPoints().clear();
 
-                // Reset della factory e del cursore per completare il ciclo
-                controller.setCurrentShapeFactory(null);
                 canvas.setCursor(Cursor.DEFAULT);
 
                 System.out.println("DEBUG: Poligono completato e stato resettato.");
-
-                // poligono è completo, aggiorna lo stato UI
-                controller.setCurrentShape(currentShape);
-                controller.updateControlState(currentShape);
-                controller.updateSpinners(currentShape);
             }
         }
     }

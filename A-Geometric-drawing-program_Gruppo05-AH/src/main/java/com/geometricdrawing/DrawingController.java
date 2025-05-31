@@ -38,13 +38,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import javafx.util.StringConverter;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Optional;
-import java.beans.PropertyEditor;
 import java.util.function.UnaryOperator;
 
 /**
@@ -107,6 +102,8 @@ public class DrawingController {
     private ZoomHandler zoomHandler; // Gestore per i livelli di zoom
     private NewWorkspace newWorkspace;
     private Exit exit;
+    private UserGuide userGuide;
+
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -173,6 +170,7 @@ public class DrawingController {
             this.grid = new Grid(this);
             this.newWorkspace = new NewWorkspace(this);
             this.exit = new Exit(this);
+            this.userGuide = new UserGuide();
 
             drawingCanvas.setOnMouseClicked(new MouseClickedHandler(drawingCanvas, this)::handleMouseEvent); //
             drawingCanvas.setOnMousePressed(new MousePressedHandler(drawingCanvas, this)::handleMouseEvent); //
@@ -408,6 +406,10 @@ public class DrawingController {
         }
     }
 
+    @FXML
+    private void handleUserGuide() {
+        userGuide.show();
+    }
 
     /**
      * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).

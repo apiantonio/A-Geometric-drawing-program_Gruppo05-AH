@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Polygon extends AbstractShape {
-    private transient ArrayList<Point2D> vertices;
+    private transient List<Point2D> vertices;
 
     public Polygon(double x, double y) {
         super(x, y, 0.0, 0.0); // inizializza con larghezza e altezza 0
@@ -205,7 +205,7 @@ public class Polygon extends AbstractShape {
         return vertices;
     }
 
-    public void setVertices(ArrayList<Point2D> vertices) {
+    public void setVertices(List<Point2D> vertices) {
         this.vertices = vertices;
         updateBounds();
     }

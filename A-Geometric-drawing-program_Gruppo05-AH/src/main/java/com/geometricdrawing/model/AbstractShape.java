@@ -55,7 +55,7 @@ public abstract class AbstractShape implements Serializable{
      * @param x coordinate lungo le ascisse
      * @param y coordinate lungo le ordinate
      * @param threshold distanza massima dalla figura per considerare il punto all'interno
-     * @return
+     * @return true se il punto è all'interno della figura, false altrimenti
      */
     public boolean containsPoint(double x, double y, double threshold) {
         // Poichè la rotazione avviene attorno al centro, lo calcolo

@@ -1,0 +1,43 @@
+Benvenuto nella guida all'utilizzo di ShapeCraft: a geometric drawing app!
+Questa applicazione ti permette di creare e modificare figure geometriche in modo semplice e intuitivo.
+
+Ecco una panoramica delle funzionalità principali:
+
+    CREAZIONE FIGURE:
+    • Seleziona il tipo di figura dal pulsante "Forme" nella sezione "Inserisci"
+    • Clicca sul foglio per creare la figura
+    • Per i poligoni: seleziona il numero di vertici e poi clicca sullo schermo per aggiungere punti
+    • Puoi inserire testo cliccando sul pulsante "Testo" e poi digitando nel campo di testo che verrà abilitato scegliendo anche la dimensione dei caratteri.
+
+    SELEZIONE E MODIFICA:
+    • Clicca su una figura per selezionarla
+    • Usa gli spinner per modificare altezza e larghezza nella sezione "Dimensioni"
+    • Cambia colori con i selettori di colore nella sezione "Stili forme"
+    • Porta in primo piano o secondo piano con i pulsanti nella sezione "Disponi"
+    • Specchia orizzontalmente / verticalmente e ruota una figura con i pulsanti nella sezione "Disponi"
+    • Puoi modificare una casella di testo selezionandola e digitando nel campo di testo
+    • Puoi annullare le modifiche con il pulsante "Annulla"
+
+    OPERAZIONI:
+    Con i pulsanti nella sezione "Strumenti" oppure con scorciatoie da tastiera:
+    • Copia/Incolla: Ctrl+C / Ctrl+V
+    • Taglia: Ctrl+X
+    • Elimina: Canc o Backspace
+    • Annulla: Ctrl+Z
+
+    MENU CONTESTUALE:
+    Clicca col tasto destro su una figura per le varie opzioni
+    • Copia/Incolla/Taglia
+    • Elimina
+    • Porta in primo piano / secondo piano
+
+    VISUALIZZAZIONE:
+    • Menu Visualizza per lo zoom e per la visualizzazione della griglia
+    • Nella sezione "Disponi" sono disponibili opzioni per la dimensione della griglia selezionabili dopo averla abilitata
+    • Usa la scroll bar per navigare nell'area di lavoro
+
+    FILE:
+    • Crea un nuovo progetto con "Nuovo"
+    • Salva/Carica progetti
+    • Esporta in PNG o PDF
+- Esci dall'applicazione con "Chiudi".
