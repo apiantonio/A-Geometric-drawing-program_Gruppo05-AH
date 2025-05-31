@@ -33,18 +33,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.AbstractShape;
-
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import javafx.util.StringConverter;
-
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Optional;
-import java.beans.PropertyEditor;
 import java.util.function.UnaryOperator;
 
 /**
@@ -125,6 +118,15 @@ public class DrawingController {
 
     private boolean isUpdatedRotateSpinner = false;     // serve perchè altrimenti il listener viene chiamato anche
     // quando il valore dello spinner non è impostato dall'utente ma da codice
+
+    private HandleType activeResizeHandle = null;
+    private Point2D resizeStartMousePos_screen; // Posizione del mouse all'inizio dello stretch (coordinate dello schermo)
+    // Per lo stretch, memorizziamo le dimensioni e la posizione iniziale della figura
+    private double initialShapeX_world_resize, initialShapeY_world_resize;
+    private double initialShapeWidth_world_resize, initialShapeHeight_world_resize;
+    private double initialShapeAngle_resize; // Angolo di rotazione iniziale della figura in gradi
+    private int initialShapeScaleX_resize, initialShapeScaleY_resize;
+    private AbstractShape shapeBeingResized; // Figura attualmente in fase di ridimensionamento
 
     public void setModel(DrawingModel model) {
         this.model = model;
@@ -510,6 +512,8 @@ public class DrawingController {
      */
     private void initializeShapeSelection(ShapeFactory factory, boolean disableFillPicker, boolean disableBorderPicker) {
         currentShape = null; // Deseleziona figura corrente
+        currentShapeFactory = factory; // Imposta la factory attiva
+
         updateControlState(null); // Aggiorna stato UI
         redrawCanvas(); // Rimuove evidenziazione precedente
 
@@ -522,7 +526,6 @@ public class DrawingController {
         }
         // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
 
-        currentShapeFactory = factory; // Imposta la factory attiva
         if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
     }
 
@@ -725,7 +728,7 @@ public class DrawingController {
     /**
      * Restituisce la forma base (non decorata) da una forma potenzialmente decorata.
      */
-    private AbstractShape getBaseShape(AbstractShape shape) {
+    public AbstractShape getBaseShape(AbstractShape shape) {
         AbstractShape base = shape;
         while (base instanceof ShapeDecorator) { // Scende attraverso i decoratori
             base = ((ShapeDecorator) base).getInnerShape();
@@ -811,6 +814,7 @@ public class DrawingController {
                 enableTextField = true;
                 enableFontSizeSpinner = true;
                 enableBorderPicker = false;
+                enableFillPicker = true;
             } else {
                 enableTextField = false;
                 enableFontSizeSpinner = false;
@@ -823,26 +827,43 @@ public class DrawingController {
             if (shape.getZ() == model.getShapes().size() -1) {
                 enableForeground = false;
             }
-        } else {
-            enableCutUi = false;
-            // La figura non è selezionata, ma stai procedendo alla creazione di una nuova figura
-            if (currentShapeFactory != null) {
+        }  else { // Nessuna forma selezionata (shape == null)
+            // Impostazioni di default per quando nessuna forma è selezionata
+            enableWidth = false;
+            enableHeight = false;
+            enableDelete = false;
+            enableCutUi = false; // Rinominata per chiarezza se diversa da enableCut
+            enableCopy = false;
+            enableCut = false;
+            enableForeground = false;
+            enableBackground = false;
+            enableRotation = false;
+            enableMirroring = false;
+
+            // Di default, quando nessuna forma è selezionata, i controlli per il testo sono disabilitati
+            enableTextField = false;
+            enableFontSizeSpinner = false;
+
+            if (currentShapeFactory != null) { // Una factory è attiva, l'utente sta per creare una forma
+                // Impostazioni di default per i color picker quando una factory è attiva
+                enableFillPicker = true;
+                enableBorderPicker = true;
+
                 if (currentShapeFactory instanceof LineFactory) {
-                    enableFillPicker = false;
-                    enableBorderPicker = true;
-                } else if(currentShapeFactory instanceof TextFactory) {
-                    enableFillPicker = false; // Text shapes typically don't use the general fill picker
-                    enableBorderPicker = false; // Text shapes don't use the general border picker
-                    enableTextField = true; // Allow immediate text input for new text shape
-                    enableFontSizeSpinner = true;
-                }else{
-                    enableFillPicker = true;
-                    enableBorderPicker = true;
+                    enableFillPicker = false; // Le linee non hanno riempimento
+                } else if (currentShapeFactory instanceof TextFactory) {
+                    enableFillPicker = true;  // Il colore del testo usa il fillPicker
+                    enableBorderPicker = false; // Le TextShape non usano il borderPicker in questo design
+                    enableTextField = true;
+                    enableFontSizeSpinner = false;
+                } else {
+                    return;
                 }
-                enableWidth = false;
-                enableHeight = false;
-                enableTextField = false;
-                enableFontSizeSpinner = false;
+            } else { // Nessuna forma selezionata E NESSUNA factory è attiva
+
+                enableFillPicker = true;
+                enableBorderPicker = true;
+
             }
         }
 
@@ -1123,42 +1144,55 @@ public class DrawingController {
      * Aggiorna i valori degli Spinner di larghezza e altezza in base alla figura selezionata.
      * @param shape La figura selezionata, o null.
      */
+    // In DrawingController.java
     public void updateSpinners(AbstractShape shape) {
-        if (widthSpinner == null || heightSpinner == null || widthSpinner.getValueFactory() == null || heightSpinner.getValueFactory() == null) return;
+        // Controlli iniziali per nullità degli spinner e del textField
+        if (widthSpinner == null || heightSpinner == null || rotationSpinner == null || fontSizeSpinner == null ||
+                widthSpinner.getValueFactory() == null || heightSpinner.getValueFactory() == null ||
+                rotationSpinner.getValueFactory() == null || fontSizeSpinner.getValueFactory() == null || textField == null) {
+            System.err.println("Errore: uno o più componenti UI (spinner/textField) non inizializzati in updateSpinners.");
+            return;
+        }
 
-        if (shape != null) { // Se una figura è selezionata
+        boolean isTextFactoryActive = (currentShapeFactory instanceof TextFactory);
+
+        if (shape != null) { // C'è una forma selezionata
             AbstractShape baseShape = getBaseShape(shape);
-            widthSpinner.getValueFactory().setValue(shape.getWidth()); // Imposta larghezza
+            widthSpinner.getValueFactory().setValue(shape.getWidth());
 
-            isUpdatedRotateSpinner = true; // Indica che lo spinner di rotazione è stato aggiornato
+            // Gestione dello spinner di rotazione (assicurati che isUpdatedRotateSpinner sia gestito correttamente se questo metodo è chiamato da altri posti)
+            isUpdatedRotateSpinner = true;
             double angle = shape.getRotationAngle();
             rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
-            isUpdatedRotateSpinner = false; // Indica che lo spinner di rotazione è stato aggiornato
+            isUpdatedRotateSpinner = false;
 
             if (baseShape instanceof Line) {
-                // Per la Linea, l'altezza non è direttamente modificabile.
-                // Lo spinner altezza mostrerà un valore di default (es. il suo minimo)
-                // e sarà disabilitato da updateControlState.
-                heightSpinner.getValueFactory().setValue(Math.max(1.0, baseShape.getHeight())); // Mostra almeno 1.0 o altezza reale
-            } else { // Per Rettangolo o Ellisse
-                heightSpinner.getValueFactory().setValue(baseShape.getHeight()); // Imposta altezza
+                heightSpinner.getValueFactory().setValue(Math.max(1.0, baseShape.getHeight()));
+            } else {
+                heightSpinner.getValueFactory().setValue(baseShape.getHeight());
             }
-            if (baseShape instanceof TextShape textShapeInstance) { // Use pattern variable binding
+
+            if (baseShape instanceof TextShape textShapeInstance) {
                 fontSizeSpinner.getValueFactory().setValue(textShapeInstance.getFontSize());
                 textField.setText(textShapeInstance.getText());
             } else {
-                // Reset/default for non-TextShapes
-                fontSizeSpinner.getValueFactory().setValue(12); // Default font size
-                textField.setText(""); // Clear text field
+                // Una forma non-testuale è selezionata. Resetta i controlli per il testo.
+                fontSizeSpinner.getValueFactory().setValue(12); // Default
+                textField.setText(""); // Cancella il campo testo
             }
-
-        } else { // No shape selected
+        } else { // Nessuna forma selezionata (shape == null)
             widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
             heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
             rotationSpinner.getValueFactory().setValue(0.0);
-            // Reset text controls as well
-            fontSizeSpinner.getValueFactory().setValue(12); // Default font size
-            textField.setText("");
+            fontSizeSpinner.getValueFactory().setValue(12); // Dimensione font di default
+
+            // Se nessuna forma è selezionata E TextFactory NON è attiva, allora cancella il textField.
+            // Altrimenti, se TextFactory è attiva, il testo digitato dall'utente deve essere preservato.
+            if (!isTextFactoryActive) {
+                textField.setText("");
+            }
+            // Se TextFactory è attiva e nessuna forma è selezionata, il contenuto di textField
+            // (che l'utente sta digitando per la nuova forma) viene mantenuto.
         }
     }
 
@@ -1237,77 +1271,262 @@ public class DrawingController {
         gc.restore(); // Ripristina lo stato del gc precedente a save()
     }
 
-    /**
-     * Disegna il bordo di evidenziazione e le maniglie per la figura selezionata.
-     * @param shape La figura da evidenziare.
-     */
+
+    // Disegna il bordo di evidenziazione e le maniglie per la figura selezionata
     private void drawHighlightBorder(AbstractShape shape) {
         AbstractShape baseShape = getBaseShape(shape); // Ottiene la forma base (non decorata)
 
-        double centerX = baseShape.getX() + baseShape.getWidth() / 2;
-        double centerY = baseShape.getY() + baseShape.getHeight() / 2;
-        double angle = baseShape.getRotationAngle();
+        gc.save();
+        applyShapeTransformsToGc(gc, shape); // Applica le trasformazioni (traslazione al centro, scala, rotazione)
 
-        // Impostazioni per il bordo di selezione
-        double lineWidthOnScreen = 1.0;
-        double worldLineWidth = lineWidthOnScreen / zoomHandler.getZoomFactor();
-
-        gc.save(); // Salva lo stato grafico prima della trasformazione
-
-        gc.translate(centerX, centerY);
-        // Applica le trasformazioni di mirroring
-        if (shape.getScaleX() == -1) {
-            gc.scale(-1, 1);
-        }
-        if (shape.getScaleY() == -1) {
-            gc.scale(1, -1);
-        }
-        gc.rotate(angle); // Applica la rotazione
-
+        double worldLineWidth = 1.0 / zoomHandler.getZoomFactor();
         gc.setStroke(Color.SKYBLUE);
-        gc.setLineWidth(1.0 / zoomHandler.getZoomFactor());
+        gc.setLineWidth(worldLineWidth);
         gc.setLineDashes(5.0 / zoomHandler.getZoomFactor());
 
-        if (baseShape instanceof Line line) {
-            // Calcola estremi relativi al centro per rispettare la trasformazione
-            double startX = line.getX() - centerX;
-            double startY = line.getY() - centerY;
-            double endX = line.getEndX() - centerX;
-            double endY = line.getEndY() - centerY;
+        // Le coordinate per il disegno sono ora relative al centro della figura (che è l'origine del gc)
+        double relX = -baseShape.getWidth() / 2;
+        double relY = -baseShape.getHeight() / 2;
+        double w = baseShape.getWidth();
+        double h = baseShape.getHeight();
 
-            gc.strokeLine(startX, startY, endX, endY);
-            drawHandle(startX, startY);
-            drawHandle(endX, endY);
+        if (baseShape instanceof Line) {
+            // Per una linea, il "bounding box" è la linea stessa.
+            // Le maniglie sono alle estremità. In questo sistema centrato, l'inizio è (relX, relY), la fine è (relX + w, relY + h)
+            gc.strokeLine(relX, relY, relX + w, relY + h); // Disegna la linea rispetto al suo centro
+
+            drawResizeHandle(relX, relY, HandleType.LINE_START);
+            drawResizeHandle(relX + w, relY + h, HandleType.LINE_END);
         } else {
-            // Rettangolo tratteggiato attorno alla bounding box ruotata
-            double x = baseShape.getX() - centerX;
-            double y = baseShape.getY() - centerY;
-            double w = baseShape.getWidth();
-            double h = baseShape.getHeight();
+            gc.strokeRect(relX, relY, w, h); // Disegna il rettangolo di selezione rispetto al centro
 
-            gc.strokeRect(x, y, w, h);
+            // Maniglie agli angoli
+            drawResizeHandle(relX, relY, HandleType.TOP_LEFT);
+            drawResizeHandle(relX + w, relY, HandleType.TOP_RIGHT);
+            drawResizeHandle(relX, relY + h, HandleType.BOTTOM_LEFT);
+            drawResizeHandle(relX + w, relY + h, HandleType.BOTTOM_RIGHT);
 
-            // Maniglie ai quattro angoli (coordinate relative al centro)
-            drawHandle(x, y); // top-left
-            drawHandle(x + w, y); // top-right
-            drawHandle(x, y + h); // bottom-left
-            drawHandle(x + w, y + h); // bottom-right
+            // Maniglie sui lati
+            drawResizeHandle(relX + w / 2, relY, HandleType.TOP_CENTER);
+            drawResizeHandle(relX + w / 2, relY + h, HandleType.BOTTOM_CENTER);
+            drawResizeHandle(relX, relY + h / 2, HandleType.LEFT_CENTER);
+            drawResizeHandle(relX + w, relY + h / 2, HandleType.RIGHT_CENTER);
         }
+        gc.restore();
+    }
 
-        gc.restore(); // Ripristina il contesto grafico
+
+    /**
+        * Disegna una maniglia di ridimensionamento per la figura selezionata.
+     */
+    private void drawResizeHandle(double localX, double localY, HandleType type) {
+        double handleRadiusInWorldUnits = HANDLE_RADIUS / zoomHandler.getZoomFactor();
+        gc.setFill(Color.rgb(70, 130, 180, 0.8)); // A slightly more opaque SteelBlue
+        gc.setStroke(Color.NAVY);
+        gc.setLineWidth(0.5 / zoomHandler.getZoomFactor());
+
+        gc.fillOval(localX - handleRadiusInWorldUnits, localY - handleRadiusInWorldUnits,
+                handleRadiusInWorldUnits * 2, handleRadiusInWorldUnits * 2);
+        gc.strokeOval(localX - handleRadiusInWorldUnits, localY - handleRadiusInWorldUnits,
+                handleRadiusInWorldUnits * 2, handleRadiusInWorldUnits * 2);
+    }
+
+    /**
+     * Restituisce il tipo di maniglia (HandleType) presente nel punto schermo specificato,
+     * rispetto alla figura selezionata. Serve per determinare se il mouse è sopra una maniglia di ridimensionamento.
+     *
+     * @param selectedShape la figura selezionata
+     * @param screenX coordinata X sullo schermo
+     * @param screenY coordinata Y sullo schermo
+     * @return il tipo di maniglia se trovata, altrimenti null
+     */
+    public HandleType getHandleAtScreenPoint(AbstractShape selectedShape, double screenX, double screenY) {
+        if (selectedShape == null || zoomHandler == null) return null;
+
+        AbstractShape baseShape = getBaseShape(selectedShape);
+        Point2D[] handleLocalCenters = getHandleLocalCenters(baseShape); // Centri delle maniglie relativi al centro della figura, non ruotata né scalata
+        HandleType[] handleTypes = getAssociatedHandleTypes(baseShape);
+
+        double shapeCenterX_world = baseShape.getX() + baseShape.getWidth() / 2;
+        double shapeCenterY_world = baseShape.getY() + baseShape.getHeight() / 2;
+        double angle = selectedShape.getRotationAngle(); // Usa l'angolo della figura (anche se decorata)
+        int scaleX = selectedShape.getScaleX();
+        int scaleY = selectedShape.getScaleY();
+
+        for (int i = 0; i < handleTypes.length; i++) {
+            Point2D localCenter = handleLocalCenters[i];
+
+            // 1. Applica la scala intrinseca (mirroring) al centro della maniglia
+            double scaledHcX = localCenter.getX() * scaleX;
+            double scaledHcY = localCenter.getY() * scaleY;
+
+            // 2. Applica la rotazione della figura al centro della maniglia scalato
+            double angleRad = Math.toRadians(angle);
+            double cosA = Math.cos(angleRad);
+            double sinA = Math.sin(angleRad);
+            double rotatedHcX = scaledHcX * cosA - scaledHcY * sinA;
+            double rotatedHcY = scaledHcX * sinA + scaledHcY * cosA;
+
+            // 3. Trasla alle coordinate mondo aggiungendo il centro della figura
+            double worldHcX = rotatedHcX + shapeCenterX_world;
+            double worldHcY = rotatedHcY + shapeCenterY_world;
+
+            // 4. Converte il centro della maniglia in coordinate schermo
+            Point2D screenHandleCenter = zoomHandler.worldToScreen(worldHcX, worldHcY);
+
+            // 5. Controlla la distanza in coordinate schermo
+            double distSq = Math.pow(screenX - screenHandleCenter.getX(), 2) + Math.pow(screenY - screenHandleCenter.getY(), 2);
+            // Usa un raggio leggermente maggiore per facilitare il click sulle maniglie
+            if (distSq <= Math.pow(HANDLE_RADIUS * 1.5, 2)) {
+                return handleTypes[i];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Restituisce i centri locali delle maniglie di ridimensionamento per una figura,
+     * relativi al suo centro, nel sistema di coordinate non ruotato e non scalato.
+     *
+     * @param baseShape la figura base (senza decoratori)
+     * @return array di Point2D con i centri delle maniglie
+     */
+    private Point2D[] getHandleLocalCenters(AbstractShape baseShape) {
+        double w = baseShape.getWidth();
+        double h = baseShape.getHeight();
+        // Coordinate relative al centro del bounding box della figura
+        double relX0 = -w / 2; // Bordo sinistro
+        double relY0 = -h / 2; // Bordo superiore
+        double relX1 = w / 2;  // Bordo destro
+        double relY1 = h / 2;  // Bordo inferiore
+        double relXMid = 0;    // Centro X
+        double relYMid = 0;    // Centro Y
+
+        if (baseShape instanceof Line) {
+            double w_comp = baseShape.getWidth();  // deltaX della linea
+            double h_comp = baseShape.getHeight(); // deltaY della linea
+            return new Point2D[]{
+                    new Point2D(-w_comp / 2, -h_comp / 2), // LINE_START
+                    new Point2D(w_comp / 2, h_comp / 2)    // LINE_END
+            };
+        } else {
+            return new Point2D[]{
+                    new Point2D(relX0, relY0),     // TOP_LEFT
+                    new Point2D(relX1, relY0),     // TOP_RIGHT
+                    new Point2D(relX0, relY1),     // BOTTOM_LEFT
+                    new Point2D(relX1, relY1),     // BOTTOM_RIGHT
+                    new Point2D(relXMid, relY0),   // TOP_CENTER
+                    new Point2D(relXMid, relY1),   // BOTTOM_CENTER
+                    new Point2D(relX0, relYMid),   // LEFT_CENTER
+                    new Point2D(relX1, relYMid)    // RIGHT_CENTER
+            };
+        }
+    }
+
+    /**
+     * Restituisce l'array di HandleType corrispondente all'ordine dei punti di getHandleLocalCenters.
+     *
+     * @param baseShape la figura base (senza decoratori)
+     * @return array di HandleType
+     */
+    private HandleType[] getAssociatedHandleTypes(AbstractShape baseShape) {
+        if (baseShape instanceof Line) {
+            return new HandleType[]{HandleType.LINE_START, HandleType.LINE_END};
+        } else {
+            return new HandleType[]{
+                    HandleType.TOP_LEFT, HandleType.TOP_RIGHT, HandleType.BOTTOM_LEFT, HandleType.BOTTOM_RIGHT,
+                    HandleType.TOP_CENTER, HandleType.BOTTOM_CENTER, HandleType.LEFT_CENTER, HandleType.RIGHT_CENTER
+            };
+        }
+    }
+
+    // --- Getter/Setter per lo stato di ridimensionamento ---
+
+    /** Restituisce la maniglia di ridimensionamento attiva */
+    public HandleType getActiveResizeHandle() { return activeResizeHandle; }
+    /** Imposta la maniglia di ridimensionamento attiva */
+    public void setActiveResizeHandle(HandleType activeResizeHandle) { this.activeResizeHandle = activeResizeHandle; }
+
+    /** Restituisce la posizione iniziale del mouse (schermo) per il ridimensionamento */
+    public Point2D getResizeStartMousePos_screen() { return resizeStartMousePos_screen; }
+    /** Imposta la posizione iniziale del mouse (schermo) per il ridimensionamento */
+    public void setResizeStartMousePos_screen(Point2D resizeStartMousePos_screen) { this.resizeStartMousePos_screen = resizeStartMousePos_screen; }
+
+    /** Restituisce la figura attualmente in fase di ridimensionamento */
+    public AbstractShape getShapeBeingResized() { return shapeBeingResized; }
+    /** Imposta la figura attualmente in fase di ridimensionamento */
+    public void setShapeBeingResized(AbstractShape shape) { this.shapeBeingResized = shape; }
+
+    /**
+     * Salva lo stato iniziale della figura prima del ridimensionamento.
+     * Utile per calcolare le variazioni durante il drag.
+     *
+     * @param shape la figura da ridimensionare
+     */
+    public void storeInitialResizeState(AbstractShape shape) {
+        if (shape == null) return;
+        this.shapeBeingResized = shape; // Salva il riferimento alla figura
+        this.initialShapeX_world_resize = shape.getX();
+        this.initialShapeY_world_resize = shape.getY();
+        this.initialShapeWidth_world_resize = shape.getWidth();
+        this.initialShapeHeight_world_resize = shape.getHeight();
+        this.initialShapeAngle_resize = shape.getRotationAngle();
+        this.initialShapeScaleX_resize = shape.getScaleX();
+        this.initialShapeScaleY_resize = shape.getScaleY();
+    }
+
+    /** Restituisce la X iniziale della figura (mondo) per il ridimensionamento */
+    public double getInitialShapeX_world_resize() { return initialShapeX_world_resize; }
+    /** Restituisce la Y iniziale della figura (mondo) per il ridimensionamento */
+    public double getInitialShapeY_world_resize() { return initialShapeY_world_resize; }
+    /** Restituisce la larghezza iniziale della figura (mondo) per il ridimensionamento */
+    public double getInitialShapeWidth_world_resize() { return initialShapeWidth_world_resize; }
+    /** Restituisce l'altezza iniziale della figura (mondo) per il ridimensionamento */
+    public double getInitialShapeHeight_world_resize() { return initialShapeHeight_world_resize; }
+    /** Restituisce l'angolo iniziale della figura per il ridimensionamento */
+    public double getInitialShapeAngle_resize() { return initialShapeAngle_resize; }
+    /** Restituisce la scala X iniziale della figura per il ridimensionamento */
+    public int getInitialShapeScaleX_resize() { return initialShapeScaleX_resize; }
+    /** Restituisce la scala Y iniziale della figura per il ridimensionamento */
+    public int getInitialShapeScaleY_resize() { return initialShapeScaleY_resize; }
+
+    /**
+     * Restituisce il cursore appropriato in base al tipo di maniglia e alla rotazione della figura.
+     * @param handleType il tipo di maniglia
+     * @param shape la figura selezionata
+     * @return il cursore JavaFX da mostrare
+     */
+    public Cursor getCursorForHandle(HandleType handleType, AbstractShape shape) {
+        if (handleType == null || shape == null) return Cursor.DEFAULT;
+
+        double angle = shape.getRotationAngle() % 360;
+        if (angle < 0) angle += 360;
+
+        // Normalizza l'angolo tra 0 e 360, poi mappa su una delle 8 direzioni per la scelta del cursore
+        // Semplificazione: si scelgono i cursori che meglio rappresentano l'asse principale di azione
+        // JavaFX offre cursori limitati, quindi questa è spesso un'approssimazione
+        switch (handleType) {
+            case TOP_LEFT:     return Cursor.NW_RESIZE;
+            case TOP_RIGHT:    return Cursor.NE_RESIZE;
+            case BOTTOM_LEFT:  return Cursor.SW_RESIZE;
+            case BOTTOM_RIGHT: return Cursor.SE_RESIZE;
+            case TOP_CENTER:   return Cursor.N_RESIZE;
+            case BOTTOM_CENTER:return Cursor.S_RESIZE;
+            case LEFT_CENTER:  return Cursor.W_RESIZE;
+            case RIGHT_CENTER: return Cursor.E_RESIZE;
+            case LINE_START:   return Cursor.W_RESIZE; // Si assume inizio linea orizzontale = ovest
+            case LINE_END:     return Cursor.E_RESIZE; // Si assume fine linea orizzontale = est
+            default:           return Cursor.DEFAULT;
+        }
+        // Una versione più avanzata ruoterebbe il tipo base di cursore.
     }
 
 
 
-    private void drawHandle(double localX, double localY) {
-        // localX, localY sono relativi al centro ruotato della forma.
-        // HANDLE_RADIUS è il raggio desiderato sullo schermo. Converti nel raggio nello spazio trasformato corrente.
-        double handleRadiusInWorldSpace = HANDLE_RADIUS / zoomHandler.getZoomFactor(); // Raggio in unità "zoomate"
-        gc.setFill(Color.SKYBLUE);
-        gc.fillOval(localX - handleRadiusInWorldSpace, localY - handleRadiusInWorldSpace,
-                handleRadiusInWorldSpace * 2, handleRadiusInWorldSpace * 2);
-    }
-
+    /**
+     * Aggiorna le scrollbar orizzontale e verticale in base al contenuto del canvas e al modello.
+     * Calcola i valori minimi, massimi e la visibilità in base alle dimensioni del canvas e delle forme.
+     */
     public void updateScrollBars() {
 
         if (drawingCanvas == null || zoomHandler == null || model == null || horizontalScrollBar == null || verticalScrollBar == null) {
@@ -1383,6 +1602,25 @@ public class DrawingController {
             verticalScrollBar.setValue(contentMinY);
         }
 
+    }
+
+    // --- Gestione delle trasformazioni per le figure ---
+    private void applyShapeTransformsToGc(GraphicsContext gc, AbstractShape shape) {
+        AbstractShape baseShape = getBaseShape(shape); // Ottieniamo la forma base (non decorata)
+        double centerX_world = baseShape.getX() + baseShape.getWidth() / 2;
+        double centerY_world = baseShape.getY() + baseShape.getHeight() / 2;
+        double angle = shape.getRotationAngle();
+        int scaleX = shape.getScaleX();
+        int scaleY = shape.getScaleY();
+
+        gc.translate(centerX_world, centerY_world);
+        if (scaleX == -1) {
+            gc.scale(-1, 1);
+        }
+        if (scaleY == -1) {
+            gc.scale(1, -1);
+        }
+        gc.rotate(angle);
     }
 
     // --- Gestori per i bottoni del menu File e Zoom ---
@@ -1468,7 +1706,7 @@ public class DrawingController {
 
     @FXML
     public void handleSelectText(ActionEvent event) {
-        initializeShapeSelection(new TextFactory(), false, false);
+        initializeShapeSelection(new TextFactory(), false, true); // disableFillPickerHint = false, disableBorderPickerHint = true
         textField.setDisable(false);
         if (textField != null) textField.requestFocus();
     }
@@ -1634,6 +1872,10 @@ public class DrawingController {
 
     public ScrollBar getVerticalScrollBar() {
         return verticalScrollBar;
+    }
+
+    public Spinner<Integer> getFontSizeSpinner() {
+        return fontSizeSpinner;
     }
 
 }

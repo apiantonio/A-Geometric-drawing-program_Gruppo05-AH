@@ -86,13 +86,37 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         super.postProcess(event); // Aggiorna il canvas
     }
 
+    // All'interno della classe MouseClickedHandler.java
+// in main/java/com/geometricdrawing/templateMethod/MouseClickedHandler.java
+
     private void handleRegularShapeCreation() {
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
 
         if (newShape instanceof TextShape && currentShapeFactory instanceof TextFactory) {
-            if (controller.getTextField() != null) {
-                String userText = controller.getTextField();
-                ((TextShape) newShape).setText(userText); // Set the text from the TextField
+            TextShape textShape = (TextShape) newShape; // Dichiara e casta newShape a TextShape
+
+            String userText = controller.getTextField(); // Il metodo getTextField() del controller restituisce il testo.
+            // Vedi DrawingController.java
+
+            // Debug: Stampa il testo ottenuto dal TextField
+            System.out.println("[MouseClickedHandler] Testo letto da TextField: '" + userText + "'");
+
+            if (userText != null) {
+                textShape.setText(userText);
+            } else {
+                textShape.setText(""); // Imposta una stringa vuota di default se userText è null
+            }
+
+            // Debug: Stampa il testo impostato nella TextShape
+            System.out.println("[MouseClickedHandler] Testo impostato in TextShape: '" + textShape.getText() + "'");
+
+            if (controller.getFontSizeSpinner() != null) { // Controlla se lo spinner esiste
+                Integer userFontSize = controller.getFontSizeSpinner().getValue();
+                if (userFontSize != null) {
+                    textShape.setFontSize(userFontSize);
+                    // Debug: Stampa la dimensione del font impostata
+                    System.out.println("[MouseClickedHandler] Dimensione font impostata in TextShape: " + userFontSize);
+                }
             }
         }
 
@@ -148,16 +172,23 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
     private AbstractShape applyDecorations(AbstractShape shape) {
         AbstractShape styledShape = shape;
-        //applica il colore di riempimento e il bordo se specificati
-        if (styledShape instanceof Line && border != null) {
-            styledShape = new BorderColorDecorator(styledShape, border);
-        } else if (!(styledShape instanceof Line) && border != null && fill != null) {
-            styledShape = new FillColorDecorator(styledShape, fill); // Applica prima il riempimento
-            styledShape = new BorderColorDecorator(styledShape, border); // Poi il bordo
-        } else if (border != null) { // Caso generico per solo bordo se il riempimento non è applicabile/selezionato
-            styledShape = new BorderColorDecorator(styledShape, border);
-        }
 
+        if (styledShape instanceof TextShape) {
+            if (fill != null) {
+                styledShape = new FillColorDecorator(styledShape, fill);
+            }
+        } else if (styledShape instanceof Line) {
+            if (border != null) {
+                styledShape = new BorderColorDecorator(styledShape, border);
+            }
+        } else {
+            if (fill != null) {
+                styledShape = new FillColorDecorator(styledShape, fill);
+            }
+            if (border != null) {
+                styledShape = new BorderColorDecorator(styledShape, border);
+            }
+        }
         return styledShape;
     }
 }
