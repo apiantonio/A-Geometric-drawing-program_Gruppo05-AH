@@ -18,7 +18,7 @@ class ShapeDecoratorTest {
         private double lastMoveY = 0;
 
         @Override
-        public void draw(GraphicsContext gc) {
+        public void drawShape(GraphicsContext gc) {
             drawCalled = true;
         }
     }
