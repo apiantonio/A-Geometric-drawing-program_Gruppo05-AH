@@ -1472,6 +1472,7 @@ public class DrawingController {
     public void handleSelectText(ActionEvent event) {
         initializeShapeSelection(new TextFactory(), false, false);
         textField.setDisable(false);
+        textField.setText("Scrivi qui...");
         if (textField != null) textField.requestFocus();
     }
 
