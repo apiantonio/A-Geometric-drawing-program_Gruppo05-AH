@@ -1,7 +1,9 @@
 package com.geometricdrawing.templateMethod;
 
 import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.HandleType; // Import HandleType
 import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.model.AbstractShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.input.MouseButton;
@@ -18,75 +20,86 @@ public class MousePressedHandler extends AbstractMouseHandler {
 
     @Override
     protected void preProcess(MouseEvent event) {
-        if (controller.getZoomHandler() == null) {
-            System.err.println("ZoomHandler non inizializzato in MousePressedHandler!");
+        currentShape = controller.getCurrentShape();
+
+        ZoomHandler zoomHandler = controller.getZoomHandler();
+        if (zoomHandler == null) {
             this.worldX = event.getX();
             this.worldY = event.getY();
         } else {
-            ZoomHandler zoomHandler = controller.getZoomHandler();
             Point2D worldCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
             this.worldX = worldCoords.getX();
             this.worldY = worldCoords.getY();
         }
 
-        controller.getShapeMenu().hide();
+        if (controller.getShapeMenu() != null) {
+            controller.getShapeMenu().hide();
+        }
 
-        // Verifica se siamo in modalità creazione
+        // --- controllo resize handle ---
+        if (currentShape != null) { // Controllo se c'è una shape selezionata
+            HandleType E_activeResizeHandle = controller.getHandleAtScreenPoint(currentShape, event.getX(), event.getY());
+            if (E_activeResizeHandle != null) {
+                controller.setActiveResizeHandle(E_activeResizeHandle);
+                controller.setResizeStartMousePos_screen(new Point2D(event.getX(), event.getY()));
+                controller.storeInitialResizeState(currentShape); // Salva lo stato iniziale della shape per il resize
+
+                if (controller.getRootPane() != null) controller.getRootPane().requestFocus();
+                return; // operazione di resize in corso
+            }
+        }
+
+
         if (controller.getCurrentShapeFactory() != null) {
-            // Non selezionare figure esistenti se stiamo creando una nuova figura
             return;
         }
 
-        currentShape = controller.getCurrentShape();
-        if (currentShape == null || !currentShape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD)) {
-            currentShape = controller.selectShapeAt(this.worldX, this.worldY);
-            controller.setCurrentShape(currentShape);
+        // Prova a selezionare una shape sotto il mouse
+        AbstractShape shapeUnderMouse = controller.selectShapeAt(this.worldX, this.worldY);
+        // selectShapeAt updates controller.currentShape and UI.
+
+        currentShape = controller.getCurrentShape(); // Aggiorna la variabile locale currentShape dopo selectShapeAt
+
+        if (currentShape != null) { // Se ora una shape è selezionata (nuova o già selezionata)
+            // Se il click è col tasto primario sulla shape (non su un handle), prepara il trascinamento dell'intera shape.
+            if (event.getButton() == MouseButton.PRIMARY && currentShape.containsPoint(this.worldX, this.worldY, SELECTION_THRESHOLD)) {
+                controller.setInitialDragShapeX_world(currentShape.getX());
+                controller.setInitialDragShapeY_world(currentShape.getY());
+
+                // dragOffset è la differenza tra mouse_world e origine della shape nel mondo
+                dragOffsetX = this.worldX - currentShape.getX();
+                controller.setDragOffsetX(dragOffsetX);
+                dragOffsetY = this.worldY - currentShape.getY();
+                controller.setDragOffsetY(dragOffsetY);
+            }
+            // Richiede il focus sul rootPane se presente
+            if (controller.getRootPane() != null) controller.getRootPane().requestFocus();
+            // Se il click è col tasto secondario, mostra il menu contestuale per la shape
+            if (event.getButton() == MouseButton.SECONDARY) {
+                controller.showContextMenu(event);
+            }
         }
+        // Se shapeUnderMouse era null, currentShape nel controller ora è null (deselezionata).
     }
 
     @Override
     protected void processEvent(MouseEvent event) {
-        // currentShape qui si riferisce alla variabile di istanza di MousePressedHandler,
-        // che è stata impostata in preProcess.
-        if (currentShape != null && currentShape.containsPoint(worldX, worldY, SELECTION_THRESHOLD)) {
-            // Il clic è su una forma esistente (o quella appena selezionata in preProcess)
-            // currentShape è già stato determinato in preProcess e trasformato in coordinate del mondo
-            controller.setInitialDragShapeX_world(currentShape.getX());
-            controller.setInitialDragShapeY_world(currentShape.getY());
-
-            dragOffsetX = this.worldX - currentShape.getX();
-            controller.setDragOffsetX(dragOffsetX);
-            dragOffsetY = this.worldY - currentShape.getY();
-            controller.setDragOffsetY(dragOffsetY);
-            canvas.setCursor(Cursor.CLOSED_HAND);
-
-            controller.getRootPane().requestFocus();
-            if (event.getButton() == MouseButton.SECONDARY) {
-                controller.showContextMenu(event);
-            }
-            // Calcola l'offset per il trascinamento
-            dragOffsetX = worldX - currentShape.getX();
-            controller.setDragOffsetX(dragOffsetX);
-            dragOffsetY = worldY - currentShape.getY();
-            controller.setDragOffsetY(dragOffsetY);
-            canvas.setCursor(Cursor.CLOSED_HAND);
-
-            controller.getRootPane().requestFocus();
-
-            // Se è un clic con il pulsante secondario, mostra il menu contestuale della forma
-            if (event.getButton() == MouseButton.SECONDARY) {
-                // Memorizza le coordinate del clic destro, potrebbero servire per "Incolla qui" dal menu della forma
-                controller.showContextMenu(event);
-            }
-        }
+        // La maggiore parte della logica è già gestita in preProcess.
     }
 
     @Override
     protected void postProcess(MouseEvent event) {
-        if (controller.getCurrentShapeFactory() == null) {
+        // Aggiorna
+        if (controller.getActiveResizeHandle() != null && controller.getShapeBeingResized() != null) {
+            controller.updateControlState(controller.getShapeBeingResized());
+            controller.updateSpinners(controller.getShapeBeingResized());
+        } else if (controller.getCurrentShapeFactory() == null) {
             controller.updateControlState(controller.getCurrentShape());
             controller.updateSpinners(controller.getCurrentShape());
-        }else controller.updateControlState(controller.getCurrentShape());
-        super.postProcess(event); // Questo chiama redrawCanvas
+        } else {
+            controller.updateControlState(null);
+            controller.updateSpinners(null);
+        }
+        super.postProcess(event); // chiama redrawCanvas
     }
 }
