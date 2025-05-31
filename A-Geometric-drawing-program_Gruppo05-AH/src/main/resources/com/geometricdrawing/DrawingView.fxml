@@ -209,9 +209,9 @@
                                                 <Insets bottom="2.0" />
                                              </VBox.margin>
                                              <children>
-                                                <MenuButton id="new_shape" contentDisplay="TOP" mnemonicParsing="false" prefHeight="72.0" prefWidth="54.0" stylesheets="@../../style.css" text="Forme">
+                                                <MenuButton id="new_shape" fx:id="shapeMenuButton" contentDisplay="TOP" mnemonicParsing="false" prefHeight="72.0" prefWidth="54.0" stylesheets="@../../style.css" text="Forme">
                                                    <graphic>
-                                                      <ImageView fitHeight="48.0" fitWidth="43.0" pickOnBounds="true" preserveRatio="true">
+                                                      <ImageView fitHeight="48.0" fitWidth="111.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>
                                                             <Image url="@../../icons/forme.png" />
                                                          </image>
@@ -259,7 +259,7 @@
                                                       <Insets right="2.0" />
                                                    </HBox.margin>
                                                 </MenuButton>
-                                                <Button contentDisplay="TOP" mnemonicParsing="false" onAction="#handleSelectText" stylesheets="@../../style.css" text="Testo">
+                                                <Button fx:id="textButton" contentDisplay="TOP" mnemonicParsing="false" onAction="#handleSelectText" stylesheets="@../../style.css" text="Testo">
                                                    <graphic>
                                                       <ImageView fitHeight="46.0" fitWidth="39.0" pickOnBounds="true" preserveRatio="true">
                                                          <image>

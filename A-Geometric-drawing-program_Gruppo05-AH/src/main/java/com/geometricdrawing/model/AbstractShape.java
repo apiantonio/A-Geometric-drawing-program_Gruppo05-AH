@@ -1,5 +1,6 @@
 package com.geometricdrawing.model;
 
+import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import java.io.*;
 
@@ -58,25 +59,41 @@ public abstract class AbstractShape implements Serializable{
      * @return true se il punto è all'interno della figura, false altrimenti
      */
     public boolean containsPoint(double x, double y, double threshold) {
-        // Poichè la rotazione avviene attorno al centro, lo calcolo
+        Point2D unrotatedPoint = unrotatePoint(x, y);
+        double unrotatedX = unrotatedPoint.getX();
+        double unrotatedY = unrotatedPoint.getY();
+
+        return isPointWithinBounds(unrotatedX, unrotatedY, threshold);
+    }
+
+    /**
+     * Applica la rotazione inversa a un punto per riportarlo al sistema di riferimento originale
+     */
+    protected Point2D unrotatePoint(double x, double y) {
         double centerX = this.x + this.width / 2;
         double centerY = this.y + this.height / 2;
 
-        // Faccio in modo che il centro coincida con l'origine del sistema
         double translatedX = x - centerX;
         double translatedY = y - centerY;
 
-        double angleRad = Math.toRadians(-rotationAngle);   // la rotazione deve avvenire nel senso opposto
+        double angleRad = Math.toRadians(-rotationAngle);
         double cos = Math.cos(angleRad);
         double sin = Math.sin(angleRad);
 
-        // Si applica la rotazione inversa per riportare il punto al sistema di riferimento originale
         double unrotatedX = translatedX * cos - translatedY * sin + centerX;
         double unrotatedY = translatedX * sin + translatedY * cos + centerY;
 
-        return unrotatedX >= this.x - threshold && unrotatedX <= this.x + this.width + threshold &&
-               unrotatedY >= this.y - threshold && unrotatedY <= this.y + this.height + threshold;
+        return new Point2D(unrotatedX, unrotatedY);
     }
+
+    /**
+     * Verifica se un punto si trova all'interno dei bounds della figura considerando la soglia
+     */
+    protected boolean isPointWithinBounds(double x, double y, double threshold) {
+        return x >= this.x - threshold && x <= this.x + this.width + threshold &&
+                y >= this.y - threshold && y <= this.y + this.height + threshold;
+    }
+
 
     public double getX() {
         return x;

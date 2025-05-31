@@ -29,6 +29,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
 import com.geometricdrawing.model.DrawingModel;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import com.geometricdrawing.model.Line;
@@ -54,6 +55,8 @@ public class DrawingController {
     @FXML private ScrollBar horizontalScrollBar;
     @FXML private ScrollBar verticalScrollBar;
 
+    @FXML private MenuButton shapeMenuButton; // Menu per le forme geometriche
+    @FXML private Button textButton;
     @FXML private Button deleteButton;
     @FXML private Button copyButton;
     @FXML private Button pasteButton;
@@ -563,16 +566,30 @@ public class DrawingController {
         spinner.setEditable(true);
 
         Button okButton = new Button("OK");
+        Button cancelButton = new Button("Annulla");
+
         okButton.setOnAction(e -> {
             int numVertici = spinner.getValue();
             // Reset dello stato del poligono
             isDrawingPolygon = true;
             tempPolygonPoints = new ArrayList<>(numVertici);
             initializeShapeSelection(new PolygonFactory(numVertici), false, false);
+
+            // Disabilita i controlli durante il disegno
+            disableControlsDuringPolygonDrawing();
+
             popupStage.close();
             System.out.println("DEBUG: temp points polygon: " + tempPolygonPoints);
             System.out.println("DEBUG: Numero di vertici impostato a " + numVertici);
         });
+
+        cancelButton.setOnAction(e -> {
+            popupStage.close(); // Non fa nulla, mantiene lo stato attuale
+        });
+
+        HBox buttonBox = new HBox(10);
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.getChildren().addAll(okButton, cancelButton);
 
         VBox layout = new VBox(15);
         layout.setPadding(new Insets(60));
@@ -585,30 +602,32 @@ public class DrawingController {
     }
 
     /**
-     * Controlla se la nuova figura, posizionata alle coordinate del mondo specificate,
-     * uscirebbe dai limiti del canvas.
-     * @param newShape La figura da controllare.
-     * @param worldX Coordinata X (del mondo) per il posizionamento.
-     * @param worldY Coordinata Y (del mondo) per il posizionamento.
-     * @return true se la figura è troppo vicina ai bordi o fuori, false altrimenti.
+     * Disabilita i controlli durante il disegno del poligono
      */
-    public boolean isTooClose(AbstractShape newShape, double worldX, double worldY) {
-        if (newShape == null || drawingCanvas == null || zoomHandler == null) return true;
+    private void disableControlsDuringPolygonDrawing() {
+        // Disabilita i menu se presenti
+        shapeMenuButton.setDisable(true);
+        textButton.setDisable(true);
+        // Disabilita il pulsante Annulla
+        undoButton.setDisable(true);
 
-        double shapeWidth = newShape.getWidth();
-        double shapeHeight = newShape.getHeight();
+        System.out.println("DEBUG: Controlli disabilitati durante il disegno del poligono.");
+    }
 
-        // Dimensioni del canvas in coordinate del mondo
-        double worldCanvasWidth = drawingCanvas.getWidth() / zoomHandler.getZoomFactor();
-        double worldCanvasHeight = drawingCanvas.getHeight() / zoomHandler.getZoomFactor();
+    /**
+     * Riabilita i controlli dopo il completamento o annullamento del poligono
+     */
+    public void enableControlsAfterPolygonDrawing() {
+        // Riabilita i menu se presenti
+        if (shapeMenuButton != null) shapeMenuButton.setDisable(false);
+        if (textButton != null) textButton.setDisable(false);
 
-        // Controlla se una qualsiasi parte della figura cade fuori dai limiti
-        if (worldX < 0 || worldY < 0 ||
-                worldX + shapeWidth > worldCanvasWidth ||
-                worldY + shapeHeight > worldCanvasHeight) {
-            return true; // Fuori dai limiti
+        // Riabilita il pulsante Annulla se ci sono comandi da annullare
+        if (undoButton != null) {
+            undoButton.setDisable(!commandManager.getCommandStack().isEmpty());
         }
-        return false; // All'interno dei limiti
+
+        System.out.println("DEBUG: Controlli riabilitati dopo il disegno del poligono.");
     }
 
     /**
@@ -772,7 +791,7 @@ public class DrawingController {
             // Verifico se ci sono comandi nello stack
             boolean hasUndoableCommands = !commandManager.getCommandStack().isEmpty();
             if (undoButton != null) {
-                undoButton.setDisable(!hasUndoableCommands);
+                undoButton.setDisable(!hasUndoableCommands || isDrawingPolygon);
             }
         }
 

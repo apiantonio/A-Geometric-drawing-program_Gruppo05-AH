@@ -156,6 +156,9 @@ public class MouseClickedHandler extends AbstractMouseHandler {
 
                 canvas.setCursor(Cursor.DEFAULT);
 
+                // Riabilita i controlli dopo il completamento del poligono
+                controller.enableControlsAfterPolygonDrawing();
+
                 System.out.println("DEBUG: Poligono completato e stato resettato.");
             }
         }

@@ -79,22 +79,16 @@ public class Polygon extends AbstractShape {
 
     @Override
     public boolean containsPoint(double x, double y, double threshold) {
-        // Aumenta il bounding box per la selezione
-        double expandedX = this.x - threshold;
-        double expandedY = this.y - threshold;
-        double expandedWidth = this.width + threshold;
-        double expandedHeight = this.height + threshold;
+        Point2D unrotatedPoint = unrotatePoint(x, y);
+        double unrotatedX = unrotatedPoint.getX();
+        double unrotatedY = unrotatedPoint.getY();
 
-        // Verifica prima il bounding box espanso
-        if (x >= expandedX && x <= expandedX + expandedWidth &&
-                y >= expandedY && y <= expandedY + expandedHeight) {
-            return isPointInPolygon(x, y);
-        }
-        return false;
+        return isPointInPolygon(unrotatedX, unrotatedY);
     }
 
     /**
-     * Verifica se un punto (x, y) è all'interno del poligono definito dai punti utilizzando l'algoritmo di ray-casting.
+     * Verifica se un punto (x, y) è all'interno del poligono definito dai punti
+     * utilizzando l'algoritmo di ray-casting.
      */
     private boolean isPointInPolygon(double x, double y) {
         boolean inside = false;

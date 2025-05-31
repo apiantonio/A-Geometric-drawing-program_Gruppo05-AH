@@ -34,7 +34,6 @@ public class MouseMovedHandler extends AbstractMouseHandler {
     protected void processEvent(MouseEvent event) {
         // se il mouse è in movimento ma non si sta trascinando o ridimensionando, aggiorna il cursore
         if (controller.isDragging() || controller.getActiveResizeHandle() != null) {
-
             return;
         }
 
