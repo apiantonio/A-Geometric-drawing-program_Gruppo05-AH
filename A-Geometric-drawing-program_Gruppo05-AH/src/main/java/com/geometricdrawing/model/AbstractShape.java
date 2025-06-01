@@ -186,6 +186,14 @@ public abstract class AbstractShape implements Serializable{
 
     public void rotateBy(double deltaAngle) {
         this.rotationAngle += deltaAngle;
+
+        // I passaggi di seguito vengono utilizzati per effettuare una normalizzazione dell'angolo
+        while (this.rotationAngle > 360) {
+            this.rotationAngle -= 360;
+        }
+        while (this.rotationAngle < -360) {
+            this.rotationAngle += 360;
+        }
     }
 
     //Utilizzato per copiare la figura nella clipboard

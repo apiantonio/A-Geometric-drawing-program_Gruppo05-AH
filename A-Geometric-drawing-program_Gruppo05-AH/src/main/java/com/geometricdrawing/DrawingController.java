@@ -71,6 +71,7 @@ public class DrawingController {
     // aggiunte per la gestione degli appunti e migliorare la user experience
     @FXML private Label cutCopyLabel;
     @FXML private Label emptyClipboardLabel;
+    @FXML private Label undoLabel;
 
     @FXML private CheckMenuItem toggleGrid; // Menu per mostrare/nascondere la griglia
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
@@ -284,7 +285,7 @@ public class DrawingController {
         }
 
         if(rotationSpinner != null) {
-            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-360, 360, 0, 1); //
+            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-Double.MAX_VALUE, Double.MAX_VALUE, 0, 1);
             rotationSpinner.setValueFactory(rotationValueFactory); //
             rotationSpinner.setEditable(true); //
             rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { //
@@ -890,12 +891,15 @@ public class DrawingController {
             enableBackground = false;
             enableRotation = false;
             enableMirroring = false;
+            // di default, i color picker sono disabilitati
+            enableFillPicker = false;
+            enableBorderPicker = false;
 
             // Di default, quando nessuna forma è selezionata, i controlli per il testo sono disabilitati
             enableTextField = false;
             enableFontSizeSpinner = false;
 
-            if (currentShapeFactory != null) { // Una factory è attiva, l'utente sta per creare una forma
+            if (currentShapeFactory != null) { // se l'utente sta per creare una forma
                 // Impostazioni di default per i color picker quando una factory è attiva
                 enableFillPicker = true;
                 enableBorderPicker = true;
@@ -903,18 +907,12 @@ public class DrawingController {
                 if (currentShapeFactory instanceof LineFactory) {
                     enableFillPicker = false; // Le linee non hanno riempimento
                 } else if (currentShapeFactory instanceof TextFactory) {
-                    enableFillPicker = true;  // Il colore del testo usa il fillPicker
                     enableBorderPicker = false; // Le TextShape non usano il borderPicker in questo design
                     enableTextField = true;
                     enableFontSizeSpinner = false;
                 } else {
                     return;
                 }
-            } else { // Nessuna forma selezionata E NESSUNA factory è attiva
-
-                enableFillPicker = true;
-                enableBorderPicker = true;
-
             }
         }
 
@@ -930,14 +928,8 @@ public class DrawingController {
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
         if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
-        if (textField != null) {
-            textField.setDisable(!enableTextField);
-            // If handleChangeTextContentAction is tied to a button, disable that button too.
-            // Example: if (changeTextButton != null) changeTextButton.setDisable(!enableTextField);
-        }
-        if (fontSizeSpinner != null) {
-            fontSizeSpinner.setDisable(!enableFontSizeSpinner);
-        }
+        if (textField != null) textField.setDisable(!enableTextField);
+        if (fontSizeSpinner != null) fontSizeSpinner.setDisable(!enableFontSizeSpinner);
         if (mirrorMenu != null) mirrorMenu.setDisable(!enableMirroring);
 
         // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
@@ -1091,6 +1083,19 @@ public class DrawingController {
     }
 
     /**
+     * Mostra una label temporanea (1 sec)
+     * per indicare che l'undo non è possibile se stai inserendo un poligono non regolare.
+     */
+    public void showUndoLabel() {
+        undoLabel.setVisible(true);
+
+        // Nasconde la label dopo 2 secondi
+        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        delay.setOnFinished(event -> undoLabel.setVisible(false));
+        delay.play();
+    }
+
+    /**
      * Gestisce l'azione di Incolla dal bottone (o scorciatoia CTRL+V),
      * che incolla con un offset di default.
      */
@@ -1150,8 +1155,7 @@ public class DrawingController {
         if (model != null && commandManager != null) {
             if(shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
             commandManager.undo(); // Esegue undo sull'ultimo comando
-            // Dopo l'undo, la figura selezionata potrebbe non esistere più o essere cambiata.
-            // È più sicuro deselezionare o rivalutare la selezione.
+
             setCurrentShape(null); // Deseleziona
             updateControlState(null);
             updateSpinners(null); // Resetta spinner
