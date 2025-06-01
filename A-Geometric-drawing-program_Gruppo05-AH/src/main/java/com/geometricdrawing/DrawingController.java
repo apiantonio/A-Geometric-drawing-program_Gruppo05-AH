@@ -515,7 +515,9 @@ public class DrawingController {
         }
         // Annulla con CTRL+Z
         if (KeyCombination.keyCombination("CTRL+Z").match(event)) {
-            handleUndo(new ActionEvent());
+            if (!isDrawingPolygon) {
+                handleUndo(new ActionEvent());
+            }
             event.consume();
         }
         // Incolla con CTRL+V (incolla con offset di default)
