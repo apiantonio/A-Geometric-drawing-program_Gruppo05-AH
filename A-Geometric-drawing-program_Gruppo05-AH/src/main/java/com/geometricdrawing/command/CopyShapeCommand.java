@@ -17,6 +17,8 @@ public class CopyShapeCommand implements Command {
     public void execute() {
         if (shapeToCopy != null && clipboardManager != null) {
             clipboardManager.copyToClipboard(shapeToCopy);
+            // Reset del contatore delle incollature quando si copia una nuova forma
+            PasteShapeCommand.resetPasteCount();
             operationPerformed = true; // L'operazione è stata eseguita
         } else {
             operationPerformed = false; // Nessuna operazione eseguita
