@@ -1,6 +1,6 @@
 package com.geometricdrawing.integration;
 
-import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.command.ChangeHeightCommand;
 import com.geometricdrawing.command.ChangeWidthCommand;
 import com.geometricdrawing.command.Command;

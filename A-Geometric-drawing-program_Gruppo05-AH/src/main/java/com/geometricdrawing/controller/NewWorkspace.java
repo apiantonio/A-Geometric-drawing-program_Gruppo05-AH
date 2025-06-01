@@ -1,4 +1,4 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
 import com.geometricdrawing.strategy.FileOperationContext;
 import com.geometricdrawing.strategy.SerializedSaveStrategy;

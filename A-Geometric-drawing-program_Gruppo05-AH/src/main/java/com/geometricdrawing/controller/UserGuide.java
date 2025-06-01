@@ -1,4 +1,4 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.ScrollPane;

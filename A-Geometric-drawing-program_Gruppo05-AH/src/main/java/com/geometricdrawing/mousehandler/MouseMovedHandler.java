@@ -1,8 +1,8 @@
-package com.geometricdrawing.templateMethod;
+package com.geometricdrawing.mousehandler;
 
-import com.geometricdrawing.DrawingController;
-import com.geometricdrawing.HandleType;
-import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.controller.DrawingController;
+import com.geometricdrawing.controller.HandleType;
+import com.geometricdrawing.controller.ZoomHandler;
 import com.geometricdrawing.model.AbstractShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;

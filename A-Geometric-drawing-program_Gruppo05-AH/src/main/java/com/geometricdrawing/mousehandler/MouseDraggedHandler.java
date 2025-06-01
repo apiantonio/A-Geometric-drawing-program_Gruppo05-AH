@@ -1,8 +1,8 @@
-package com.geometricdrawing.templateMethod;
+package com.geometricdrawing.mousehandler;
 
-import com.geometricdrawing.DrawingController;
-import com.geometricdrawing.HandleType;
-import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.controller.DrawingController;
+import com.geometricdrawing.controller.HandleType;
+import com.geometricdrawing.controller.ZoomHandler;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
 import com.geometricdrawing.model.TextShape;
@@ -40,46 +40,50 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         if (activeHandle != null && shapeToUpdate != null) {
             // logica di resize
             handleShapeResize(event, activeHandle, shapeToUpdate);
-        } else if (shapeToDragEntirely != null && event.getButton() == MouseButton.PRIMARY) {
-            // logica di trascinamento
-            if (!controller.isDragging()) {
-                controller.setStartDragX(event.getX());
-                controller.setStartDragY(event.getY());
-            }
-
-            ZoomHandler zoomHandler = controller.getZoomHandler();
-            if (zoomHandler == null || controller.getHorizontalScrollBar() == null || controller.getVerticalScrollBar() == null) { // Added null check for scrollbars
-                return;
-            }
-
-            Point2D worldMouseCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
-            // usiamo le coordinate del mouse in world per calcolare la nuova posizione della shape
-            double newWorldX = worldMouseCoords.getX() - controller.getDragOffsetX();
-            double newWorldY = worldMouseCoords.getY() - controller.getDragOffsetY();
-
-            // logica di clamping per evitare che la shape esca dai bordi del canvas
-            double currentShapeWidth = shapeToDragEntirely.getWidth();
-            double currentShapeHeight = shapeToDragEntirely.getHeight();
-            double worldCanvasWidth = canvas.getWidth() / zoomHandler.getZoomFactor();
-            double worldCanvasHeight = canvas.getHeight() / zoomHandler.getZoomFactor();
-            double currentScrollX = controller.getHorizontalScrollBar().getValue();
-            double currentScrollY = controller.getVerticalScrollBar().getValue();
-            double effectiveBorderMargin = AbstractMouseHandler.BORDER_MARGIN / zoomHandler.getZoomFactor();
-
-            double minClampedX = currentScrollX + effectiveBorderMargin - currentShapeWidth * AbstractMouseHandler.VISIBLE_SHAPE_PORTION;
-            // Sticking to user's original calculation for maxClampedX which did not subtract border margin at the far end
-            double maxClampedX = currentScrollX + worldCanvasWidth - currentShapeWidth * AbstractMouseHandler.HIDDEN_SHAPE_PORTION;
-            newWorldX = Math.max(minClampedX, Math.min(newWorldX, maxClampedX));
-
-            double minClampedY = currentScrollY + effectiveBorderMargin - currentShapeHeight * AbstractMouseHandler.VISIBLE_SHAPE_PORTION;
-            double maxClampedY = currentScrollY + worldCanvasHeight - currentShapeHeight * AbstractMouseHandler.HIDDEN_SHAPE_PORTION;
-            newWorldY = Math.max(minClampedY, Math.min(newWorldY, maxClampedY));
-
-
-            controller.getModel().moveShapeTo(shapeToDragEntirely, newWorldX, newWorldY);
+            return;
+        }
+        if (shapeToDragEntirely != null && event.getButton() == MouseButton.PRIMARY) {
+            handleShapeDrag(event, shapeToDragEntirely);
         }
     }
 
+    private void handleShapeDrag(MouseEvent event, AbstractShape shapeToDragEntirely) {
+        // logica di trascinamento
+        if (!controller.isDragging()) {
+            controller.setStartDragX(event.getX());
+            controller.setStartDragY(event.getY());
+        }
+
+        ZoomHandler zoomHandler = controller.getZoomHandler();
+        if (zoomHandler == null || controller.getHorizontalScrollBar() == null || controller.getVerticalScrollBar() == null) { // Added null check for scrollbars
+            return;
+        }
+
+        Point2D worldMouseCoords = zoomHandler.screenToWorld(event.getX(), event.getY());
+        // usiamo le coordinate del mouse in world per calcolare la nuova posizione della shape
+        double newWorldX = worldMouseCoords.getX() - controller.getDragOffsetX();
+        double newWorldY = worldMouseCoords.getY() - controller.getDragOffsetY();
+
+        // logica di clamping per evitare che la shape esca dai bordi del canvas
+        double currentShapeWidth = shapeToDragEntirely.getWidth();
+        double currentShapeHeight = shapeToDragEntirely.getHeight();
+        double worldCanvasWidth = canvas.getWidth() / zoomHandler.getZoomFactor();
+        double worldCanvasHeight = canvas.getHeight() / zoomHandler.getZoomFactor();
+        double currentScrollX = controller.getHorizontalScrollBar().getValue();
+        double currentScrollY = controller.getVerticalScrollBar().getValue();
+        double effectiveBorderMargin = AbstractMouseHandler.BORDER_MARGIN / zoomHandler.getZoomFactor();
+
+        double minClampedX = currentScrollX + effectiveBorderMargin - currentShapeWidth * AbstractMouseHandler.VISIBLE_SHAPE_PORTION;
+        // Sticking to user's original calculation for maxClampedX which did not subtract border margin at the far end
+        double maxClampedX = currentScrollX + worldCanvasWidth - currentShapeWidth * AbstractMouseHandler.HIDDEN_SHAPE_PORTION;
+        newWorldX = Math.max(minClampedX, Math.min(newWorldX, maxClampedX));
+
+        double minClampedY = currentScrollY + effectiveBorderMargin - currentShapeHeight * AbstractMouseHandler.VISIBLE_SHAPE_PORTION;
+        double maxClampedY = currentScrollY + worldCanvasHeight - currentShapeHeight * AbstractMouseHandler.HIDDEN_SHAPE_PORTION;
+        newWorldY = Math.max(minClampedY, Math.min(newWorldY, maxClampedY));
+
+        controller.getModel().moveShapeTo(shapeToDragEntirely, newWorldX, newWorldY);
+    }
 
     private void handleShapeResize(MouseEvent event, HandleType handleType, AbstractShape shapeToUpdate) {
         AbstractShape baseShapeToAnalyze = controller.getBaseShape(shapeToUpdate);
@@ -116,7 +120,7 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         double newH = iH;
         final double MIN_SIZE = 5.0; // Esistente: dimensione minima assoluta
 
-        // Gestione specifica per le LINEE (rimane invariata)
+        // Gestione specifica per le LINEE
         if (baseShapeToAnalyze instanceof Line) {
             Point2D initialStartPoint_world = new Point2D(iX, iY);
             Point2D initialEndPoint_world = new Point2D(iX + iW, iY + iH);
@@ -221,7 +225,6 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         double tentativeH = iH;
 
         // Calcola le dimensioni tentative in base al drag del mouse e all'handle
-
         switch (handleType) {
             case TOP_LEFT:
                 tentativeW = iW - localDeltaX;
@@ -256,6 +259,91 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                 // tentativeH rimane iH
                 break;
         }
+
+        // Nel metodo handleShapeResize, dopo il calcolo delle dimensioni tentative
+        // Aggiungi questo codice per mantenere fisso l'angolo superiore sinistro:
+
+        // Calcola l'offset necessario per mantenere fisso l'angolo superiore sinistro
+        double offsetX = 0;
+        double offsetY = 0;
+
+        switch (handleType) {
+            case TOP_LEFT:
+                // L'angolo superiore sinistro è già fisso, non serve offset
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case TOP_RIGHT:
+                // Solo la larghezza cambia, l'angolo sup-sx rimane fisso
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case BOTTOM_LEFT:
+                // Solo l'altezza cambia, l'angolo sup-sx rimane fisso
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case BOTTOM_RIGHT:
+                // Entrambe le dimensioni cambiano, l'angolo sup-sx rimane fisso
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case TOP_CENTER:
+                // Solo l'altezza cambia dal centro superiore
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case BOTTOM_CENTER:
+                // Solo l'altezza cambia dal centro inferiore
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case LEFT_CENTER:
+                // Solo la larghezza cambia dal centro sinistro
+                offsetX = 0;
+                offsetY = 0;
+                break;
+            case RIGHT_CENTER:
+                // Solo la larghezza cambia dal centro destro
+                offsetX = 0;
+                offsetY = 0;
+                break;
+        }
+
+        // Per figure ruotate/specchiate, calcola l'offset trasformato
+        if (iAngle != 0 || iScaleX != 1 || iScaleY != 1) {
+            // Calcola la differenza tra il centro della figura originale e quello della figura ridimensionata
+            double originalCenterX = iX + iW / 2;
+            double originalCenterY = iY + iH / 2;
+            double newCenterX = iX + tentativeW / 2;
+            double newCenterY = iY + tentativeH / 2;
+            
+            // Calcola l'offset del centro
+            double centerOffsetX = newCenterX - originalCenterX;
+            double centerOffsetY = newCenterY - originalCenterY;
+            
+            // Applica la trasformazione inversa all'offset per ottenere l'offset necessario
+            // nelle coordinate del mondo per mantenere fisso l'angolo superiore sinistro
+            double angleRad = Math.toRadians(iAngle);
+            double cosA = Math.cos(angleRad);
+            double sinA = Math.sin(angleRad);
+            
+            // Trasforma l'offset considerando rotazione e mirroring
+            double transformedOffsetX = (centerOffsetX * cosA + centerOffsetY * sinA) * iScaleX;
+            double transformedOffsetY = (-centerOffsetX * sinA + centerOffsetY * cosA) * iScaleY;
+            
+            // Aggiusta la posizione per mantenere fisso l'angolo superiore sinistro
+            newX = iX - transformedOffsetX;
+            newY = iY - transformedOffsetY;
+        } else {
+            // Per figure non trasformate, usa la logica semplice
+            newX = iX;
+            newY = iY;
+        }
+
+        // Aggiorna le dimensioni finali
+        newW = Math.max(tentativeW, MIN_SIZE);
+        newH = Math.max(tentativeH, MIN_SIZE);
 
         // Applica vincoli specifici per TextShape
         if (baseShapeToAnalyze instanceof TextShape textShape) {
@@ -321,7 +409,6 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         }
         // Se l'handle non ha modificato le dimensioni (es. handle non di resize, anche se questo metodo non dovrebbe essere chiamato),
         // newW e newH rimangono iW e iH. Se le ha modificate, ora sono clampate.
-
 
         // Calcola la nuova posizione (newX, newY) della forma.
         // Questa logica è quella originale e si basa sui localDeltaX/Y (movimento del mouse non clampato)

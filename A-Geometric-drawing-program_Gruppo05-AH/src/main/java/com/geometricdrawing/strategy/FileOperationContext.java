@@ -1,6 +1,6 @@
 package com.geometricdrawing.strategy;
 
-import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.model.DrawingModel;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;

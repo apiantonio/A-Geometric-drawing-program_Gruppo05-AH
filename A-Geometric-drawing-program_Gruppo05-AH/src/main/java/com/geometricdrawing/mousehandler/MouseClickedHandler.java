@@ -1,6 +1,6 @@
-package com.geometricdrawing.templateMethod;
+package com.geometricdrawing.mousehandler;
 
-import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.Command;
 import com.geometricdrawing.decorator.BorderColorDecorator;
@@ -10,13 +10,12 @@ import com.geometricdrawing.factory.ShapeFactory;
 import com.geometricdrawing.factory.TextFactory;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
-import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.controller.ZoomHandler;
 import com.geometricdrawing.model.Polygon;
 import com.geometricdrawing.model.TextShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
@@ -87,7 +86,7 @@ public class MouseClickedHandler extends AbstractMouseHandler {
     }
 
     // All'interno della classe MouseClickedHandler.java
-// in main/java/com/geometricdrawing/templateMethod/MouseClickedHandler.java
+// in main/java/com/geometricdrawing/mousehandler/MouseClickedHandler.java
 
     private void handleRegularShapeCreation() {
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);

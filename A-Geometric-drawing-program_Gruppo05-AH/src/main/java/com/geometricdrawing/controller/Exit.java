@@ -1,10 +1,9 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
 import com.geometricdrawing.strategy.FileOperationContext;
 import com.geometricdrawing.strategy.SerializedSaveStrategy;
 import javafx.application.Platform;
 
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;

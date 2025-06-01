@@ -1,8 +1,6 @@
 package com.geometricdrawing;
 
-import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.command.CommandManager;
-
+import com.geometricdrawing.controller.DrawingController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;

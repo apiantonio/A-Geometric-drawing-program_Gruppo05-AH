@@ -1,12 +1,13 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
+import com.geometricdrawing.GeometricDrawingApp;
 import com.geometricdrawing.command.*;
 import com.geometricdrawing.decorator.BorderColorDecorator;
 import com.geometricdrawing.decorator.FillColorDecorator;
 import com.geometricdrawing.decorator.ShapeDecorator;
 import com.geometricdrawing.factory.*;
 import com.geometricdrawing.model.TextShape;
-import com.geometricdrawing.templateMethod.*;
+import com.geometricdrawing.mousehandler.*;
 import com.geometricdrawing.strategy.*;
 import javafx.animation.PauseTransition;
 import javafx.collections.ListChangeListener;
@@ -1300,7 +1301,7 @@ public class DrawingController {
             grid.drawGrid(gc, scrollXWorld, scrollYWorld, viewPortWorldWidth, viewPortWorldHeight);
         }
 
-        drawTempPolygon(); // Disegna il poligono temporaneo se esiste
+
 
         // Disegna tutte le figure nel modello (l'ordine di disegno influisce sulla sovrapposizione visiva)
         // model.getShapes() di solito è in ordine di inserimento. Per un controllo Z-order più fine,
@@ -1321,6 +1322,10 @@ public class DrawingController {
                 }
             }
         }
+
+        // DOPO tutte le altre figure per farlo apparire sopra
+        drawTempPolygon(); // Disegna il poligono temporaneo se esiste
+
         gc.restore(); // Ripristina lo stato del gc precedente a save()
     }
 
@@ -1558,19 +1563,19 @@ public class DrawingController {
         // Normalizza l'angolo tra 0 e 360, poi mappa su una delle 8 direzioni per la scelta del cursore
         // Semplificazione: si scelgono i cursori che meglio rappresentano l'asse principale di azione
         // JavaFX offre cursori limitati, quindi questa è spesso un'approssimazione
-        switch (handleType) {
-            case TOP_LEFT:     return Cursor.NW_RESIZE;
-            case TOP_RIGHT:    return Cursor.NE_RESIZE;
-            case BOTTOM_LEFT:  return Cursor.SW_RESIZE;
-            case BOTTOM_RIGHT: return Cursor.SE_RESIZE;
-            case TOP_CENTER:   return Cursor.N_RESIZE;
-            case BOTTOM_CENTER:return Cursor.S_RESIZE;
-            case LEFT_CENTER:  return Cursor.W_RESIZE;
-            case RIGHT_CENTER: return Cursor.E_RESIZE;
-            case LINE_START:   return Cursor.W_RESIZE; // Si assume inizio linea orizzontale = ovest
-            case LINE_END:     return Cursor.E_RESIZE; // Si assume fine linea orizzontale = est
-            default:           return Cursor.DEFAULT;
-        }
+        return switch (handleType) {
+            case TOP_LEFT -> Cursor.NW_RESIZE;
+            case TOP_RIGHT -> Cursor.NE_RESIZE;
+            case BOTTOM_LEFT -> Cursor.SW_RESIZE;
+            case BOTTOM_RIGHT -> Cursor.SE_RESIZE;
+            case TOP_CENTER -> Cursor.N_RESIZE;
+            case BOTTOM_CENTER -> Cursor.S_RESIZE;
+            case LEFT_CENTER -> Cursor.W_RESIZE;
+            case RIGHT_CENTER -> Cursor.E_RESIZE;
+            case LINE_START -> Cursor.W_RESIZE; // Si assume inizio linea orizzontale = ovest
+            case LINE_END -> Cursor.E_RESIZE; // Si assume fine linea orizzontale = est
+            default -> Cursor.DEFAULT;
+        };
         // Una versione più avanzata ruoterebbe il tipo base di cursore.
     }
 
