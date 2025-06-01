@@ -789,7 +789,6 @@ public class DrawingController {
         boolean enableFillPicker = false;
         boolean enableBorderPicker = false;
         boolean enableDelete = false;
-        boolean enablePaste = false;
         boolean enableCopy = false;
         boolean enableCut = false;
         boolean enableForeground = false;
@@ -808,11 +807,6 @@ public class DrawingController {
             if (undoButton != null) {
                 undoButton.setDisable(!hasUndoableCommands || isDrawingPolygon);
             }
-        }
-
-        // Controllo contenuto appunti per Incolla
-        if (clipboardManager != null) {
-            enablePaste = clipboardManager.hasContent();
         }
 
         // se c'è una figura selezionata
@@ -932,39 +926,39 @@ public class DrawingController {
         if (fontSizeSpinner != null) fontSizeSpinner.setDisable(!enableFontSizeSpinner);
         if (mirrorMenu != null) mirrorMenu.setDisable(!enableMirroring);
 
-        // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
-        if (pasteButton != null) {
-            boolean wasEnabled = !pasteButton.isDisabled(); // com'era prima
-            pasteButton.setDisable(!enablePaste);           // aggiorna stato
-
-            // Se prima era abilitato e ora è disabilitato, mostra label
-            if (!firstTime && wasEnabled && !enablePaste) {
-                showClipboardEmptyLabel();
-            }
-        }
+        updatePasteControlsState(); // richiama il metodo che gestisce l'incolla che risulta più complesso
     }
 
     /**
-     * Aggiorna lo stato dei controlli di Incolla (bottone e voci di menu)
+     * Aggiorna lo stato dei controlli di Incolla (sia del bottone che delle voci nel contextmenu)
      * in base al contenuto degli appunti.
      */
     private void updatePasteControlsState() {
         boolean hasContent = clipboardManager != null && clipboardManager.hasContent();
-        // Bottone Incolla
+
+        // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
+            boolean wasEnabled = !pasteButton.isDisabled();
             pasteButton.setDisable(!hasContent);
+
+            // Se prima era abilitato e ora è disabilitato, mostra label
+            if (!firstTime && wasEnabled && !hasContent) {
+                showClipboardEmptyLabel();
+            }
         }
-        // Voce "Incolla" (con offset) nel menu contestuale delle figure
+
+        // Menu contestuale delle figure
         if (shapeMenu != null) {
             shapeMenu.getItems().stream()
-                    .filter(item -> "Incolla".equals(item.getText())) // Cerca "Incolla"
+                    .filter(item -> "Incolla".equals(item.getText()))
                     .findFirst()
                     .ifPresent(item -> item.setDisable(!hasContent));
         }
-        // Voce "Incolla qui" nel menu contestuale del canvas
+
+        // Menu contestuale del canvas
         if (canvasContextMenu != null) {
             canvasContextMenu.getItems().stream()
-                    .filter(item -> "Incolla qui".equals(item.getText())) // Cerca "Incolla qui"
+                    .filter(item -> "Incolla qui".equals(item.getText()))
                     .findFirst()
                     .ifPresent(item -> item.setDisable(!hasContent));
         }
@@ -1893,40 +1887,15 @@ public class DrawingController {
     }
 
 
-    public boolean isDrawingPolygon() {
-        return isDrawingPolygon;
-    }
-
+    public boolean isDrawingPolygon() { return isDrawingPolygon;}
     public double getInitialDragShapeX_world() { return initialDragShapeX_world; }
     public void setInitialDragShapeX_world(double initialDragShapeX_world) { this.initialDragShapeX_world = initialDragShapeX_world; }
     public double getInitialDragShapeY_world() { return initialDragShapeY_world; }
     public void setInitialDragShapeY_world(double initialDragShapeY_world) { this.initialDragShapeY_world = initialDragShapeY_world; }
-
-    public void setTempPolygonPoints(ArrayList<Point2D> arrayList) {
-        this.tempPolygonPoints = arrayList;
-    }
-
-    public ArrayList<Point2D> getTempPolygonPoints() {
-        return this.tempPolygonPoints;
-    }
-
-    public void setIsDrawingPolygon(boolean isDrawingPolygon) {
-        this.isDrawingPolygon = isDrawingPolygon;
-    }
-
-    public String getTextField() {
-        return this.textField.getText();
-    }
-    public ScrollBar getHorizontalScrollBar() {
-        return horizontalScrollBar;
-    }
-
-    public ScrollBar getVerticalScrollBar() {
-        return verticalScrollBar;
-    }
-
-    public Spinner<Integer> getFontSizeSpinner() {
-        return fontSizeSpinner;
-    }
-
+    public ArrayList<Point2D> getTempPolygonPoints() { return this.tempPolygonPoints; }
+    public void setIsDrawingPolygon(boolean isDrawingPolygon) { this.isDrawingPolygon = isDrawingPolygon; }
+    public String getTextField() { return this.textField.getText(); }
+    public ScrollBar getHorizontalScrollBar() { return horizontalScrollBar; }
+    public ScrollBar getVerticalScrollBar() { return verticalScrollBar; }
+    public Spinner<Integer> getFontSizeSpinner() { return fontSizeSpinner; }
 }
