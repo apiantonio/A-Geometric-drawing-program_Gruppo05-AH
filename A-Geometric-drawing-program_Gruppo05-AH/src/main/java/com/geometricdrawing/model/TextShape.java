@@ -12,7 +12,7 @@ import java.util.List;
 public class TextShape extends AbstractShape {
     private String text;
     private int fontSize;
-    private String fontFamily;
+    private final String fontFamily;
 
     public TextShape(double x, double y, double width, double height, String text, int fontSize) {
         super(x, y, width, height);

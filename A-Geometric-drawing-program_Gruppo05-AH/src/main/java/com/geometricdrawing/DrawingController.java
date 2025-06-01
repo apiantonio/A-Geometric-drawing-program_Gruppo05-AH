@@ -107,7 +107,6 @@ public class DrawingController {
     private Exit exit;
     private UserGuide userGuide;
 
-
     // Variabili per il trascinamento
     private double dragOffsetX;
     private double dragOffsetY;
@@ -298,18 +297,17 @@ public class DrawingController {
             configureNumericTextFormatter(rotationSpinner); //
         }
 
-        currentShapeFactory = null; //
-        updatePasteControlsState(); //
         if (fontSizeSpinner != null) {
             SpinnerValueFactory<Integer> fontSizeFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(6, 72, 12, 1); // Min, Max, Initial, Step
             fontSizeSpinner.setValueFactory(fontSizeFactory);
-            fontSizeSpinner.setEditable(true);
+            fontSizeSpinner.setEditable(false); // non permette di editare, così si risolve il problema del text formatter solo numeri interi positivi
             fontSizeSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
                 if (newValue != null && currentShape != null && getBaseShape(currentShape) instanceof TextShape) {
                     handleFontSizeChange(newValue);
                 }
             });
         }
+
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
         updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
 
@@ -320,7 +318,6 @@ public class DrawingController {
         // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
         onToggleGrid();
     }
-
 
     /**
      * Crea il menu contestuale per le figure (Elimina, Copia, Incolla con offset).
@@ -373,8 +370,7 @@ public class DrawingController {
         mirrorHorizontal.setGraphic(mirrorHorizontalImg);
         mirrorVertical.setGraphic(mirrorVerticalImg);
 
-        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem,
-                mirrorHorizontal, mirrorVertical);
+        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem, mirrorHorizontal, mirrorVertical);
     }
 
     /**
@@ -430,9 +426,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleUserGuide() {
-        userGuide.show();
-    }
+    private void handleUserGuide() { userGuide.show(); }
 
     /**
      * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).
@@ -532,7 +526,7 @@ public class DrawingController {
     }
 
     /**
-     * Prepara il controller per la creazione di una nuova figura.
+     * Prepara il controller per la creazione di una nuova figura e gestisce il binding alla creazione.
      * @param factory La factory per il tipo di figura da creare.
      * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
      * @param disableBorderPicker Se il border picker deve essere disabilitato per questa factory.
@@ -551,7 +545,14 @@ public class DrawingController {
         } else { // Per Rettangolo/Ellisse, il bordo è possibile
             borderPicker.setDisable(disableBorderPicker);
         }
-        // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
+
+        // Abilita il fontSizeSpinner se è attiva la factory del testo
+        if (factory instanceof TextFactory) {
+            fontSizeSpinner.setDisable(false);
+            textField.setDisable(false);
+            textField.setText("Scrivi qui..."); // Il testo di default che compare quando clicchi sul canvas se non inserisci nulla
+            textField.requestFocus();
+        }
 
         if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
     }
@@ -1225,15 +1226,11 @@ public class DrawingController {
             widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
             heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
             rotationSpinner.getValueFactory().setValue(0.0);
-            fontSizeSpinner.getValueFactory().setValue(12); // Dimensione font di default
 
-            // Se nessuna forma è selezionata E TextFactory NON è attiva, allora cancella il textField.
-            // Altrimenti, se TextFactory è attiva, il testo digitato dall'utente deve essere preservato.
-            if (!isTextFactoryActive) {
-                textField.setText("");
-            }
-            // Se TextFactory è attiva e nessuna forma è selezionata, il contenuto di textField
-            // (che l'utente sta digitando per la nuova forma) viene mantenuto.
+            // Se nessuna forma è selezionata E TextFactory NON è attiva, allora cancella il textField, altrimenti il testo viene mantenuto
+            if (!isTextFactoryActive) { textField.setText(""); }
+            // discorso analogo per la size del testo
+            if (!isTextFactoryActive) { fontSizeSpinner.getValueFactory().setValue(12);}
         }
     }
 
@@ -1735,6 +1732,12 @@ public class DrawingController {
             if (textShape.getFontSize() != newSize) {
                 ChangeFontSizeCommand cmd = new ChangeFontSizeCommand(model, textShape, newSize);
                 commandManager.executeCommand(cmd);
+
+                // Calcola e applica le nuove dimensioni del rettangolo
+                Point2D naturalSize = textShape.getNaturalTextBlockDimensions(Double.MAX_VALUE);
+                textShape.setWidth(naturalSize.getX());
+                textShape.setHeight(naturalSize.getY());
+
                 redrawCanvas();
             }
         }
@@ -1742,10 +1745,7 @@ public class DrawingController {
 
     @FXML
     public void handleSelectText(ActionEvent event) {
-        initializeShapeSelection(new TextFactory(), false, true); // disableFillPickerHint = false, disableBorderPickerHint = true
-        textField.setDisable(false);
-        textField.setText("Scrivi qui...");
-        if (textField != null) textField.requestFocus();
+        initializeShapeSelection(new TextFactory(), false, true); // solo colore di riempimento attivo
     }
 
     @FXML
@@ -1877,7 +1877,6 @@ public class DrawingController {
             }
         });
     }
-
 
     public boolean isDrawingPolygon() { return isDrawingPolygon;}
     public double getInitialDragShapeX_world() { return initialDragShapeX_world; }
