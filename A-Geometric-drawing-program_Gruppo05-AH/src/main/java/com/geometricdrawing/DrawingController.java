@@ -1151,7 +1151,7 @@ public class DrawingController {
     }
 
     /**
-     * gestisce l'azione di creazione di una nuova area di lavoro quando si clicca sul menu File -> Nuovo
+     * Gestisce l'azione di creazione di una nuova area di lavoro quando si clicca sul menu File -> Nuovo
      */
     @FXML
     public void handleNewWorkspace(ActionEvent event) {
@@ -1244,14 +1244,6 @@ public class DrawingController {
     public void showContextMenu(MouseEvent event) {
         // Mostra il menu solo se una figura è effettivamente selezionata
         if (shapeMenu != null && currentShape != null) {
-            updatePasteControlsState(); // Assicura che la voce "Incolla" sia aggiornata
-
-            boolean enableCut = currentShape != null;
-            shapeMenu.getItems().stream()
-                    .filter(item -> "Taglia".equals(item.getText()))
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!enableCut));
-
             shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
         }
     }
