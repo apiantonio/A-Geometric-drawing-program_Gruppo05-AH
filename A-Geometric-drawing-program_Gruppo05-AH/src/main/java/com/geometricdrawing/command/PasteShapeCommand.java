@@ -5,6 +5,7 @@ import com.geometricdrawing.model.DrawingModel;
 
 public class PasteShapeCommand implements Command {
     private static final double DEFAULT_OFFSET = 10.0;
+    private static int pasteCount = 0; // Contatore statico per tenere traccia delle incollature
     private final DrawingModel model;
     private final ClipboardManager clipboardManager;
     private AbstractShape pastedShape;
@@ -36,8 +37,11 @@ public class PasteShapeCommand implements Command {
                 if (useAbsoluteCoordinates) {
                     model.moveShapeTo(pastedShape, targetX, targetY);
                 } else {
-                    // Applica offset di default alla posizione originale della forma incollata
-                    model.moveShapeTo(this.pastedShape, this.pastedShape.getX() + DEFAULT_OFFSET, this.pastedShape.getY() + DEFAULT_OFFSET);
+                    // Applica offset cumulativo alla posizione originale della forma incollata
+                    pasteCount++;
+                    double offsetX = this.pastedShape.getX() + (DEFAULT_OFFSET * pasteCount);
+                    double offsetY = this.pastedShape.getY() + (DEFAULT_OFFSET * pasteCount);
+                    model.moveShapeTo(this.pastedShape, offsetX, offsetY);
                 }
                 model.addShape(this.pastedShape); //
             }
@@ -46,10 +50,14 @@ public class PasteShapeCommand implements Command {
         }
     }
 
+    // Metodo per resettare il contatore (ad esempio quando viene copiata una nuova forma)
+    public static void resetPasteCount() {
+        pasteCount = 0;
+    }
+
     public AbstractShape getPastedShape() {
         return pastedShape;
     }
-
 
     @Override
     public void undo() {
