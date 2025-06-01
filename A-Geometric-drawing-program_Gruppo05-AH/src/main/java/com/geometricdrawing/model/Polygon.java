@@ -79,29 +79,43 @@ public class Polygon extends AbstractShape {
 
     @Override
     public boolean containsPoint(double x, double y, double threshold) {
-        Point2D unrotatedPoint = unrotatePoint(x, y);
-        double unrotatedX = unrotatedPoint.getX();
-        double unrotatedY = unrotatedPoint.getY();
+        // Applica la trasformazione inversa completa al punto per riportarlo
+        // al sistema di coordinate originale del poligono (prima di qualsiasi trasformazione)
+        Point2D transformedPoint = inverseTransformPoint(x, y);
+        double transformedX = transformedPoint.getX();
+        double transformedY = transformedPoint.getY();
 
-        return isPointInPolygon(unrotatedX, unrotatedY);
+        // Ora verifica se il punto trasformato è dentro il poligono originale
+        // usando le coordinate originali dei vertici
+        return isPointInPolygon(transformedX, transformedY);
     }
 
     /**
-     * Verifica se un punto (x, y) è all'interno del poligono definito dai punti
+     * Verifica se un punto (x, y) è all'interno del poligono definito dai vertici originali
      * utilizzando l'algoritmo di ray-casting.
+     * Le coordinate del punto devono essere nel sistema di riferimento locale del poligono.
      */
     private boolean isPointInPolygon(double x, double y) {
+        if (vertices.size() < 3) {
+            return false;
+        }
+
+        // Calcola il centro del bounding box per convertire i vertici in coordinate locali
+        double centerX = this.x + this.width / 2;
+        double centerY = this.y + this.height / 2;
+
         boolean inside = false;
         int j = vertices.size() - 1; // indice del punto precedente
 
-        // esamina ogni coppia di vertici consecutivi del poligono e verifica se una linea
+        // Esamina ogni coppia di vertici consecutivi del poligono e verifica se una linea
         // orizzontale che passa per il punto (x,y) interseca il lato del poligono.
         // Ad ogni intersezione valida, lo stato "dentro/fuori" viene invertito.
         for (int i = 0; i < vertices.size(); i++) {
-            double xi = vertices.get(i).getX();
-            double yi = vertices.get(i).getY();
-            double xj = vertices.get(j).getX();
-            double yj = vertices.get(j).getY();
+            // Converti i vertici in coordinate locali relative al centro
+            double xi = vertices.get(i).getX() - centerX;
+            double yi = vertices.get(i).getY() - centerY;
+            double xj = vertices.get(j).getX() - centerX;
+            double yj = vertices.get(j).getY() - centerY;
 
             boolean intersects = (yi > y) != (yj > y); // il segmento attraversa la riga orizzontale a y
 
