@@ -524,7 +524,7 @@
                </ImageView>
             </graphic>
          </Label>
-         <Label fx:id="undoLabel" alignment="CENTER" layoutX="10.0" layoutY="10.0" prefHeight="32.0" prefWidth="346.0" style="-fx-background-color: #FFC10799; -fx-background-radius: 10;" text="Completa prima il poligono per annullare l'operazione!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="420.0">
+         <Label fx:id="undoLabel" alignment="CENTER" layoutX="10.0" layoutY="10.0" prefHeight="32.0" prefWidth="435.0" style="-fx-background-color: #FFC10740; -fx-background-radius: 10;" text="Completa il poligono per annullare l'operazione!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="354.0" AnchorPane.rightAnchor="354.0">
             <font>
                <Font size="16.0" />
             </font>

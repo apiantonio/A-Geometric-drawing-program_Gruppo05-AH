@@ -517,6 +517,8 @@ public class DrawingController {
         if (KeyCombination.keyCombination("CTRL+Z").match(event)) {
             if (!isDrawingPolygon) {
                 handleUndo(new ActionEvent());
+            } else {
+                showUndoLabel();
             }
             event.consume();
         }
@@ -1058,14 +1060,14 @@ public class DrawingController {
     }
 
     /**
-     * Mostra una label temporanea (1 sec)
+     * Mostra una label temporanea (1.5 sec)
      * per indicare la corretta esecuzione delle operazioni di Taglia/Copia.
      */
     public void showCutCopyLabel() {
         cutCopyLabel.setVisible(true);
 
         // Nasconde la label dopo 2 secondi (o quanto preferisci)
-        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
         delay.setOnFinished(event -> {
             cutCopyLabel.setVisible(false);
         });
@@ -1073,26 +1075,26 @@ public class DrawingController {
     }
 
     /**
-     * Mostra una label temporanea (1 sec)
+     * Mostra una label temporanea (1.5 sec)
      * per indicare che la sezione appunti è stata svuotata post undo
      */
     private void showClipboardEmptyLabel() {
         emptyClipboardLabel.setVisible(true);
 
-        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
         delay.setOnFinished(event -> emptyClipboardLabel.setVisible(false));
         delay.play();
     }
 
     /**
-     * Mostra una label temporanea (1 sec)
+     * Mostra una label temporanea (1.5 sec)
      * per indicare che l'undo non è possibile se stai inserendo un poligono non regolare.
      */
     public void showUndoLabel() {
         undoLabel.setVisible(true);
 
         // Nasconde la label dopo 2 secondi
-        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
         delay.setOnFinished(event -> undoLabel.setVisible(false));
         delay.play();
     }
