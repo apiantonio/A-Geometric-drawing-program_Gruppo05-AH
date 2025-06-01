@@ -789,7 +789,6 @@ public class DrawingController {
         boolean enableFillPicker = false;
         boolean enableBorderPicker = false;
         boolean enableDelete = false;
-        boolean enableCutUi;
         boolean enablePaste = false;
         boolean enableCopy = false;
         boolean enableCut = false;
@@ -822,7 +821,6 @@ public class DrawingController {
             AbstractShape baseShape = getBaseShape(shape);
             enableWidth = true;
             enableDelete = true;
-            enableCutUi = true;
             enableCopy = true;
             enableCut = true;
             enableBackground = true;
@@ -888,7 +886,6 @@ public class DrawingController {
             enableWidth = false;
             enableHeight = false;
             enableDelete = false;
-            enableCutUi = false; // Rinominata per chiarezza se diversa da enableCut
             enableCopy = false;
             enableCut = false;
             enableForeground = false;
@@ -926,7 +923,6 @@ public class DrawingController {
         if (fillPicker != null) fillPicker.setDisable(!enableFillPicker);
         if (borderPicker != null) borderPicker.setDisable(!enableBorderPicker);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
-        if (cutButton != null) cutButton.setDisable(!enableCutUi);
         if (copyButton != null) copyButton.setDisable(!enableCopy);
         if (cutButton != null) cutButton.setDisable(!enableCut);
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
@@ -945,13 +941,6 @@ public class DrawingController {
             if (!firstTime && wasEnabled && !enablePaste) {
                 showClipboardEmptyLabel();
             }
-        }
-
-        if (shapeMenu != null) {
-            shapeMenu.getItems().stream()
-                    .filter(item -> "Taglia".equals(item.getText()))
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!enableCutUi));
         }
     }
 
@@ -1093,7 +1082,6 @@ public class DrawingController {
     public void showUndoLabel() {
         undoLabel.setVisible(true);
 
-        // Nasconde la label dopo 2 secondi
         PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
         delay.setOnFinished(event -> undoLabel.setVisible(false));
         delay.play();
@@ -1264,11 +1252,11 @@ public class DrawingController {
         if (shapeMenu != null && currentShape != null) {
             updatePasteControlsState(); // Assicura che la voce "Incolla" sia aggiornata
 
-            boolean enableCutUi = currentShape != null;
+            boolean enableCut = currentShape != null;
             shapeMenu.getItems().stream()
                     .filter(item -> "Taglia".equals(item.getText()))
                     .findFirst()
-                    .ifPresent(item -> item.setDisable(!enableCutUi));
+                    .ifPresent(item -> item.setDisable(!enableCut));
 
             shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
         }
