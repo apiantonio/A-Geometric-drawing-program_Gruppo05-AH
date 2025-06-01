@@ -1,9 +1,7 @@
-package com.geometricdrawing.templateMethod;
+package com.geometricdrawing.mousehandler;
 
-import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.model.AbstractShape;
-import com.geometricdrawing.model.DrawingModel;
-import com.geometricdrawing.model.Line;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseEvent;
 

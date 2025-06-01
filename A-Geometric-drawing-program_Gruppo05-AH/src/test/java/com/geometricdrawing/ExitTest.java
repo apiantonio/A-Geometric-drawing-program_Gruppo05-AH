@@ -1,7 +1,8 @@
 package com.geometricdrawing;
 
+import com.geometricdrawing.controller.DrawingController;
+import com.geometricdrawing.controller.Exit;
 import com.geometricdrawing.strategy.FileOperationContext;
-import com.geometricdrawing.strategy.SerializedSaveStrategy;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.JFXPanel; // Per inizializzare il toolkit JavaFX

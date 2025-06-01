@@ -1,4 +1,4 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
 public enum HandleType {
     // Angoli

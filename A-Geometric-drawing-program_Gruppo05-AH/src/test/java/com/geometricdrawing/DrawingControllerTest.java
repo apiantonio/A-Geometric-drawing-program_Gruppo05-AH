@@ -1,10 +1,11 @@
 package com.geometricdrawing;
 
 import com.geometricdrawing.command.CommandManager;
+import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.DrawingModel;
 import com.geometricdrawing.model.Rectangle;
-import com.geometricdrawing.templateMethod.MousePressedHandler;
+import com.geometricdrawing.mousehandler.MousePressedHandler;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Button;
@@ -16,14 +17,13 @@ import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.File;
-import java.io.IOException;
+
 import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Spinner;
 

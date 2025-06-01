@@ -1,6 +1,6 @@
 package com.geometricdrawing.integration;
 
-import com.geometricdrawing.DrawingController;
+import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.command.AddShapeCommand;
 import com.geometricdrawing.command.Command;
 import com.geometricdrawing.command.CommandManager;
@@ -20,7 +20,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import org.junit.jupiter.api.*;
 

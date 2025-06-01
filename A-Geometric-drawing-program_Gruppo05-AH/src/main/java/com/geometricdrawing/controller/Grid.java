@@ -1,4 +1,4 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

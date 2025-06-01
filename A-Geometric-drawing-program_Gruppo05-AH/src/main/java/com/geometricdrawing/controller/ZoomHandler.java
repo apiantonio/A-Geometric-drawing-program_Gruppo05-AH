@@ -1,8 +1,6 @@
-package com.geometricdrawing;
+package com.geometricdrawing.controller;
 
-import com.geometricdrawing.DrawingController;
 import javafx.geometry.Point2D;
-import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ScrollBar;
 

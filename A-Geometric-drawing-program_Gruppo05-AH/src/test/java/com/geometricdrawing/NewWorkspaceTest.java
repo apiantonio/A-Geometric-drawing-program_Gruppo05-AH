@@ -1,5 +1,7 @@
 package com.geometricdrawing;
 
+import com.geometricdrawing.controller.DrawingController;
+import com.geometricdrawing.controller.NewWorkspace;
 import com.geometricdrawing.model.DrawingModel;
 import javafx.embed.swing.JFXPanel;
 import org.junit.jupiter.api.BeforeAll;

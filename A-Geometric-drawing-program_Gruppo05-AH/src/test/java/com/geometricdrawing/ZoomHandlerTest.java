@@ -1,5 +1,7 @@
 package com.geometricdrawing;
 
+import com.geometricdrawing.controller.DrawingController;
+import com.geometricdrawing.controller.ZoomHandler;
 import javafx.geometry.Point2D;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

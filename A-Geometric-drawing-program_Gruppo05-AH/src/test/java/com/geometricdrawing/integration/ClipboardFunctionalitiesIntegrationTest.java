@@ -1,7 +1,7 @@
 package com.geometricdrawing.integration;
 
-import com.geometricdrawing.DrawingController;
-import com.geometricdrawing.ZoomHandler;
+import com.geometricdrawing.controller.DrawingController;
+import com.geometricdrawing.controller.ZoomHandler;
 import com.geometricdrawing.command.*;
 import com.geometricdrawing.decorator.ShapeDecorator;
 import com.geometricdrawing.factory.ShapeFactory;
