@@ -332,6 +332,8 @@ public class DrawingController {
         MenuItem deleteItem = new MenuItem("Elimina");
         MenuItem foregroundItem = new MenuItem("Porta in primo piano");
         MenuItem backgroundItem = new MenuItem("Porta in secondo piano");
+        MenuItem mirrorHorizontal = new MenuItem("Capovolgi orizzontalmente");
+        MenuItem mirrorVertical = new MenuItem("Capovolgi verticalmente");
 
         // Azioni per le voci di menu
         deleteItem.setOnAction(e -> handleDeleteShape(new ActionEvent()));
@@ -340,6 +342,8 @@ public class DrawingController {
         pasteOffsetItem.setOnAction(e -> handlePasteShape(new ActionEvent()));
         foregroundItem.setOnAction(e -> handleForegroundShape(new ActionEvent()));
         backgroundItem.setOnAction(e -> handleBackgroundShape(new ActionEvent()));
+        mirrorHorizontal.setOnAction(e -> handleMirrorHorizontalShape(new ActionEvent()));
+        mirrorVertical.setOnAction(e -> handleMirrorVerticalShape(new ActionEvent()));
 
         // Icone per le voci di menu
         ImageView delimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/delCtxMenu.png")));
@@ -354,6 +358,10 @@ public class DrawingController {
         forgrndimg.setFitHeight(20); forgrndimg.setFitWidth(20);
         ImageView backgrndimg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/background.png")));
         backgrndimg.setFitHeight(20); backgrndimg.setFitWidth(20);
+        ImageView mirrorHorizontalImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/mirrorH.png")));
+        mirrorHorizontalImg.setFitHeight(20); mirrorHorizontalImg.setFitWidth(20);
+        ImageView mirrorVerticalImg = new ImageView(new Image(GeometricDrawingApp.class.getResourceAsStream("/icons/mirrorV.png")));
+        mirrorVerticalImg.setFitHeight(20); mirrorVerticalImg.setFitWidth(20);
 
         deleteItem.setGraphic(delimg);
         cutItem.setGraphic(cutimg);
@@ -361,8 +369,11 @@ public class DrawingController {
         pasteOffsetItem.setGraphic(pasteimg);
         foregroundItem.setGraphic(forgrndimg);
         backgroundItem.setGraphic(backgrndimg);
+        mirrorHorizontal.setGraphic(mirrorHorizontalImg);
+        mirrorVertical.setGraphic(mirrorVerticalImg);
 
-        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem);
+        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem,
+                mirrorHorizontal, mirrorVertical);
     }
 
     /**
@@ -856,6 +867,19 @@ public class DrawingController {
             if (shape.getZ() == model.getShapes().size() -1) {
                 enableForeground = false;
             }
+
+            // Se il menu contestuale è visibile
+            if (shapeMenu != null) {
+                // Scorri tutti gli item e abilita porta in primo/secondo piano sulla base delle variabili booleane
+                for (MenuItem item : shapeMenu.getItems()) {
+                    if (item.getText().equals("Porta in primo piano")) {
+                        item.setDisable(!enableForeground);
+                    } else if (item.getText().equals("Porta in secondo piano")) {
+                        item.setDisable(!enableBackground);
+                    }
+                }
+            }
+
         }  else { // Nessuna forma selezionata (shape == null)
             // Impostazioni di default per quando nessuna forma è selezionata
             enableWidth = false;

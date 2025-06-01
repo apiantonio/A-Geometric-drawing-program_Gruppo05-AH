@@ -25,7 +25,7 @@ public class MirrorShapeCommand implements Command {
 
     @Override
     public void undo() {
-        model.mirrorShape(shape, !horizontal);
+        model.mirrorShape(shape, horizontal);
     }
 
 }
