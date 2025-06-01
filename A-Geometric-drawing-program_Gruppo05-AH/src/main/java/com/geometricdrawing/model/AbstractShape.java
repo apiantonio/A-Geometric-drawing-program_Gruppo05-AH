@@ -52,46 +52,73 @@ public abstract class AbstractShape implements Serializable{
     /**
      * Metodo che controlla se un punto di coordinate (x,y) è presente nella figura.
      * Sono necessari controlli aggiuntivi per verificare che il punto sia nella figura
-     * specialmente se quest'ultima è stata in precedenza ruotata
+     * specialmente se quest'ultima è stata in precedenza ruotata e/o specchiata.
      * @param x coordinate lungo le ascisse
      * @param y coordinate lungo le ordinate
      * @param threshold distanza massima dalla figura per considerare il punto all'interno
      * @return true se il punto è all'interno della figura, false altrimenti
      */
     public boolean containsPoint(double x, double y, double threshold) {
-        Point2D unrotatedPoint = unrotatePoint(x, y);
-        double unrotatedX = unrotatedPoint.getX();
-        double unrotatedY = unrotatedPoint.getY();
+        // Prima applica la trasformazione inversa completa al punto
+        Point2D transformedPoint = inverseTransformPoint(x, y);
+        double transformedX = transformedPoint.getX();
+        double transformedY = transformedPoint.getY();
 
-        return isPointWithinBounds(unrotatedX, unrotatedY, threshold);
+        return isPointWithinBounds(transformedX, transformedY, threshold);
     }
 
+
     /**
-     * Applica la rotazione inversa a un punto per riportarlo al sistema di riferimento originale
+     * Applica la trasformazione inversa completa a un punto per riportarlo
+     * al sistema di riferimento originale della figura (senza rotazione e mirroring)
+     * @implSpec
+     * Le coordinate del punto (x, y) sono considerate rispetto al centro della figura,
+     * @return un Point2D che rappresenta le coordinate del punto trasformato rispetto al centro della figura originale
      */
-    protected Point2D unrotatePoint(double x, double y) {
+    protected Point2D inverseTransformPoint(double x, double y) {
         double centerX = this.x + this.width / 2;
         double centerY = this.y + this.height / 2;
 
-        double translatedX = x - centerX;
-        double translatedY = y - centerY;
+        // Trasla il punto rispetto al centro della figura
+        double localX = x - centerX;
+        double localY = y - centerY;
 
-        double angleRad = Math.toRadians(-rotationAngle);
+        // Applica la rotazione inversa, ma tenendo conto del mirroring
+        // Se c'è mirroring, l'angolo di rotazione deve essere aggiustato
+        double effectiveAngle = rotationAngle;
+
+        // Se c'è mirroring su X ma non su Y, o viceversa (non entrambi),
+        // la rotazione va in direzione opposta
+        if ((scaleX < 0 && scaleY > 0) || (scaleX > 0 && scaleY < 0)) {
+            effectiveAngle = -effectiveAngle;
+        }
+
+        double angleRad = Math.toRadians(-effectiveAngle);
         double cos = Math.cos(angleRad);
         double sin = Math.sin(angleRad);
 
-        double unrotatedX = translatedX * cos - translatedY * sin + centerX;
-        double unrotatedY = translatedX * sin + translatedY * cos + centerY;
+        double unrotatedX = localX * cos - localY * sin;
+        double unrotatedY = localX * sin + localY * cos;
 
-        return new Point2D(unrotatedX, unrotatedY);
+        // Applica il mirroring inverso
+        double unscaledX = unrotatedX / scaleX;
+        double unscaledY = unrotatedY / scaleY;
+
+        // Il punto risultante è in coordinate locali rispetto al centro della figura originale (non trasformata)
+        return new Point2D(unscaledX, unscaledY);
     }
 
     /**
      * Verifica se un punto si trova all'interno dei bounds della figura considerando la soglia
      */
     protected boolean isPointWithinBounds(double x, double y, double threshold) {
-        return x >= this.x - threshold && x <= this.x + this.width + threshold &&
-                y >= this.y - threshold && y <= this.y + this.height + threshold;
+        // Il punto trasformato è in coordinate centrate nell'origine,
+        // quindi controllo rispetto a un rettangolo centrato in (0,0)
+        double halfWidth = this.width / 2;
+        double halfHeight = this.height / 2;
+
+        return x >= -halfWidth - threshold && x <= halfWidth + threshold &&
+                y >= -halfHeight - threshold && y <= halfHeight + threshold;
     }
 
 
@@ -125,9 +152,7 @@ public abstract class AbstractShape implements Serializable{
 
     public int getScaleY() { return scaleY;}
 
-    public void setScaleY(int scaleY) {
-        this.scaleY = scaleY;
-    }
+    public void setScaleY(int scaleY) { this.scaleY = scaleY; }
 
     // sposta la figura a una nuova posizione (newX, newY)
     public void moveTo(double newX, double newY) {
