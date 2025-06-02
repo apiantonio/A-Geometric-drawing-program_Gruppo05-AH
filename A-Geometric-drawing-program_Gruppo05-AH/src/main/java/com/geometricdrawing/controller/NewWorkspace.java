@@ -53,7 +53,7 @@ public class NewWorkspace {
         });
     }
 
-    protected void createNewWorkspace() {
+    public void createNewWorkspace() {
         if (controller.getModel() != null) {
             controller.getModel().clear(); // Questo attiverà i listener nel DrawingController
         }
