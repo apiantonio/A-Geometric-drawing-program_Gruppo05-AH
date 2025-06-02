@@ -305,14 +305,12 @@ public class DrawingController {
         }
 
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
-        updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
-
         if (drawingCanvas != null && horizontalScrollBar != null && verticalScrollBar != null) {
             updateScrollBars();
         }
 
+        updateControlState(null); // updatePasteControlsState viene richiamato al suo interno
         firstTime = false;
-        updateControlState(null);
         // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
         onToggleGrid();
     }
@@ -1273,31 +1271,18 @@ public class DrawingController {
             grid.drawGrid(gc, scrollXWorld, scrollYWorld, viewPortWorldWidth, viewPortWorldHeight);
         }
 
-
-
-        // Disegna tutte le figure nel modello (l'ordine di disegno influisce sulla sovrapposizione visiva)
-        // model.getShapes() di solito è in ordine di inserimento. Per un controllo Z-order più fine,
-        // si potrebbe usare model.getShapesOrderedByZ() se l'ordine di disegno deve seguire Z.
-        // Qui, si assume che l'ordine di model.getShapes() sia corretto per il disegno.
-        // Disegna le forme (usano le loro coordinate del mondo; la trasformazione del gc gestisce la visualizzazione)
         for (AbstractShape shape : model.getShapes()) {
             if (shape != null) {
                 shape.draw(gc); // Il metodo draw della forma gestisce la sua posizione e rotazione
                 // rispetto al gc già trasformato (scalato e scrollato)
                 if (shape == currentShape) {
-                    // drawHighlightBorder DEVE disegnare rispetto alle coordinate del mondo della forma,
-                    // ma il gc è già trasformato. La logica interna di drawHighlightBorder
-                    // deve tenerne conto o deve essere passata al gc prima delle trasformazioni locali della forma.
-                    // Per ora, assumiamo che drawHighlightBorder si aspetti un gc già pronto per disegnare
-                    // alle coordinate del mondo della forma.
                     drawHighlightBorder(shape);
                 }
             }
         }
 
         // DOPO tutte le altre figure per farlo apparire sopra
-        drawTempPolygon(); // Disegna il poligono temporaneo se esiste
-
+        drawTempPolygon();
         gc.restore(); // Ripristina lo stato del gc precedente a save()
     }
 
@@ -1344,7 +1329,6 @@ public class DrawingController {
         }
         gc.restore();
     }
-
 
     /**
         * Disegna una maniglia di ridimensionamento per la figura selezionata.
@@ -1551,8 +1535,6 @@ public class DrawingController {
         // Una versione più avanzata ruoterebbe il tipo base di cursore.
     }
 
-
-
     /**
      * Aggiorna le scrollbar orizzontale e verticale in base al contenuto del canvas e al modello.
      * Calcola i valori minimi, massimi e la visibilità in base alle dimensioni del canvas e delle forme.
@@ -1617,7 +1599,6 @@ public class DrawingController {
         } else {
             horizontalScrollBar.setValue(contentMinX);
         }
-
 
         // Configurazione ScrollBar Verticale
         verticalScrollBar.setMin(contentMinY); //
