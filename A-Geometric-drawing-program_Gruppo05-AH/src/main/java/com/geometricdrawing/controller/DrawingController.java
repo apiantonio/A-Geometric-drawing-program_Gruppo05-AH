@@ -126,6 +126,8 @@ public class DrawingController {
     private boolean isUpdatedRotateSpinner = false;     // serve perchè altrimenti il listener viene chiamato anche
     // quando il valore dello spinner non è impostato dall'utente ma da codice
 
+    private boolean isUpdatingSpinnersProgrammatically = false; // Indica se gli spinner sono aggiornati da codice (per evitare loop infiniti)
+
     private HandleType activeResizeHandle = null;
     private Point2D resizeStartMousePos_screen; // Posizione del mouse all'inizio dello stretch (coordinate dello schermo)
     // Per lo stretch, memorizziamo le dimensioni e la posizione iniziale della figura
@@ -256,13 +258,14 @@ public class DrawingController {
             System.err.println("Errore: drawingCanvas non è stato iniettato da FXML!");
         }
 
-        // Inizializzazione Spinner per altezza e larghezza
         if (heightSpinner != null) {
             SpinnerValueFactory<Double> heightFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_HEIGHT, 1.0);
             heightSpinner.setValueFactory(heightFactory);
             heightSpinner.setEditable(true);
-            heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
-                if (newValue != null) handleDimensionChange(false, newValue); // false indica cambio altezza
+            heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                if (!isUpdatingSpinnersProgrammatically && newValue != null) {
+                    handleDimensionChange(false, newValue); // false indica cambio altezza
+                }
             });
             configureSpinnerFocusListener(heightSpinner);
             configureNumericTextFormatter(heightSpinner);
@@ -272,8 +275,10 @@ public class DrawingController {
             SpinnerValueFactory<Double> widthFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(1.0, 1000.0, ShapeFactory.DEFAULT_WIDTH, 1.0);
             widthSpinner.setValueFactory(widthFactory);
             widthSpinner.setEditable(true);
-            widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { // Listener per modifiche
-                if (newValue != null) handleDimensionChange(true, newValue); // true indica cambio larghezza
+            widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                if (!isUpdatingSpinnersProgrammatically && newValue != null) { // CONTROLLA LA FLAG
+                    handleDimensionChange(true, newValue); // true indica cambio larghezza
+                }
             });
             configureSpinnerFocusListener(widthSpinner);
             configureNumericTextFormatter(widthSpinner);
@@ -1180,7 +1185,6 @@ public class DrawingController {
      * Aggiorna i valori degli Spinner di larghezza e altezza in base alla figura selezionata.
      * @param shape La figura selezionata, o null.
      */
-    // In DrawingController.java
     public void updateSpinners(AbstractShape shape) {
         // Controlli iniziali per nullità degli spinner e del textField
         if (widthSpinner == null || heightSpinner == null || rotationSpinner == null || fontSizeSpinner == null ||
@@ -1190,41 +1194,42 @@ public class DrawingController {
             return;
         }
 
-        boolean isTextFactoryActive = (currentShapeFactory instanceof TextFactory);
+        isUpdatingSpinnersProgrammatically = true; // imposto flag per evitare loop infiniti
+        try {
+            boolean isTextFactoryActive = (currentShapeFactory instanceof TextFactory);
 
-        if (shape != null) { // C'è una forma selezionata
-            AbstractShape baseShape = getBaseShape(shape);
-            widthSpinner.getValueFactory().setValue(shape.getWidth());
+            if (shape != null) { // C'è una forma selezionata
+                AbstractShape baseShape = getBaseShape(shape);
+                widthSpinner.getValueFactory().setValue(shape.getWidth());
 
-            // Gestione dello spinner di rotazione (assicurati che isUpdatedRotateSpinner sia gestito correttamente se questo metodo è chiamato da altri posti)
-            isUpdatedRotateSpinner = true;
-            double angle = shape.getRotationAngle();
-            rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
-            isUpdatedRotateSpinner = false;
+                isUpdatedRotateSpinner = true; // Questa flag esiste già per la rotazione ed è corretta
+                double angle = shape.getRotationAngle();
+                rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
+                isUpdatedRotateSpinner = false;
 
-            if (baseShape instanceof Line) {
-                heightSpinner.getValueFactory().setValue(Math.max(1.0, baseShape.getHeight()));
-            } else {
-                heightSpinner.getValueFactory().setValue(baseShape.getHeight());
+                if (baseShape instanceof Line) {
+                    heightSpinner.getValueFactory().setValue(Math.max(1.0, baseShape.getHeight()));
+                } else {
+                    heightSpinner.getValueFactory().setValue(baseShape.getHeight());
+                }
+
+                if (baseShape instanceof TextShape textShapeInstance) {
+                    fontSizeSpinner.getValueFactory().setValue(textShapeInstance.getFontSize());
+                    textField.setText(textShapeInstance.getText());
+                } else {
+                    fontSizeSpinner.getValueFactory().setValue(12);
+                    textField.setText("");
+                }
+            } else { // Nessuna forma selezionata
+                widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
+                heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
+                rotationSpinner.getValueFactory().setValue(0.0);
+
+                if (!isTextFactoryActive) { textField.setText(""); }
+                if (!isTextFactoryActive) { fontSizeSpinner.getValueFactory().setValue(12);}
             }
-
-            if (baseShape instanceof TextShape textShapeInstance) {
-                fontSizeSpinner.getValueFactory().setValue(textShapeInstance.getFontSize());
-                textField.setText(textShapeInstance.getText());
-            } else {
-                // Una forma non-testuale è selezionata. Resetta i controlli per il testo.
-                fontSizeSpinner.getValueFactory().setValue(12); // Default
-                textField.setText(""); // Cancella il campo testo
-            }
-        } else { // Nessuna forma selezionata (shape == null)
-            widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
-            heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
-            rotationSpinner.getValueFactory().setValue(0.0);
-
-            // Se nessuna forma è selezionata E TextFactory NON è attiva, allora cancella il textField, altrimenti il testo viene mantenuto
-            if (!isTextFactoryActive) { textField.setText(""); }
-            // discorso analogo per la size del testo
-            if (!isTextFactoryActive) { fontSizeSpinner.getValueFactory().setValue(12);}
+        } finally {
+            isUpdatingSpinnersProgrammatically = false; // ripristino flag
         }
     }
 
