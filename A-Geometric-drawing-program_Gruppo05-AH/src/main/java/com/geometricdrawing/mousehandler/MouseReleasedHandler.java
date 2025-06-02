@@ -30,68 +30,94 @@ public class MouseReleasedHandler extends AbstractMouseHandler {
 
     @Override
     protected void processEvent(MouseEvent event) {
-        // Recupero l'handle di resize attivo e la shape che è stata ridimensionata (se presenti)
         HandleType activeHandle = controller.getActiveResizeHandle();
-        AbstractShape shapeThatWasResized = controller.getShapeBeingResized();
+        AbstractShape shapeThatWasResized = controller.getShapeBeingResized(); // Figura dopo la modifica
 
         if (activeHandle != null && shapeThatWasResized != null) {
-            // Se sto rilasciando dopo un resize, creo i comandi per undo/redo
+            // L'operazione era un ridimensionamento/stretch
             double finalX = shapeThatWasResized.getX();
             double finalY = shapeThatWasResized.getY();
             double finalW = shapeThatWasResized.getWidth();
             double finalH = shapeThatWasResized.getHeight();
 
-            // Recupero lo stato iniziale della shape (prima del resize)
+            // Recupera lo stato iniziale della figura (prima del resize) dal controller
             double initialX = controller.getInitialShapeX_world_resize();
             double initialY = controller.getInitialShapeY_world_resize();
             double initialW = controller.getInitialShapeWidth_world_resize();
             double initialH = controller.getInitialShapeHeight_world_resize();
 
-            List<Command> commands = new ArrayList<>();
+            // Determina se c'è stato un cambiamento effettivo in posizione o dimensioni
+            // Usa una soglia molto piccola per i confronti in virgola mobile
+            boolean hasChanged = (Math.abs(finalX - initialX) > 1e-7 ||
+                    Math.abs(finalY - initialY) > 1e-7 ||
+                    Math.abs(finalW - initialW) > 1e-7 ||
+                    Math.abs(finalH - initialH) > 1e-7);
 
-            // Se la posizione è cambiata in modo significativo, aggiungo il comando di spostamento
-            if (Math.abs(finalX - initialX) > 1e-3 || Math.abs(finalY - initialY) > 1e-3) {
-                MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), shapeThatWasResized, finalX, finalY);
-                moveCmd.setOldX(initialX); // Serve per l'undo: imposto la posizione iniziale
-                moveCmd.setOldY(initialY);
-                commands.add(moveCmd);
+            // Gestione specifica per Line, poiché width/height sono dx/dy
+            if (shapeThatWasResized instanceof com.geometricdrawing.model.Line &&
+                    (activeHandle == HandleType.LINE_START || activeHandle == HandleType.LINE_END)) {
+                // Per le linee, un cambiamento nella posizione del punto iniziale (finalX, finalY vs initialX, initialY)
+                // o nelle componenti del vettore (finalW, finalH vs initialW, initialH) costituisce uno stretch.
+                hasChanged = (Math.abs(finalX - initialX) > 1e-7 ||
+                        Math.abs(finalY - initialY) > 1e-7 ||
+                        Math.abs(finalW - initialW) > 1e-7 ||
+                        Math.abs(finalH - initialH) > 1e-7);
             }
 
-            // Se la larghezza è cambiata, aggiungo il comando di cambio larghezza
-            if (Math.abs(finalW - initialW) > 1e-3) {
-                ChangeWidthCommand widthCmd = new ChangeWidthCommand(controller.getModel(), shapeThatWasResized, finalW, initialW);
-                commands.add(widthCmd);
+
+            if (hasChanged) {
+                // Crea un singolo comando che incapsula l'intera operazione di stretch
+                // Assicurati che StretchShapeCommand sia importato correttamente
+                com.geometricdrawing.command.StretchShapeCommand stretchCmd = new com.geometricdrawing.command.StretchShapeCommand(
+                        controller.getModel(),
+                        shapeThatWasResized,
+                        initialX, initialY, initialW, initialH,
+                        finalX, finalY, finalW, finalH
+                );
+                controller.getCommandManager().executeCommand(stretchCmd);
+                // Rimuovi o commenta questa stampa in produzione
+                System.out.println("[DEBUG] MouseReleasedHandler: Added StretchShapeCommand. initialX=" + initialX + ", finalX=" + finalX +
+                        "; initialW=" + initialW + ", finalW=" + finalW +
+                        "; initialH=" + initialH + ", finalH=" + finalH +
+                        "; initialY=" + initialY + ", finalY=" + finalY);
+            } else {
+                // Rimuovi o commenta questa stampa in produzione
+                System.out.println("[DEBUG] MouseReleasedHandler: No significant change detected for StretchShapeCommand. " +
+                        "finalX=" + finalX + ", initialX=" + initialX +
+                        ", finalY=" + finalY + ", initialY=" + initialY +
+                        ", finalW=" + finalW + ", initialW=" + initialW +
+                        ", finalH=" + finalH + ", initialH=" + initialH);
             }
 
-            // Se l'altezza è cambiata (e non sto ridimensionando una Linea tramite i suoi capi), aggiungo il comando di cambio altezza
-            if (Math.abs(finalH - initialH) > 1e-3 && !(shapeThatWasResized instanceof Line &&
-                    (activeHandle == HandleType.LINE_START || activeHandle == HandleType.LINE_END))) {
-                // Le linee non cambiano "altezza" tramite questi handle
-                ChangeHeightCommand heightCmd = new ChangeHeightCommand(controller.getModel(), shapeThatWasResized, finalH, initialH);
-                commands.add(heightCmd);
-            }
-
-            // Eseguo tutti i comandi generati (uno per tipo di modifica)
-            if (!commands.isEmpty()) {
-                // Se avessi un CompositeCommand, potrei eseguire tutto in un colpo solo per l'undo atomico
-                for (Command cmd : commands) {
-                    controller.getCommandManager().executeCommand(cmd);
-                }
-            }
         } else if (controller.isDragging() && controller.getCurrentShape() != null) {
-            // Se sto rilasciando dopo un drag della shape intera, creo il comando di spostamento
+            // Questa parte gestisce il trascinamento normale (non stretch) e usa MoveShapeCommand.
             AbstractShape currentDraggedShape = controller.getCurrentShape();
             double finalDragX = currentDraggedShape.getX();
             double finalDragY = currentDraggedShape.getY();
-            double initialDragX = controller.getInitialDragShapeX_world(); // Salvato al mouse press
+            // Recupera lo stato iniziale del trascinamento dal controller
+            double initialDragX = controller.getInitialDragShapeX_world();
             double initialDragY = controller.getInitialDragShapeY_world();
 
-            // Se la posizione è cambiata, aggiungo il comando di spostamento
-            if (Math.abs(finalDragX - initialDragX) > 1e-3 || Math.abs(finalDragY - initialDragY) > 1e-3) {
-                MoveShapeCommand moveCmd = new MoveShapeCommand(controller.getModel(), currentDraggedShape, finalDragX, finalDragY);
-                moveCmd.setOldX(initialDragX);
+            // Se la posizione è cambiata significativamente durante il trascinamento
+            if (Math.abs(finalDragX - initialDragX) > 1e-7 || Math.abs(finalDragY - initialDragY) > 1e-7) {
+                // Assicurati che MoveShapeCommand sia importato correttamente
+                com.geometricdrawing.command.MoveShapeCommand moveCmd = new com.geometricdrawing.command.MoveShapeCommand(
+                        controller.getModel(),
+                        currentDraggedShape,
+                        finalDragX,
+                        finalDragY
+                );
+                moveCmd.setOldX(initialDragX); // Imposta esplicitamente le coordinate "vecchie" per l'undo
                 moveCmd.setOldY(initialDragY);
                 controller.getCommandManager().executeCommand(moveCmd);
+                // Rimuovi o commenta questa stampa in produzione
+                System.out.println("[DEBUG] MouseReleasedHandler: Added MoveShapeCommand for DRAG. initialX=" + initialDragX + ", finalX=" + finalDragX +
+                        "; initialY=" + initialDragY + ", finalY=" + finalDragY + ". Command's oldX set to " + initialDragX);
+            } else {
+                // Rimuovi o commenta questa stampa in produzione
+                System.out.println("[DEBUG] MouseReleasedHandler: MoveShapeCommand for DRAG NOT added. No significant position change. " +
+                        "finalDragX=" + finalDragX + ", initialDragX=" + initialDragX +
+                        ", finalDragY=" + finalDragY + ", initialDragY=" + initialDragY);
             }
         }
     }
