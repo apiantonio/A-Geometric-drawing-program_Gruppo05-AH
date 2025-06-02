@@ -94,7 +94,6 @@ public class ClipboardFunctionalitiesIntegrationTest {
                 controller = new DrawingController();
 
                 drawingCanvas = new Canvas();
-                // CORREZIONE: canvasContainer deve essere un AnchorPane come definito in DrawingController
                 canvasContainer = new AnchorPane(drawingCanvas);
                 canvasContainer.setPrefSize(CANVAS_WIDTH_FOR_TEST, CANVAS_HEIGHT_FOR_TEST);
 
@@ -128,8 +127,22 @@ public class ClipboardFunctionalitiesIntegrationTest {
                 pasteButton = new Button("Incolla");
                 undoButton = new Button("Annulla");
 
+                MenuItem mirrorHorizontal = new MenuItem("Specchia Orizzontalmente");
+                MenuItem mirrorVertical = new MenuItem("Specchia Verticalmente");
+
+                TextField textField = new TextField();
+                Spinner<Integer> fontSizeSpinner = new Spinner<>();
+                SpinnerValueFactory<Integer> fontSizeFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(6, 72, 12, 1);
+                fontSizeSpinner.setValueFactory(fontSizeFactory);
+                Spinner<Double> rotationSpinner = new Spinner<>();
+                SpinnerValueFactory<Double> rotationFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-Double.MAX_VALUE, Double.MAX_VALUE, 0, 1);
+                rotationSpinner.setValueFactory(rotationFactory);
+
+                CheckMenuItem toggleGrid = new CheckMenuItem("Mostra Griglia");
+                MenuButton gridOptions = new MenuButton();
+
                 setPrivateField(controller, "drawingCanvas", drawingCanvas);
-                setPrivateField(controller, "canvasContainer", canvasContainer); // Ora è un AnchorPane
+                setPrivateField(controller, "canvasContainer", canvasContainer);
                 setPrivateField(controller, "rootPane", rootPane);
                 setPrivateField(controller, "fillPicker", fillColorPicker);
                 setPrivateField(controller, "borderPicker", borderColorPicker);
@@ -142,6 +155,15 @@ public class ClipboardFunctionalitiesIntegrationTest {
                 setPrivateField(controller, "undoButton", undoButton);
                 setPrivateField(controller, "cutCopyLabel", new Label());
                 setPrivateField(controller, "emptyClipboardLabel", new Label());
+                setPrivateField(controller, "mirrorHorizontal", mirrorHorizontal);
+                setPrivateField(controller, "mirrorVertical", mirrorVertical);
+                setPrivateField(controller, "horizontalScrollBar", new ScrollBar());
+                setPrivateField(controller, "verticalScrollBar", new ScrollBar());
+                setPrivateField(controller, "textField", textField);
+                setPrivateField(controller, "fontSizeSpinner", fontSizeSpinner);
+                setPrivateField(controller, "rotationSpinner", rotationSpinner);
+                setPrivateField(controller, "gridOptions", gridOptions);
+                setPrivateField(controller, "toggleGrid", toggleGrid);
 
                 controller.setModel(model);
                 controller.setCommandManager(commandManager);

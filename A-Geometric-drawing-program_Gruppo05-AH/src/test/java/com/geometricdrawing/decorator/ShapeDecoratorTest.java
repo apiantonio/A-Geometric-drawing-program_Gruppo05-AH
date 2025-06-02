@@ -13,6 +13,7 @@ class ShapeDecoratorTest {
     private static class TestableShape extends AbstractShape {
         private boolean drawCalled = false;
         private double lastX = 0;
+        private boolean getWidthCalled = false;
         private double lastWidth = 0;
         private double lastMoveX = 0;
         private double lastMoveY = 0;
@@ -21,6 +22,26 @@ class ShapeDecoratorTest {
         public void drawShape(GraphicsContext gc) {
             drawCalled = true;
         }
+        @Override
+        public void setX(double x) {
+            this.lastX = x;
+            super.setX(x);
+        }
+
+        @Override
+        public double getWidth() {
+            getWidthCalled = true;
+            lastWidth = super.getWidth();
+            return lastWidth;
+        }
+
+        @Override
+        public void moveTo(double newX, double newY) {
+            this.lastMoveX = newX;
+            this.lastMoveY = newY;
+            super.moveTo(newX, newY);
+        }
+
     }
 
     private static class TestableDecorator extends ShapeDecorator {
@@ -45,7 +66,7 @@ class ShapeDecoratorTest {
         TestableShape innerShape = new TestableShape();
         TestableDecorator decorator = new TestableDecorator(innerShape);
 
-        decorator.draw(null);  // il GC può essere null per questo test
+        decorator.drawShape(null);  // Passiamo null perché nel test non usiamo realmente il GraphicsContext
 
         assert(decorator.wasDecorateCalled());  // verifica che decorate sia stato chiamato
         assert(innerShape.drawCalled);  // verifica che draw dell'inner shape sia stato chiamato

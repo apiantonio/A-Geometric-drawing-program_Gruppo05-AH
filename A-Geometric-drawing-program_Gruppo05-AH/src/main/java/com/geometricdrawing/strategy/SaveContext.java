@@ -10,27 +10,23 @@ import javafx.stage.Window;
 import java.io.File;
 import java.io.IOException;
 
-public class FileOperationContext {
+public class SaveContext {
 
     private final DrawingController controller;
-    private LoadStrategy loadStrategy;
     private SaveStrategy saveStrategy;
 
-    public FileOperationContext(DrawingController controller) {
+    public SaveContext(DrawingController controller) {
         if (controller == null) {
-            throw new IllegalArgumentException("DrawingController non può essere null per FileOperationContext");
+            throw new IllegalArgumentException("DrawingController non può essere null per SaveContext");
         }
         this.controller = controller;
     }
 
-    public void setStrategySave(SaveStrategy saveStrategy) {
+    public void setStrategy(SaveStrategy saveStrategy) {
         this.saveStrategy = saveStrategy;
     }
-    public void setStrategyLoad(LoadStrategy loadStrategy) {
-        this.loadStrategy = loadStrategy;
-    }
 
-    public boolean executeSave() {
+    public boolean execute() {
         if (saveStrategy == null) {
             System.err.println("Strategia di salvataggio non fornita al contesto.");
             controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Strategia di salvataggio non specificata.");
@@ -84,48 +80,5 @@ public class FileOperationContext {
         return false;
     }
 
-    public void executeLoad() {
-        if (loadStrategy == null) {
-            System.err.println("Strategia di caricamento non fornita al contesto.");
-            controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Strategia di caricamento non specificata.");
-            return;
-        }
-        Window currentWindow = controller.getWindow();
-        if (currentWindow == null) {
-            System.err.println("Finestra non disponibile per FileChooser.");
-            controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Interno", "Impossibile visualizzare la finestra di dialogo.");
-            return;
-        }
 
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(loadStrategy.getDialogTitle());
-        fileChooser.getExtensionFilters().add(loadStrategy.getExtensionFilter());
-        File file = fileChooser.showOpenDialog(currentWindow);
-
-        if (file != null) {
-            try {
-                DrawingModel newModel = new DrawingModel(); // Carica sempre in una nuova istanza del modello
-                loadStrategy.load(file, newModel);
-
-                // Delega gli aggiornamenti di stato al controller
-                controller.setModel(newModel);
-                controller.setCurrentShape(null);
-                controller.updateControlState(null);
-                controller.redrawCanvas();
-
-                System.out.println("File caricato con successo da " + file.getAbsolutePath());
-                controller.showAlertDialog(Alert.AlertType.INFORMATION, "Caricamento Riuscito", "Disegno caricato da:\n" + file.getName());
-            } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Errore durante il caricamento del file: " + e.getMessage());
-                e.printStackTrace();
-                controller.showAlertDialog(Alert.AlertType.ERROR, "Errore di Caricamento", "Impossibile caricare il file:\n" + e.getMessage());
-            } catch (Exception e) {
-                System.err.println("Errore imprevisto durante l'operazione di caricamento: " + e.getMessage());
-                e.printStackTrace();
-                controller.showAlertDialog(Alert.AlertType.ERROR, "Errore Imprevisto", "Si è verificato un errore imprevisto durante il caricamento:\n" + e.getMessage());
-            }
-        } else {
-            System.out.println("Operazione di caricamento annullata dall'utente.");
-        }
-    }
 }
