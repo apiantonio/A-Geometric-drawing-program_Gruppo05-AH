@@ -1346,7 +1346,7 @@ public class DrawingController {
     }
 
     /**
-        * Disegna una maniglia di ridimensionamento per la figura selezionata.
+     * Disegna una maniglia di ridimensionamento per la figura selezionata.
      */
     private void drawResizeHandle(double localX, double localY, HandleType type) {
         double handleRadiusInWorldUnits = HANDLE_RADIUS / zoomHandler.getZoomFactor();
@@ -1382,30 +1382,30 @@ public class DrawingController {
         int scaleX = selectedShape.getScaleX();
         int scaleY = selectedShape.getScaleY();
 
+
+        double effectiveAngle = angle;
+        if ((scaleX < 0 && scaleY > 0) || (scaleX > 0 && scaleY < 0)) {
+            effectiveAngle = -effectiveAngle;
+        }
+
         for (int i = 0; i < handleTypes.length; i++) {
             Point2D localCenter = handleLocalCenters[i];
 
-            // 1. Applica la scala intrinseca (mirroring) al centro della maniglia
             double scaledHcX = localCenter.getX() * scaleX;
             double scaledHcY = localCenter.getY() * scaleY;
 
-            // 2. Applica la rotazione della figura al centro della maniglia scalato
-            double angleRad = Math.toRadians(angle);
+            double angleRad = Math.toRadians(effectiveAngle); // Use effectiveAngle here
             double cosA = Math.cos(angleRad);
             double sinA = Math.sin(angleRad);
             double rotatedHcX = scaledHcX * cosA - scaledHcY * sinA;
             double rotatedHcY = scaledHcX * sinA + scaledHcY * cosA;
 
-            // 3. Trasla alle coordinate mondo aggiungendo il centro della figura
             double worldHcX = rotatedHcX + shapeCenterX_world;
             double worldHcY = rotatedHcY + shapeCenterY_world;
 
-            // 4. Converte il centro della maniglia in coordinate schermo
             Point2D screenHandleCenter = zoomHandler.worldToScreen(worldHcX, worldHcY);
 
-            // 5. Controlla la distanza in coordinate schermo
             double distSq = Math.pow(screenX - screenHandleCenter.getX(), 2) + Math.pow(screenY - screenHandleCenter.getY(), 2);
-            // Usa un raggio leggermente maggiore per facilitare il click sulle maniglie
             if (distSq <= Math.pow(HANDLE_RADIUS * 1.5, 2)) {
                 return handleTypes[i];
             }
@@ -1633,13 +1633,13 @@ public class DrawingController {
     // --- Gestione delle trasformazioni per le figure ---
     private void applyShapeTransformsToGc(GraphicsContext gc, AbstractShape shape) {
         AbstractShape baseShape = getBaseShape(shape); // Ottieniamo la forma base (non decorata)
-        double centerX_world = baseShape.getX() + baseShape.getWidth() / 2;
-        double centerY_world = baseShape.getY() + baseShape.getHeight() / 2;
+        double centerX = baseShape.getX() + baseShape.getWidth() / 2;
+        double centerY = baseShape.getY() + baseShape.getHeight() / 2;
         double angle = shape.getRotationAngle();
         int scaleX = shape.getScaleX();
         int scaleY = shape.getScaleY();
 
-        gc.translate(centerX_world, centerY_world);
+        gc.translate(centerX, centerY);
         if (scaleX == -1) {
             gc.scale(-1, 1);
         }

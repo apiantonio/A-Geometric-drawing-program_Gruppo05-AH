@@ -89,11 +89,9 @@ public abstract class AbstractShape implements Serializable{
         double localY = y - centerY;
 
         // Applica la rotazione inversa, ma tenendo conto del mirroring
-        // Se c'è mirroring, l'angolo di rotazione deve essere aggiustato
-        double effectiveAngle = rotationAngle;
-
         // Se c'è mirroring su X ma non su Y, o viceversa (non entrambi),
         // la rotazione va in direzione opposta
+        double effectiveAngle = rotationAngle;
         if ((scaleX < 0 && scaleY > 0) || (scaleX > 0 && scaleY < 0)) {
             effectiveAngle = -effectiveAngle;
         }
@@ -177,17 +175,15 @@ public abstract class AbstractShape implements Serializable{
     }
 
     public void setEndX(double endX) {
-        this.width = this.x + endX;
-        this.width -= this.x;
+        this.width = endX - x;
     }
 
     public double getEndY() {
-        return y - height;
+        return y + height;
     }
 
     public void setEndY(double endY) {
-        this.height = this.y - endY;
-        this.height -= this.y;
+        this.height = endY - y;
     }
 
     public double getWidth() {
