@@ -190,8 +190,6 @@ public class DrawingController {
             drawingCanvas.setOnMouseReleased(new MouseReleasedHandler(drawingCanvas, this)::handleMouseEvent); //
             drawingCanvas.setOnMouseMoved(new MouseMovedHandler(drawingCanvas, this)::handleMouseEvent); //
 
-            createShapeContextMenu();
-            createCanvasContextMenu();
             mirrorHorizontal.setOnAction(this::handleMirrorHorizontalShape);
             mirrorVertical.setOnAction(this::handleMirrorVerticalShape);
 
@@ -237,9 +235,6 @@ public class DrawingController {
             // Colori iniziali per i color picker
             fillPicker.setValue(Color.LIGHTGREEN);
             borderPicker.setValue(Color.ORANGE);
-
-            updateControlState(null);
-            firstTime = false;
 
             // Gestione focus e scorciatoie da tastiera
             rootPane.setFocusTraversable(true);
@@ -316,6 +311,8 @@ public class DrawingController {
             updateScrollBars();
         }
 
+        firstTime = false;
+        updateControlState(null);
         // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
         onToggleGrid();
     }
@@ -551,10 +548,8 @@ public class DrawingController {
         if (factory instanceof TextFactory) {
             fontSizeSpinner.setDisable(false);
             textField.setDisable(false);
-            textField.setText("Scrivi qui..."); // Il testo di default che compare quando clicchi sul canvas se non inserisci nulla
             textField.requestFocus();
         }
-
         if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
     }
 
@@ -896,21 +891,13 @@ public class DrawingController {
             enableTextField = false;
             enableFontSizeSpinner = false;
 
-            if (currentShapeFactory != null) { // se l'utente sta per creare una forma
-                // Impostazioni di default per i color picker quando una factory è attiva
-                enableFillPicker = true;
-                enableBorderPicker = true;
-
-                if (currentShapeFactory instanceof LineFactory) {
-                    enableFillPicker = false; // Le linee non hanno riempimento
-                } else if (currentShapeFactory instanceof TextFactory) {
-                    enableBorderPicker = false; // Le TextShape non usano il borderPicker in questo design
-                    enableTextField = true;
-                    enableFontSizeSpinner = false;
-                } else {
-                    return;
-                }
+            // I comandi seguenti ripristinano lo stato dei pulsanti relativi al testo quando sono deselezionati
+            if(! (currentShapeFactory instanceof TextFactory)) {
+                textField.setText("Scrivi qui..."); // Resetta il testo del campo
+                if (fontSizeSpinner != null) { fontSizeSpinner.getValueFactory().setValue(12); }
             }
+
+            // Il binding alla creazione della figura è gestito da InitializeShapeSelection
         }
 
         // Imposta lo stato dei controlli
@@ -1149,6 +1136,14 @@ public class DrawingController {
             updateSpinners(null); // Resetta spinner
             redrawCanvas();
             updateScrollBars();
+
+            // Nel caso in cui tu stavi inserendo del testo ma hai deciso di fare undo prima di completare l'inserimento
+            if (currentShapeFactory instanceof TextFactory && currentShape == null) {
+                textField.setText("Scrivi qui...");
+                fontSizeSpinner.getValueFactory().setValue(12);
+            }
+
+            currentShapeFactory = null;
         }
     }
 
