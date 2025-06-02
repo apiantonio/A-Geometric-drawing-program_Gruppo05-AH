@@ -316,7 +316,7 @@ public class DrawingController {
 
         updateControlState(null); // updatePasteControlsState viene richiamato al suo interno
         firstTime = false;
-        // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
+
         onToggleGrid();
     }
 
