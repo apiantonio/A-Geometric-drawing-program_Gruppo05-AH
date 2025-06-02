@@ -33,6 +33,11 @@ public abstract class AbstractShape implements Serializable{
     protected AbstractShape() {}
 
     public void draw(GraphicsContext gc) {
+        if (gc == null) {
+            drawShape(null);
+            System.err.println("GraphicsContext non inizializzato. Impossibile disegnare la figura.");
+            return;
+        }
         gc.save();
 
         double centerX = x + width / 2;

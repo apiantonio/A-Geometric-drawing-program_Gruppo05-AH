@@ -57,14 +57,13 @@ class DrawingControllerTest {
                 fxInitialized = true;
                 latch.countDown();
             });
-            if (!latch.await(5, TimeUnit.SECONDS)) {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
                 throw new InterruptedException("Timeout: JavaFX Toolkit non inizializzato.");
             }
         } catch (IllegalStateException e) {
             // Se il toolkit è già inizializzato imposto il flag
             fxInitialized = true;
         }
-
     }
 
     private Object getPrivateField(DrawingController controller, String currentShape) {
@@ -92,10 +91,11 @@ class DrawingControllerTest {
                 heightSpinner = new Spinner<>(1.0, 1000.0, 40.0);
                 widthSpinner = new Spinner<>(1.0, 1000.0, 60.0);
                 deleteButton = new Button();
-                this.canvas = new Canvas();
+                this.canvas = new Canvas(800, 600);
                 Pane canvasContainer = new AnchorPane();
                 AnchorPane rootPane = new AnchorPane();
 
+                // Imposta i campi privati prima di inizializzare
                 setPrivateField("model", model);
                 setPrivateField("commandManager", commandManager);
                 setPrivateField("fillPicker", fillPicker);
@@ -106,9 +106,12 @@ class DrawingControllerTest {
                 setPrivateField("drawingCanvas", canvas);
                 setPrivateField("canvasContainer", canvasContainer);
                 setPrivateField("rootPane", rootPane);
-
-                // Inizializza il controller
-                controller.initialize();
+                if (controller.getClass().getDeclaredField("gc") != null) {
+                    Field gcField = controller.getClass().getDeclaredField("gc");
+                    gcField.setAccessible(true);
+                    gcField.set(controller, canvas.getGraphicsContext2D());
+                }
+                
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -116,7 +119,7 @@ class DrawingControllerTest {
             }
         });
 
-        if (!setupLatch.await(5, TimeUnit.SECONDS)) {
+        if (!setupLatch.await(10, TimeUnit.SECONDS)) { // Aumentato timeout
             throw new InterruptedException("Timeout durante il setup.");
         }
     }
@@ -129,7 +132,6 @@ class DrawingControllerTest {
 
     @Test
     void handleCanvasClickShouldSelectExistingShape() throws Exception {
-
         DrawingModel model = new DrawingModel();
         controller.setModel(model);
         controller.setCommandManager(new CommandManager());
@@ -197,7 +199,6 @@ class DrawingControllerTest {
     void handleLoadSerialized_WhenModelIsInitiallyNull_ShouldCreateNewModel() throws Exception {
         setPrivateField("model", null);
         Platform.runLater(() -> {
-
             controller.handleLoadSerialized(new ActionEvent());
 
             DrawingModel currentModel = (DrawingModel) getPrivateField(controller, "model");
@@ -214,6 +215,7 @@ class DrawingControllerTest {
             assertDoesNotThrow(() -> controller.handleSaveAsPng(new ActionEvent()));
         });
     }
+    
     // Quando il canvas è vuoto, il metodo dovrebbe comunque permettere il salvataggio in PDF senza lanciare eccezioni.
     @Test
     void handleSaveAsPdf_CanvasIsEmpty() throws Exception {

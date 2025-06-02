@@ -2,7 +2,7 @@ package com.geometricdrawing;
 
 import com.geometricdrawing.controller.DrawingController;
 import com.geometricdrawing.controller.Exit;
-import com.geometricdrawing.strategy.FileOperationContext;
+import com.geometricdrawing.strategy.SaveContext;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.JFXPanel; // Per inizializzare il toolkit JavaFX
@@ -39,7 +39,7 @@ class ExitTest {
     @Mock
     private DrawingController drawingControllerMock;
     @Mock
-    private FileOperationContext fileOperationContextMock;
+    private SaveContext saveContext;
     private Exit exitUnderTest;
     private MockedStatic<Platform> platformMockedStatic;
 
@@ -66,7 +66,7 @@ class ExitTest {
     @BeforeEach
     void setUp() {
         exitUnderTest = new Exit(drawingControllerMock);
-        when(drawingControllerMock.getFileOperationContext()).thenReturn(fileOperationContextMock);
+        when(drawingControllerMock.getSaveContext()).thenReturn(saveContext);
         platformMockedStatic = Mockito.mockStatic(Platform.class);
     }
 
@@ -116,7 +116,10 @@ class ExitTest {
 
 
     @Test
-    void exit_whenUserChoosesSaveAndFocIsNotNull_shouldSaveAndExit() {
+    void exit_whenUserChoosesSaveAndSaveContextIsNotNull_shouldSaveAndExit() {
+        // Configura il mock per far sì che execute() ritorni true
+        when(saveContext.execute()).thenReturn(true);
+        
         // Usa try-with-resources per assicurare che il mockConstruction sia chiuso correttamente
         try (MockedConstruction<Alert> ignored = setupAlertConstructionAndStubbing(UserChoice.SAVE)) {
             exitUnderTest.exit(); // Qui viene creato l'Alert e scatta il mock
@@ -133,16 +136,16 @@ class ExitTest {
             verify(alertMockInstance).showAndWait();
 
             // Verifica le interazioni con il controller e il contesto di file
-            verify(drawingControllerMock).getFileOperationContext();
-            verify(fileOperationContextMock).executeSave();
+            verify(drawingControllerMock).getSaveContext();
+            verify(saveContext).execute();
             // Verifica che Platform.exit() sia stato chiamato una volta
             platformMockedStatic.verify(Platform::exit, times(1));
         }
     }
 
     @Test
-    void exit_whenUserChoosesSaveAndFocIsNull_shouldNotSaveAndNotExitFromSavePath() {
-        when(drawingControllerMock.getFileOperationContext()).thenReturn(null);
+    void exit_whenUserChoosesSaveAndSaveContextIsNull_shouldNotSaveAndNotExitFromSavePath() {
+        when(drawingControllerMock.getSaveContext()).thenReturn(null);
 
         try (MockedConstruction<Alert> ignored = setupAlertConstructionAndStubbing(UserChoice.SAVE)) {
 
@@ -150,8 +153,8 @@ class ExitTest {
 
             // Assert
             verify(alertMockInstance).showAndWait(); // L'alert viene comunque mostrato
-            verify(drawingControllerMock).getFileOperationContext(); // Il contesto viene richiesto
-            verify(fileOperationContextMock, never()).executeSave(); // Ma non si salva
+            verify(drawingControllerMock).getSaveContext(); // Il contesto viene richiesto
+            verify(saveContext, never()).execute(); // Ma non si salva
             platformMockedStatic.verify(Platform::exit, never()); // E non si esce da questo specifico percorso logico
         }
     }
@@ -162,7 +165,7 @@ class ExitTest {
             exitUnderTest.exit();
 
             verify(alertMockInstance).showAndWait();
-            verify(fileOperationContextMock, never()).executeSave();
+            verify(saveContext, never()).execute();
             platformMockedStatic.verify(Platform::exit, times(1));
         }
     }
@@ -173,7 +176,24 @@ class ExitTest {
             exitUnderTest.exit();
 
             verify(alertMockInstance).showAndWait();
-            verify(fileOperationContextMock, never()).executeSave();
+            verify(saveContext, never()).execute();
+            platformMockedStatic.verify(Platform::exit, never());
+        }
+    }
+
+    // Test aggiuntivo per il caso in cui saveContext.execute() restituisce false
+    @Test
+    void exit_whenUserChoosesSaveButExecuteFails_shouldNotExit() {
+        // Configura il mock per far sì che execute() ritorni false
+        when(saveContext.execute()).thenReturn(false);
+        
+        try (MockedConstruction<Alert> ignored = setupAlertConstructionAndStubbing(UserChoice.SAVE)) {
+            exitUnderTest.exit();
+
+            verify(alertMockInstance).showAndWait();
+            verify(drawingControllerMock).getSaveContext();
+            verify(saveContext).execute();
+            // Platform.exit() non dovrebbe essere chiamato se il salvataggio fallisce
             platformMockedStatic.verify(Platform::exit, never());
         }
     }

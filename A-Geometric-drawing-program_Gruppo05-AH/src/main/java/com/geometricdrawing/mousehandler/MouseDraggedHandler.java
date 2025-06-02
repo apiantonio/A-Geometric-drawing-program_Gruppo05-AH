@@ -103,7 +103,6 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         double screenDeltaX = currentScreenMousePos.getX() - startScreenMousePos.getX();
         double screenDeltaY = currentScreenMousePos.getY() - startScreenMousePos.getY();
 
-        // Convertiamo le coordinate dello schermo in coordinate del mondo
         double worldDeltaXUnrotated = screenDeltaX / zoomHandler.getZoomFactor();
         double worldDeltaYUnrotated = screenDeltaY / zoomHandler.getZoomFactor();
 
@@ -114,356 +113,241 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         double localDeltaX = (worldDeltaXUnrotated * cosA_inv - worldDeltaYUnrotated * sinA_inv) / iScaleX;
         double localDeltaY = (worldDeltaXUnrotated * sinA_inv + worldDeltaYUnrotated * cosA_inv) / iScaleY;
 
-        double newX = iX;
-        double newY = iY;
-        double newW = iW;
-        double newH = iH;
-        final double MIN_SIZE = 5.0; // Esistente: dimensione minima assoluta
+        // Valori finali da calcolare e applicare
+        double finalX = iX;
+        double finalY = iY;
+        double finalW = iW;
+        double finalH = iH;
 
-        // Gestione specifica per le LINEE
+        final double MIN_SIZE = 5.0;
+        final double MAX_DIMENSION_ALLOWED = 1000.0; // Limite massimo per larghezza/altezza
+
         if (baseShapeToAnalyze instanceof Line) {
+            final double MAX_LINE_LENGTH_ALLOWED = 1000.0;
+
             Point2D initialStartPoint_world = new Point2D(iX, iY);
             Point2D initialEndPoint_world = new Point2D(iX + iW, iY + iH);
 
-            double lineVecInitialX = iW;
-            double lineVecInitialY = iH;
-            double lineInitialLength = Math.sqrt(lineVecInitialX * lineVecInitialX + lineVecInitialY * lineVecInitialY);
-            System.out.printf("  [DEBUG] Vettore Linea Iniziale: vecX=%.2f, vecY=%.2f, lunghezza=%.2f%n", lineVecInitialX, lineVecInitialY, lineInitialLength);
-
+            // Calcola il vettore unitario della linea iniziale per mantenere la direzione
             double lineUnitVecX = 0, lineUnitVecY = 0;
-            if (lineInitialLength > 1e-6) {
-                lineUnitVecX = lineVecInitialX / lineInitialLength;
-                lineUnitVecY = lineVecInitialY / lineInitialLength;
-            } else {
+            double initialLength = Math.sqrt(iW * iW + iH * iH);
+            if (initialLength > 1e-6) {
+                lineUnitVecX = iW / initialLength;
+                lineUnitVecY = iH / initialLength;
+            } else { // Se la linea iniziale ha lunghezza zero, usa l'angolo della forma o una direzione di default
                 lineUnitVecX = Math.cos(Math.toRadians(iAngle));
                 lineUnitVecY = Math.sin(Math.toRadians(iAngle));
                 if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6) {
-                    lineUnitVecX = 1.0;
-                    lineUnitVecY = 0.0;
+                    lineUnitVecX = 1.0; // Default orizzontale
                 }
-                System.out.println("  [DEBUG] Linea con lunghezza zero, usato fallback per versore direzione.");
             }
-            System.out.printf("  [DEBUG] Versore Direzione Linea: uX=%.2f, uY=%.2f%n", lineUnitVecX, lineUnitVecY);
 
+            // Proiezione del delta del mouse sull'asse della linea
             double dragMagnitudeAlongLineAxis = worldDeltaXUnrotated * lineUnitVecX + worldDeltaYUnrotated * lineUnitVecY;
-            System.out.printf("  [DEBUG] Magnitudo Drag Proiettata su Asse Linea: %.2f%n", dragMagnitudeAlongLineAxis);
-
+            // Correzione per mirroring (semplificata, come nel codice originale)
             if (iAngle == 0) {
-                if (Math.abs(lineUnitVecX) > Math.abs(lineUnitVecY)) {
+                if (Math.abs(lineUnitVecX) > Math.abs(lineUnitVecY)) { // Prevalentemente orizzontale
                     if (iScaleX != 0) dragMagnitudeAlongLineAxis /= iScaleX;
-                } else if (Math.abs(lineUnitVecY) > 0) {
+                } else if (Math.abs(lineUnitVecY) > 0) { // Prevalentemente verticale
                     if (iScaleY != 0) dragMagnitudeAlongLineAxis /= iScaleY;
                 }
             }
-            System.out.printf("  [DEBUG] Magnitudo Drag (dopo tentativo correzione mirroring): %.2f%n", dragMagnitudeAlongLineAxis);
-
 
             double stretchVecWorldX = dragMagnitudeAlongLineAxis * lineUnitVecX;
             double stretchVecWorldY = dragMagnitudeAlongLineAxis * lineUnitVecY;
-            System.out.printf("  [DEBUG] Vettore Stiramento Mondo: sX=%.2f, sY=%.2f%n", stretchVecWorldX, stretchVecWorldY);
+
+            double tempFinalX = iX, tempFinalY = iY, tempFinalW = iW, tempFinalH = iH;
 
             if (handleType == HandleType.LINE_START) {
-                newX = initialStartPoint_world.getX() + stretchVecWorldX;
-                newY = initialStartPoint_world.getY() + stretchVecWorldY;
-                newW = initialEndPoint_world.getX() - newX;
-                newH = initialEndPoint_world.getY() - newY;
+                tempFinalX = initialStartPoint_world.getX() + stretchVecWorldX;
+                tempFinalY = initialStartPoint_world.getY() + stretchVecWorldY;
+                tempFinalW = initialEndPoint_world.getX() - tempFinalX;
+                tempFinalH = initialEndPoint_world.getY() - tempFinalY;
             } else if (handleType == HandleType.LINE_END) {
-                newX = initialStartPoint_world.getX();
-                newY = initialStartPoint_world.getY();
+                // tempFinalX, tempFinalY rimangono iX, iY (origine della linea)
                 double newEndX = initialEndPoint_world.getX() + stretchVecWorldX;
                 double newEndY = initialEndPoint_world.getY() + stretchVecWorldY;
-                newW = newEndX - newX;
-                newH = newEndY - newY;
+                tempFinalW = newEndX - tempFinalX;
+                tempFinalH = newEndY - tempFinalY;
             } else {
-                System.out.println("  [DEBUG] HandleType non valido per Linea: " + handleType);
-                return;
+                return; // Handle non valido per la linea
             }
-            System.out.printf("  [DEBUG] Calcolato Pre-MIN_SIZE: nX=%.2f, nY=%.2f, nW=%.2f, nH=%.2f%n", newX, newY, newW, newH);
 
-            double currentLength = Math.sqrt(newW * newW + newH * newH);
-            System.out.printf("  [DEBUG] Lunghezza Calcolata: %.2f, MIN_SIZE: %.2f%n", currentLength, MIN_SIZE);
+            double currentLength = Math.sqrt(tempFinalW * tempFinalW + tempFinalH * tempFinalH);
+            double targetLength = currentLength;
 
-            if (currentLength < MIN_SIZE) {
-                System.out.println("  [DEBUG] Lunghezza calcolata < MIN_SIZE.");
+            if (targetLength > MAX_LINE_LENGTH_ALLOWED) {
+                targetLength = MAX_LINE_LENGTH_ALLOWED;
+            }
+            if (targetLength < MIN_SIZE) {
+                targetLength = MIN_SIZE;
+            }
+
+            if (Math.abs(currentLength - targetLength) > 1e-6) { // Se è necessario un aggiustamento della lunghezza
                 if (currentLength > 1e-6) {
-                    double scaleFactorToMin = MIN_SIZE / currentLength;
-                    System.out.printf("    [DEBUG] scaleFactorToMin: %.2f%n", scaleFactorToMin);
-                    if (handleType == HandleType.LINE_START) {
-                        double vecX_E_to_nS = newX - initialEndPoint_world.getX();
-                        double vecY_E_to_nS = newY - initialEndPoint_world.getY();
-                        vecX_E_to_nS *= scaleFactorToMin;
-                        vecY_E_to_nS *= scaleFactorToMin;
-                        newX = initialEndPoint_world.getX() + vecX_E_to_nS;
-                        newY = initialEndPoint_world.getY() + vecY_E_to_nS;
-                        newW = initialEndPoint_world.getX() - newX;
-                        newH = initialEndPoint_world.getY() - newY;
-                    } else { // HandleType.LINE_END
-                        newW *= scaleFactorToMin;
-                        newH *= scaleFactorToMin;
+                    double scale = targetLength / currentLength;
+                    tempFinalW *= scale;
+                    tempFinalH *= scale;
+                } else if (targetLength > 0) {
+
+                    double dirX = worldDeltaXUnrotated, dirY = worldDeltaYUnrotated;
+                    double dragLen = Math.sqrt(dirX*dirX + dirY*dirY);
+                    if (dragLen > 1e-6) {
+                        dirX /= dragLen; dirY /= dragLen;
+                    } else { // Fallback alla direzione unitaria originale o default
+                        dirX = lineUnitVecX; dirY = lineUnitVecY;
                     }
-                    System.out.printf("    [DEBUG] Corretto per MIN_SIZE: nX=%.2f, nY=%.2f, nW=%.2f, nH=%.2f%n", newX, newY, newW, newH);
-                } else if (MIN_SIZE > 0) {
-                    System.out.println("    [DEBUG] Linea collassata, nessun aggiornamento.");
-                    return;
+                    tempFinalW = dirX * targetLength;
+                    tempFinalH = dirY * targetLength;
+                }
+                // Se LINE_START è stato trascinato, l'origine (tempFinalX, tempFinalY) deve essere ricalcolata
+                // in modo che il punto finale (initialEndPoint_world) rimanga fisso.
+                if (handleType == HandleType.LINE_START) {
+                    tempFinalX = initialEndPoint_world.getX() - tempFinalW;
+                    tempFinalY = initialEndPoint_world.getY() - tempFinalH;
                 }
             }
+            finalX = tempFinalX; finalY = tempFinalY; finalW = tempFinalW; finalH = tempFinalH;
 
-            System.out.printf("  [DEBUG] Applicando a Linea: finalX=%.2f, finalY=%.2f, finalW=%.2f, finalH=%.2f%n", newX, newY, newW, newH);
-            controller.getModel().moveShapeTo(shapeToUpdate, newX, newY);
-            shapeToUpdate.setWidth(newW);
-            shapeToUpdate.setHeight(newH);
-            System.out.printf("  [DEBUG] Stato Linea Dopo Aggiornamento: x=%.2f, y=%.2f, w=%.2f, h=%.2f%n", shapeToUpdate.getX(), shapeToUpdate.getY(), shapeToUpdate.getWidth(), shapeToUpdate.getHeight());
+        } else { // Gestione per forme non-Linea
+            double tentativeW = iW;
+            double tentativeH = iH;
 
-            controller.updateSpinners(shapeToUpdate);
-            System.out.println("--- STRETCH LINEA FINE ---");
-            return;
-        }
-        // FINE gestione specifica per LINEE
-
-        // Inizializza le dimensioni proposte con quelle iniziali
-        double tentativeW = iW;
-        double tentativeH = iH;
-
-        // Calcola le dimensioni tentative in base al drag del mouse e all'handle
-        switch (handleType) {
-            case TOP_LEFT:
-                tentativeW = iW - localDeltaX;
-                tentativeH = iH - localDeltaY;
-                break;
-            case TOP_RIGHT:
-                tentativeW = iW + localDeltaX;
-                tentativeH = iH - localDeltaY;
-                break;
-            case BOTTOM_LEFT:
-                tentativeW = iW - localDeltaX;
-                tentativeH = iH + localDeltaY;
-                break;
-            case BOTTOM_RIGHT:
-                tentativeW = iW + localDeltaX;
-                tentativeH = iH + localDeltaY;
-                break;
-            case TOP_CENTER:
-                tentativeH = iH - localDeltaY;
-                // tentativeW rimane iW
-                break;
-            case BOTTOM_CENTER:
-                tentativeH = iH + localDeltaY;
-                // tentativeW rimane iW
-                break;
-            case LEFT_CENTER:
-                tentativeW = iW - localDeltaX;
-                // tentativeH rimane iH
-                break;
-            case RIGHT_CENTER:
-                tentativeW = iW + localDeltaX;
-                // tentativeH rimane iH
-                break;
-        }
-
-        // Nel metodo handleShapeResize, dopo il calcolo delle dimensioni tentative
-        // Aggiungi questo codice per mantenere fisso l'angolo superiore sinistro:
-
-        // Calcola l'offset necessario per mantenere fisso l'angolo superiore sinistro
-        double offsetX = 0;
-        double offsetY = 0;
-
-        switch (handleType) {
-            case TOP_LEFT:
-                // L'angolo superiore sinistro è già fisso, non serve offset
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case TOP_RIGHT:
-                // Solo la larghezza cambia, l'angolo sup-sx rimane fisso
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case BOTTOM_LEFT:
-                // Solo l'altezza cambia, l'angolo sup-sx rimane fisso
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case BOTTOM_RIGHT:
-                // Entrambe le dimensioni cambiano, l'angolo sup-sx rimane fisso
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case TOP_CENTER:
-                // Solo l'altezza cambia dal centro superiore
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case BOTTOM_CENTER:
-                // Solo l'altezza cambia dal centro inferiore
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case LEFT_CENTER:
-                // Solo la larghezza cambia dal centro sinistro
-                offsetX = 0;
-                offsetY = 0;
-                break;
-            case RIGHT_CENTER:
-                // Solo la larghezza cambia dal centro destro
-                offsetX = 0;
-                offsetY = 0;
-                break;
-        }
-
-        // Per figure ruotate/specchiate, calcola l'offset trasformato
-        if (iAngle != 0 || iScaleX != 1 || iScaleY != 1) {
-            // Calcola la differenza tra il centro della figura originale e quello della figura ridimensionata
-            double originalCenterX = iX + iW / 2;
-            double originalCenterY = iY + iH / 2;
-            double newCenterX = iX + tentativeW / 2;
-            double newCenterY = iY + tentativeH / 2;
-            
-            // Calcola l'offset del centro
-            double centerOffsetX = newCenterX - originalCenterX;
-            double centerOffsetY = newCenterY - originalCenterY;
-            
-            // Applica la trasformazione inversa all'offset per ottenere l'offset necessario
-            // nelle coordinate del mondo per mantenere fisso l'angolo superiore sinistro
-            double angleRad = Math.toRadians(iAngle);
-            double cosA = Math.cos(angleRad);
-            double sinA = Math.sin(angleRad);
-            
-            // Trasforma l'offset considerando rotazione e mirroring
-            double transformedOffsetX = (centerOffsetX * cosA + centerOffsetY * sinA) * iScaleX;
-            double transformedOffsetY = (-centerOffsetX * sinA + centerOffsetY * cosA) * iScaleY;
-            
-            // Aggiusta la posizione per mantenere fisso l'angolo superiore sinistro
-            newX = iX - transformedOffsetX;
-            newY = iY - transformedOffsetY;
-        } else {
-            // Per figure non trasformate, usa la logica semplice
-            newX = iX;
-            newY = iY;
-        }
-
-        // Aggiorna le dimensioni finali
-        newW = Math.max(tentativeW, MIN_SIZE);
-        newH = Math.max(tentativeH, MIN_SIZE);
-
-        // Applica vincoli specifici per TextShape
-        if (baseShapeToAnalyze instanceof TextShape textShape) {
-            double widthForTextWrapCalc = iW; // Larghezza di riferimento per il wrapping
-            boolean affectsWidth = false; // L'handle corrente modifica la larghezza?
-            boolean affectsHeight = false; // L'handle corrente modifica l'altezza?
-
-            // Determina se l'handle modifica larghezza e/o altezza
             switch (handleType) {
-                case TOP_LEFT: case TOP_RIGHT: case BOTTOM_LEFT: case BOTTOM_RIGHT:
-                    affectsWidth = true;
-                    affectsHeight = true;
+                case TOP_LEFT:
+                    tentativeW = iW - localDeltaX;
+                    tentativeH = iH - localDeltaY;
                     break;
-                case LEFT_CENTER: case RIGHT_CENTER:
-                    affectsWidth = true;
+                case TOP_RIGHT:
+                    tentativeW = iW + localDeltaX;
+                    tentativeH = iH - localDeltaY;
                     break;
-                case TOP_CENTER: case BOTTOM_CENTER:
-                    affectsHeight = true;
+                case BOTTOM_LEFT:
+                    tentativeW = iW - localDeltaX;
+                    tentativeH = iH + localDeltaY;
+                    break;
+                case BOTTOM_RIGHT:
+                    tentativeW = iW + localDeltaX;
+                    tentativeH = iH + localDeltaY;
+                    break;
+                case TOP_CENTER:
+                    tentativeH = iH - localDeltaY;
+                    // tentativeW rimane iW
+                    break;
+                case BOTTOM_CENTER:
+                    tentativeH = iH + localDeltaY;
+                    // tentativeW rimane iW
+                    break;
+                case LEFT_CENTER:
+                    tentativeW = iW - localDeltaX;
+                    // tentativeH rimane iH
+                    break;
+                case RIGHT_CENTER:
+                    tentativeW = iW + localDeltaX;
+                    // tentativeH rimane iH
                     break;
             }
 
-            if (affectsWidth) {
-                // Usa la larghezza (ma non meno di MIN_SIZE) per il calcolo del testo
-                widthForTextWrapCalc = Math.max(MIN_SIZE, tentativeW);
-            }
+            // Applica MAX_DIMENSION_ALLOWED
+            tentativeW = Math.min(tentativeW, MAX_DIMENSION_ALLOWED);
+            tentativeH = Math.min(tentativeH, MAX_DIMENSION_ALLOWED);
 
-            // Ottieni le dimensioni naturali del testo
-            Point2D naturalTextDims = textShape.getNaturalTextBlockDimensions(widthForTextWrapCalc);
-            double minTextW = naturalTextDims.getX();
-            double minTextH = naturalTextDims.getY();
+            // Gestione del testo per assicurare dimensioni minime basate sul contenuto
+            if (baseShapeToAnalyze instanceof TextShape textShape) {
+                double widthForTextWrapCalc = iW;
+                boolean affectsWidth = false;
+                boolean affectsHeight = false;
 
-            if (affectsWidth) {
-                tentativeW = Math.max(tentativeW, minTextW); // Applica larghezza minima del testo
-            }
-            if (affectsHeight) {
-                // Se la larghezza è stata modificata (e potenzialmente aumentata dal vincolo del testo),
-                // ricalcola l'altezza minima del testo con la nuova larghezza, poiché il wrapping potrebbe cambiare.
-                if (affectsWidth && Math.abs(tentativeW - widthForTextWrapCalc) > 1e-3) { // Se tentativeW è stata clampata da minTextW
-                    Point2D reevalTextDims = textShape.getNaturalTextBlockDimensions(tentativeW);
-                    minTextH = reevalTextDims.getY();
+                switch (handleType) {
+                    case TOP_LEFT: case TOP_RIGHT: case BOTTOM_LEFT: case BOTTOM_RIGHT:
+                        affectsWidth = true;
+                        affectsHeight = true;
+                        break;
+                    case LEFT_CENTER: case RIGHT_CENTER:
+                        affectsWidth = true;
+                        break;
+                    case TOP_CENTER: case BOTTOM_CENTER:
+                        affectsHeight = true;
+                        break;
                 }
-                tentativeH = Math.max(tentativeH, minTextH); // Applica altezza minima del testo
-            }
-        }
 
-        // Applica il MIN_SIZE assoluto e assegna a newW, newH finali
-        // (newW e newH sono inizializzate a iW, iH all'inizio del metodo)
-        boolean dimensionsChangedByHandle = false;
-        switch (handleType) {
-            case TOP_LEFT: case TOP_RIGHT: case BOTTOM_LEFT: case BOTTOM_RIGHT:
-            case LEFT_CENTER: case RIGHT_CENTER: // Handles che modificano la larghezza
-                newW = Math.max(MIN_SIZE, tentativeW);
-                dimensionsChangedByHandle = true;
-                // Non break, continua a controllare per l'altezza se è un angolo
-            case TOP_CENTER: case BOTTOM_CENTER: // Handles che modificano l'altezza (o continuano da sopra)
-                if (handleType == HandleType.TOP_CENTER || handleType == HandleType.BOTTOM_CENTER ||
-                        handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT ||
-                        handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT) {
-                    newH = Math.max(MIN_SIZE, tentativeH);
-                    dimensionsChangedByHandle = true;
+                if (affectsWidth) {
+                    widthForTextWrapCalc = Math.max(MIN_SIZE, tentativeW);
                 }
-                break;
+
+                Point2D naturalTextDims = textShape.getNaturalTextBlockDimensions(widthForTextWrapCalc);
+                double minTextW = naturalTextDims.getX();
+                double minTextH = naturalTextDims.getY();
+
+                if (affectsWidth) {
+                    tentativeW = Math.max(tentativeW, minTextW);
+                }
+                if (affectsHeight) {
+                    if (affectsWidth && Math.abs(tentativeW - widthForTextWrapCalc) > 1e-3) {
+                        Point2D reevalTextDims = textShape.getNaturalTextBlockDimensions(tentativeW);
+                        minTextH = reevalTextDims.getY();
+                    }
+                    tentativeH = Math.max(tentativeH, minTextH);
+                }
+            }
+
+
+            finalW = Math.max(MIN_SIZE, tentativeW);
+            finalH = Math.max(MIN_SIZE, tentativeH);
+
+            // Calcola lo spostamento dell'origine (dx_origin_local, dy_origin_local)
+            // Questo spostamento è relativo al sistema di coordinate locale della forma
+            // ed è necessario perché se si ridimensiona da sinistra o dall'alto, l'origine si sposta.
+            double dx_origin_local = 0.0;
+            double dy_origin_local = 0.0;
+
+            switch (handleType) {
+                case TOP_LEFT:
+                    dx_origin_local = iW - finalW;
+                    dy_origin_local = iH - finalH;
+                    break;
+                case TOP_RIGHT:
+                    dy_origin_local = iH - finalH;
+                    break;
+                case BOTTOM_LEFT:
+                    dx_origin_local = iW - finalW;
+                    break;
+                case BOTTOM_RIGHT:
+                    // Nessuno spostamento dell'origine
+                    break;
+                case TOP_CENTER:
+                    dy_origin_local = iH - finalH;
+                    break;
+                case BOTTOM_CENTER:
+                    // Nessuno spostamento dell'origine
+                    break;
+                case LEFT_CENTER:
+                    dx_origin_local = iW - finalW;
+                    break;
+                case RIGHT_CENTER:
+                    // Nessuno spostamento dell'origine
+                    break;
+                default:
+                    System.err.println("Tipo di maniglia di ridimensionamento non gestito: " + handleType);
+                    return;
+            }
+
+            // Trasforma lo spostamento dell'origine locale in coordinate del mondo
+            double angleRad_for_transform = Math.toRadians(iAngle);
+            double cosA_for_transform = Math.cos(angleRad_for_transform);
+            double sinA_for_transform = Math.sin(angleRad_for_transform);
+
+            double world_offsetX = (dx_origin_local * iScaleX * cosA_for_transform - dy_origin_local * iScaleY * sinA_for_transform);
+            double world_offsetY = (dx_origin_local * iScaleX * sinA_for_transform + dy_origin_local * iScaleY * cosA_for_transform);
+
+            finalX = iX + world_offsetX;
+            finalY = iY + world_offsetY;
         }
-        // Se l'handle non ha modificato le dimensioni (es. handle non di resize, anche se questo metodo non dovrebbe essere chiamato),
-        // newW e newH rimangono iW e iH. Se le ha modificate, ora sono clampate.
 
-        // Calcola la nuova posizione (newX, newY) della forma.
-        // Questa logica è quella originale e si basa sui localDeltaX/Y (movimento del mouse non clampato)
-        // per determinare lo spostamento dell'origine (x,y) della forma.
-        double angleRad = Math.toRadians(iAngle);
-        double cosA = Math.cos(angleRad);
-        double sinA = Math.sin(angleRad);
-        // newX e newY sono già inizializzate a iX, iY
-
-        switch (handleType) {
-            case TOP_LEFT:
-                double shiftX_tl = (localDeltaX * iScaleX * cosA - localDeltaY * iScaleY * sinA);
-                double shiftY_tl = (localDeltaX * iScaleX * sinA + localDeltaY * iScaleY * cosA);
-                newX = iX + shiftX_tl;
-                newY = iY + shiftY_tl;
-                break;
-            case TOP_RIGHT:
-                double shiftX_tr = (0 - localDeltaY * iScaleY * sinA);
-                double shiftY_tr = (0 + localDeltaY * iScaleY * cosA);
-                newX = iX + shiftX_tr;
-                newY = iY + shiftY_tr;
-                break;
-            case BOTTOM_LEFT:
-                double shiftX_bl = (localDeltaX * iScaleX * cosA - 0);
-                double shiftY_bl = (localDeltaX * iScaleX * sinA + 0);
-                newX = iX + shiftX_bl;
-                newY = iY + shiftY_bl;
-                break;
-            case BOTTOM_RIGHT:
-                // newX, newY rimangono iX, iY (origine non si sposta)
-                break;
-            case TOP_CENTER:
-                double shiftX_tc = (0 - localDeltaY * iScaleY * sinA);
-                double shiftY_tc = (0 + localDeltaY * iScaleY * cosA);
-                newX = iX + shiftX_tc;
-                newY = iY + shiftY_tc;
-                break;
-            case BOTTOM_CENTER:
-                // newX, newY rimangono iX, iY
-                break;
-            case LEFT_CENTER:
-                double shiftX_lc = (localDeltaX * iScaleX * cosA - 0);
-                double shiftY_lc = (localDeltaX * iScaleX * sinA + 0);
-                newX = iX + shiftX_lc;
-                newY = iY + shiftY_lc;
-                break;
-            case RIGHT_CENTER:
-                // newX, newY rimangono iX, iY
-                break;
-        }
-
-        // Applicazione finale dei valori calcolati (newX, newY) e dimensioni clampate (newW, newH)
-        controller.getModel().moveShapeTo(shapeToUpdate, newX, newY);
-        shapeToUpdate.setWidth(newW);
-        shapeToUpdate.setHeight(newH);
+        // Non usiamo controller.getCommandManager().executeCommand() qui perché deve essere un semplice feedback visivo, il command viene richiamato in mouseReleasedHandler
+        controller.getModel().moveShapeTo(shapeToUpdate, finalX, finalY);
+        controller.getModel().setShapeWidth(shapeToUpdate, finalW);
+        controller.getModel().setShapeHeight(shapeToUpdate, finalH);
 
         controller.updateSpinners(shapeToUpdate);
     }

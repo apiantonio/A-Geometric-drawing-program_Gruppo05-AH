@@ -1,6 +1,6 @@
 package com.geometricdrawing.controller;
 
-import com.geometricdrawing.strategy.FileOperationContext;
+import com.geometricdrawing.strategy.SaveContext;
 import com.geometricdrawing.strategy.SerializedSaveStrategy;
 import javafx.application.Platform;
 
@@ -21,7 +21,7 @@ public class Exit {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Chiudi Applicazione");
         alert.setContentText("Vuoi salvare le modifiche prima di chiudere?");
-        FileOperationContext foc = drawingController.getFileOperationContext();
+        SaveContext saveContext = drawingController.getSaveContext();
         ButtonType buttonTypeSave = new ButtonType("Salva");
         ButtonType buttonTypeDontSave = new ButtonType("Non Salvare");
         ButtonType buttonTypeCancel = new ButtonType("Annulla", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -33,9 +33,9 @@ public class Exit {
             if (result.get() == buttonTypeSave) {
                 // L'utente vuole salvare. Mostra il dialogo di salvataggio.
                 // Usiamo lo strategy per il salvataggio serializzato.
-                if (foc != null) {
-                    foc.setStrategySave(new SerializedSaveStrategy());
-                    boolean prova = foc.executeSave();
+                if (saveContext != null) {
+                    saveContext.setStrategy(new SerializedSaveStrategy());
+                    boolean prova = saveContext.execute();
                     if(prova) {
                         Platform.exit();
                         return true;

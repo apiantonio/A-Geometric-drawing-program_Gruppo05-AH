@@ -170,6 +170,9 @@ public class ShapeInsertionIntegrationTest {
                 MenuItem mirrorVertical = new MenuItem("Specchia Verticalmente");
                 MenuButton mirrorMenu = new MenuButton("Specchia");
 
+                MenuButton shapeMenuButton = new MenuButton("Seleziona Forma");
+                Button textButton = new Button("Testo");
+
                 // Imposta tutti i campi privati del controller
                 setPrivateField(controller, "drawingCanvas", drawingCanvas);
                 setPrivateField(controller, "canvasContainer", canvasContainer);
@@ -197,6 +200,8 @@ public class ShapeInsertionIntegrationTest {
                 setPrivateField(controller, "mirrorHorizontal", mirrorHorizontal);
                 setPrivateField(controller, "mirrorVertical", mirrorVertical);
                 setPrivateField(controller, "mirrorMenu", mirrorMenu);
+                setPrivateField(controller, "shapeMenuButton", shapeMenuButton);
+                setPrivateField(controller, "textButton", textButton);
 
                 controller.setModel(model);
                 controller.setCommandManager(commandManager);
