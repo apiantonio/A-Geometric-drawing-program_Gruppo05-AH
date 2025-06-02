@@ -524,6 +524,18 @@
                </ImageView>
             </graphic>
          </Label>
+         <Label fx:id="undoLabel" alignment="CENTER" layoutX="10.0" layoutY="10.0" prefHeight="32.0" prefWidth="435.0" style="-fx-background-color: #FFC10740; -fx-background-radius: 10;" text="Completa il poligono per annullare l'operazione!" visible="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="354.0" AnchorPane.rightAnchor="354.0">
+            <font>
+               <Font size="16.0" />
+            </font>
+            <graphic>
+               <ImageView fitHeight="32.0" fitWidth="47.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="@../../icons/alert.png" />
+                  </image>
+               </ImageView>
+            </graphic>
+         </Label>
       </AnchorPane>
       <ScrollBar fx:id="horizontalScrollBar" orientation="HORIZONTAL" prefHeight="20.0" visible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" />
       <ScrollBar fx:id="verticalScrollBar" orientation="VERTICAL" prefWidth="20.0" visible="true" AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="200.0" />

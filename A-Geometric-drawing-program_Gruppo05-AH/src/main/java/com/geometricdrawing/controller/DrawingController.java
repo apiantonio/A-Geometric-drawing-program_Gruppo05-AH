@@ -72,6 +72,7 @@ public class DrawingController {
     // aggiunte per la gestione degli appunti e migliorare la user experience
     @FXML private Label cutCopyLabel;
     @FXML private Label emptyClipboardLabel;
+    @FXML private Label undoLabel;
 
     @FXML private CheckMenuItem toggleGrid; // Menu per mostrare/nascondere la griglia
     @FXML private MenuButton gridOptions; // Menu per selezionare il tipo di griglia
@@ -106,7 +107,6 @@ public class DrawingController {
     private NewWorkspace newWorkspace;
     private Exit exit;
     private UserGuide userGuide;
-
 
     // Variabili per il trascinamento
     private double dragOffsetX;
@@ -285,7 +285,7 @@ public class DrawingController {
         }
 
         if(rotationSpinner != null) {
-            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-360, 360, 0, 1); //
+            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-Double.MAX_VALUE, Double.MAX_VALUE, 0, 1);
             rotationSpinner.setValueFactory(rotationValueFactory); //
             rotationSpinner.setEditable(true); //
             rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { //
@@ -298,18 +298,17 @@ public class DrawingController {
             configureNumericTextFormatter(rotationSpinner); //
         }
 
-        currentShapeFactory = null; //
-        updatePasteControlsState(); //
         if (fontSizeSpinner != null) {
             SpinnerValueFactory<Integer> fontSizeFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(6, 72, 12, 1); // Min, Max, Initial, Step
             fontSizeSpinner.setValueFactory(fontSizeFactory);
-            fontSizeSpinner.setEditable(true);
+            fontSizeSpinner.setEditable(false); // non permette di editare, così si risolve il problema del text formatter solo numeri interi positivi
             fontSizeSpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
                 if (newValue != null && currentShape != null && getBaseShape(currentShape) instanceof TextShape) {
                     handleFontSizeChange(newValue);
                 }
             });
         }
+
         currentShapeFactory = null; // Nessuna factory attiva all'inizio
         updatePasteControlsState(); // Aggiorna stato bottoni/menu incolla
 
@@ -320,7 +319,6 @@ public class DrawingController {
         // ATTENZIONE! Deve essere l'ultimo metodo chiamato in initialize() perchè richiama il redrawCanvas
         onToggleGrid();
     }
-
 
     /**
      * Crea il menu contestuale per le figure (Elimina, Copia, Incolla con offset).
@@ -373,8 +371,7 @@ public class DrawingController {
         mirrorHorizontal.setGraphic(mirrorHorizontalImg);
         mirrorVertical.setGraphic(mirrorVerticalImg);
 
-        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem,
-                mirrorHorizontal, mirrorVertical);
+        shapeMenu.getItems().addAll(cutItem, copyItem, pasteOffsetItem, deleteItem, foregroundItem, backgroundItem, mirrorHorizontal, mirrorVertical);
     }
 
     /**
@@ -430,9 +427,7 @@ public class DrawingController {
     }
 
     @FXML
-    private void handleUserGuide() {
-        userGuide.show();
-    }
+    private void handleUserGuide() { userGuide.show(); }
 
     /**
      * Configura un TextFormatter per uno Spinner per accettare solo input numerici (double).
@@ -517,6 +512,8 @@ public class DrawingController {
         if (KeyCombination.keyCombination("CTRL+Z").match(event)) {
             if (!isDrawingPolygon) {
                 handleUndo(new ActionEvent());
+            } else {
+                showUndoLabel();
             }
             event.consume();
         }
@@ -530,7 +527,7 @@ public class DrawingController {
     }
 
     /**
-     * Prepara il controller per la creazione di una nuova figura.
+     * Prepara il controller per la creazione di una nuova figura e gestisce il binding alla creazione.
      * @param factory La factory per il tipo di figura da creare.
      * @param disableFillPicker Se il fill picker deve essere disabilitato per questa factory.
      * @param disableBorderPicker Se il border picker deve essere disabilitato per questa factory.
@@ -549,7 +546,14 @@ public class DrawingController {
         } else { // Per Rettangolo/Ellisse, il bordo è possibile
             borderPicker.setDisable(disableBorderPicker);
         }
-        // Altri stati dei picker (es. dopo la selezione effettiva) sono gestiti da updateControlState.
+
+        // Abilita il fontSizeSpinner se è attiva la factory del testo
+        if (factory instanceof TextFactory) {
+            fontSizeSpinner.setDisable(false);
+            textField.setDisable(false);
+            textField.setText("Scrivi qui..."); // Il testo di default che compare quando clicchi sul canvas se non inserisci nulla
+            textField.requestFocus();
+        }
 
         if (drawingCanvas != null) drawingCanvas.setCursor(Cursor.CROSSHAIR); // Cambia cursore
     }
@@ -787,8 +791,6 @@ public class DrawingController {
         boolean enableFillPicker = false;
         boolean enableBorderPicker = false;
         boolean enableDelete = false;
-        boolean enableCutUi;
-        boolean enablePaste = false;
         boolean enableCopy = false;
         boolean enableCut = false;
         boolean enableForeground = false;
@@ -809,18 +811,12 @@ public class DrawingController {
             }
         }
 
-        // Controllo contenuto appunti per Incolla
-        if (clipboardManager != null) {
-            enablePaste = clipboardManager.hasContent();
-        }
-
         // se c'è una figura selezionata
         if (shape != null) {
             // capisci il tipo di figura SENZA decorator per gestire riempimento e altezza (che dovrebbero essere disabilitati)
             AbstractShape baseShape = getBaseShape(shape);
             enableWidth = true;
             enableDelete = true;
-            enableCutUi = true;
             enableCopy = true;
             enableCut = true;
             enableBackground = true;
@@ -886,19 +882,21 @@ public class DrawingController {
             enableWidth = false;
             enableHeight = false;
             enableDelete = false;
-            enableCutUi = false; // Rinominata per chiarezza se diversa da enableCut
             enableCopy = false;
             enableCut = false;
             enableForeground = false;
             enableBackground = false;
             enableRotation = false;
             enableMirroring = false;
+            // di default, i color picker sono disabilitati
+            enableFillPicker = false;
+            enableBorderPicker = false;
 
             // Di default, quando nessuna forma è selezionata, i controlli per il testo sono disabilitati
             enableTextField = false;
             enableFontSizeSpinner = false;
 
-            if (currentShapeFactory != null) { // Una factory è attiva, l'utente sta per creare una forma
+            if (currentShapeFactory != null) { // se l'utente sta per creare una forma
                 // Impostazioni di default per i color picker quando una factory è attiva
                 enableFillPicker = true;
                 enableBorderPicker = true;
@@ -906,18 +904,12 @@ public class DrawingController {
                 if (currentShapeFactory instanceof LineFactory) {
                     enableFillPicker = false; // Le linee non hanno riempimento
                 } else if (currentShapeFactory instanceof TextFactory) {
-                    enableFillPicker = true;  // Il colore del testo usa il fillPicker
                     enableBorderPicker = false; // Le TextShape non usano il borderPicker in questo design
                     enableTextField = true;
                     enableFontSizeSpinner = false;
                 } else {
                     return;
                 }
-            } else { // Nessuna forma selezionata E NESSUNA factory è attiva
-
-                enableFillPicker = true;
-                enableBorderPicker = true;
-
             }
         }
 
@@ -927,62 +919,48 @@ public class DrawingController {
         if (fillPicker != null) fillPicker.setDisable(!enableFillPicker);
         if (borderPicker != null) borderPicker.setDisable(!enableBorderPicker);
         if (deleteButton != null) deleteButton.setDisable(!enableDelete);
-        if (cutButton != null) cutButton.setDisable(!enableCutUi);
         if (copyButton != null) copyButton.setDisable(!enableCopy);
         if (cutButton != null) cutButton.setDisable(!enableCut);
         if (foregroundButton != null) foregroundButton.setDisable(!enableForeground);
         if (backgroundButton != null) backgroundButton.setDisable(!enableBackground);
         if (rotationSpinner != null) rotationSpinner.setDisable(!enableRotation);
-        if (textField != null) {
-            textField.setDisable(!enableTextField);
-            // If handleChangeTextContentAction is tied to a button, disable that button too.
-            // Example: if (changeTextButton != null) changeTextButton.setDisable(!enableTextField);
-        }
-        if (fontSizeSpinner != null) {
-            fontSizeSpinner.setDisable(!enableFontSizeSpinner);
-        }
+        if (textField != null) textField.setDisable(!enableTextField);
+        if (fontSizeSpinner != null) fontSizeSpinner.setDisable(!enableFontSizeSpinner);
         if (mirrorMenu != null) mirrorMenu.setDisable(!enableMirroring);
 
-        // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
-        if (pasteButton != null) {
-            boolean wasEnabled = !pasteButton.isDisabled(); // com'era prima
-            pasteButton.setDisable(!enablePaste);           // aggiorna stato
-
-            // Se prima era abilitato e ora è disabilitato, mostra label
-            if (!firstTime && wasEnabled && !enablePaste) {
-                showClipboardEmptyLabel();
-            }
-        }
-
-        if (shapeMenu != null) {
-            shapeMenu.getItems().stream()
-                    .filter(item -> "Taglia".equals(item.getText()))
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!enableCutUi));
-        }
+        updatePasteControlsState(); // richiama il metodo che gestisce l'incolla che risulta più complesso
     }
 
     /**
-     * Aggiorna lo stato dei controlli di Incolla (bottone e voci di menu)
+     * Aggiorna lo stato dei controlli di Incolla (sia del bottone che delle voci nel contextmenu)
      * in base al contenuto degli appunti.
      */
     private void updatePasteControlsState() {
         boolean hasContent = clipboardManager != null && clipboardManager.hasContent();
-        // Bottone Incolla
+
+        // la gestione di incolla è legata anche alla visualizzazione della label degli appunti svuotati
         if (pasteButton != null) {
+            boolean wasEnabled = !pasteButton.isDisabled();
             pasteButton.setDisable(!hasContent);
+
+            // Se prima era abilitato e ora è disabilitato, mostra label
+            if (!firstTime && wasEnabled && !hasContent) {
+                showClipboardEmptyLabel();
+            }
         }
-        // Voce "Incolla" (con offset) nel menu contestuale delle figure
+
+        // Menu contestuale delle figure
         if (shapeMenu != null) {
             shapeMenu.getItems().stream()
-                    .filter(item -> "Incolla".equals(item.getText())) // Cerca "Incolla"
+                    .filter(item -> "Incolla".equals(item.getText()))
                     .findFirst()
                     .ifPresent(item -> item.setDisable(!hasContent));
         }
-        // Voce "Incolla qui" nel menu contestuale del canvas
+
+        // Menu contestuale del canvas
         if (canvasContextMenu != null) {
             canvasContextMenu.getItems().stream()
-                    .filter(item -> "Incolla qui".equals(item.getText())) // Cerca "Incolla qui"
+                    .filter(item -> "Incolla qui".equals(item.getText()))
                     .findFirst()
                     .ifPresent(item -> item.setDisable(!hasContent));
         }
@@ -1067,14 +1045,14 @@ public class DrawingController {
     }
 
     /**
-     * Mostra una label temporanea (1 sec)
+     * Mostra una label temporanea (1.5 sec)
      * per indicare la corretta esecuzione delle operazioni di Taglia/Copia.
      */
     public void showCutCopyLabel() {
         cutCopyLabel.setVisible(true);
 
         // Nasconde la label dopo 2 secondi (o quanto preferisci)
-        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
         delay.setOnFinished(event -> {
             cutCopyLabel.setVisible(false);
         });
@@ -1082,14 +1060,26 @@ public class DrawingController {
     }
 
     /**
-     * Mostra una label temporanea (1 sec)
+     * Mostra una label temporanea (1.5 sec)
      * per indicare che la sezione appunti è stata svuotata post undo
      */
     private void showClipboardEmptyLabel() {
         emptyClipboardLabel.setVisible(true);
 
-        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
         delay.setOnFinished(event -> emptyClipboardLabel.setVisible(false));
+        delay.play();
+    }
+
+    /**
+     * Mostra una label temporanea (1.5 sec)
+     * per indicare che l'undo non è possibile se stai inserendo un poligono non regolare.
+     */
+    public void showUndoLabel() {
+        undoLabel.setVisible(true);
+
+        PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
+        delay.setOnFinished(event -> undoLabel.setVisible(false));
         delay.play();
     }
 
@@ -1153,8 +1143,7 @@ public class DrawingController {
         if (model != null && commandManager != null) {
             if(shapeMenu != null) shapeMenu.hide(); // Nasconde menu se aperto
             commandManager.undo(); // Esegue undo sull'ultimo comando
-            // Dopo l'undo, la figura selezionata potrebbe non esistere più o essere cambiata.
-            // È più sicuro deselezionare o rivalutare la selezione.
+
             setCurrentShape(null); // Deseleziona
             updateControlState(null);
             updateSpinners(null); // Resetta spinner
@@ -1164,7 +1153,7 @@ public class DrawingController {
     }
 
     /**
-     * gestisce l'azione di creazione di una nuova area di lavoro quando si clicca sul menu File -> Nuovo
+     * Gestisce l'azione di creazione di una nuova area di lavoro quando si clicca sul menu File -> Nuovo
      */
     @FXML
     public void handleNewWorkspace(ActionEvent event) {
@@ -1238,15 +1227,11 @@ public class DrawingController {
             widthSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_WIDTH);
             heightSpinner.getValueFactory().setValue(ShapeFactory.DEFAULT_HEIGHT);
             rotationSpinner.getValueFactory().setValue(0.0);
-            fontSizeSpinner.getValueFactory().setValue(12); // Dimensione font di default
 
-            // Se nessuna forma è selezionata E TextFactory NON è attiva, allora cancella il textField.
-            // Altrimenti, se TextFactory è attiva, il testo digitato dall'utente deve essere preservato.
-            if (!isTextFactoryActive) {
-                textField.setText("");
-            }
-            // Se TextFactory è attiva e nessuna forma è selezionata, il contenuto di textField
-            // (che l'utente sta digitando per la nuova forma) viene mantenuto.
+            // Se nessuna forma è selezionata E TextFactory NON è attiva, allora cancella il textField, altrimenti il testo viene mantenuto
+            if (!isTextFactoryActive) { textField.setText(""); }
+            // discorso analogo per la size del testo
+            if (!isTextFactoryActive) { fontSizeSpinner.getValueFactory().setValue(12);}
         }
     }
 
@@ -1257,14 +1242,6 @@ public class DrawingController {
     public void showContextMenu(MouseEvent event) {
         // Mostra il menu solo se una figura è effettivamente selezionata
         if (shapeMenu != null && currentShape != null) {
-            updatePasteControlsState(); // Assicura che la voce "Incolla" sia aggiornata
-
-            boolean enableCutUi = currentShape != null;
-            shapeMenu.getItems().stream()
-                    .filter(item -> "Taglia".equals(item.getText()))
-                    .findFirst()
-                    .ifPresent(item -> item.setDisable(!enableCutUi));
-
             shapeMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
         }
     }
@@ -1760,6 +1737,12 @@ public class DrawingController {
             if (textShape.getFontSize() != newSize) {
                 ChangeFontSizeCommand cmd = new ChangeFontSizeCommand(model, textShape, newSize);
                 commandManager.executeCommand(cmd);
+
+                // Calcola e applica le nuove dimensioni del rettangolo
+                Point2D naturalSize = textShape.getNaturalTextBlockDimensions(Double.MAX_VALUE);
+                textShape.setWidth(naturalSize.getX());
+                textShape.setHeight(naturalSize.getY());
+
                 redrawCanvas();
             }
         }
@@ -1767,10 +1750,7 @@ public class DrawingController {
 
     @FXML
     public void handleSelectText(ActionEvent event) {
-        initializeShapeSelection(new TextFactory(), false, true); // disableFillPickerHint = false, disableBorderPickerHint = true
-        textField.setDisable(false);
-        textField.setText("Scrivi qui...");
-        if (textField != null) textField.requestFocus();
+        initializeShapeSelection(new TextFactory(), false, true); // solo colore di riempimento attivo
     }
 
     @FXML
@@ -1903,41 +1883,15 @@ public class DrawingController {
         });
     }
 
-
-    public boolean isDrawingPolygon() {
-        return isDrawingPolygon;
-    }
-
+    public boolean isDrawingPolygon() { return isDrawingPolygon;}
     public double getInitialDragShapeX_world() { return initialDragShapeX_world; }
     public void setInitialDragShapeX_world(double initialDragShapeX_world) { this.initialDragShapeX_world = initialDragShapeX_world; }
     public double getInitialDragShapeY_world() { return initialDragShapeY_world; }
     public void setInitialDragShapeY_world(double initialDragShapeY_world) { this.initialDragShapeY_world = initialDragShapeY_world; }
-
-    public void setTempPolygonPoints(ArrayList<Point2D> arrayList) {
-        this.tempPolygonPoints = arrayList;
-    }
-
-    public ArrayList<Point2D> getTempPolygonPoints() {
-        return this.tempPolygonPoints;
-    }
-
-    public void setIsDrawingPolygon(boolean isDrawingPolygon) {
-        this.isDrawingPolygon = isDrawingPolygon;
-    }
-
-    public String getTextField() {
-        return this.textField.getText();
-    }
-    public ScrollBar getHorizontalScrollBar() {
-        return horizontalScrollBar;
-    }
-
-    public ScrollBar getVerticalScrollBar() {
-        return verticalScrollBar;
-    }
-
-    public Spinner<Integer> getFontSizeSpinner() {
-        return fontSizeSpinner;
-    }
-
+    public ArrayList<Point2D> getTempPolygonPoints() { return this.tempPolygonPoints; }
+    public void setIsDrawingPolygon(boolean isDrawingPolygon) { this.isDrawingPolygon = isDrawingPolygon; }
+    public String getTextField() { return this.textField.getText(); }
+    public ScrollBar getHorizontalScrollBar() { return horizontalScrollBar; }
+    public ScrollBar getVerticalScrollBar() { return verticalScrollBar; }
+    public Spinner<Integer> getFontSizeSpinner() { return fontSizeSpinner; }
 }

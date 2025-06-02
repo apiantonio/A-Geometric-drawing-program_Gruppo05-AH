@@ -16,6 +16,7 @@ import com.geometricdrawing.model.TextShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
@@ -85,20 +86,16 @@ public class MouseClickedHandler extends AbstractMouseHandler {
         super.postProcess(event); // Aggiorna il canvas
     }
 
-    // All'interno della classe MouseClickedHandler.java
-// in main/java/com/geometricdrawing/mousehandler/MouseClickedHandler.java
-
+    /**
+     * Gestisce la creazione di una figura regolare (non poligono).
+     * Se la figura è di tipo TextShape, imposta il testo e la dimensione del font.
+     */
     private void handleRegularShapeCreation() {
         AbstractShape newShape = currentShapeFactory.createShape(this.worldX, this.worldY);
 
         if (newShape instanceof TextShape && currentShapeFactory instanceof TextFactory) {
             TextShape textShape = (TextShape) newShape; // Dichiara e casta newShape a TextShape
-
-            String userText = controller.getTextField(); // Il metodo getTextField() del controller restituisce il testo.
-            // Vedi DrawingController.java
-
-            // Debug: Stampa il testo ottenuto dal TextField
-            System.out.println("[MouseClickedHandler] Testo letto da TextField: '" + userText + "'");
+            String userText = controller.getTextField(); // dal controller ricavo il testo inserito dall'utente
 
             if (userText != null) {
                 textShape.setText(userText);
@@ -106,17 +103,17 @@ public class MouseClickedHandler extends AbstractMouseHandler {
                 textShape.setText(""); // Imposta una stringa vuota di default se userText è null
             }
 
-            // Debug: Stampa il testo impostato nella TextShape
-            System.out.println("[MouseClickedHandler] Testo impostato in TextShape: '" + textShape.getText() + "'");
-
-            if (controller.getFontSizeSpinner() != null) { // Controlla se lo spinner esiste
-                Integer userFontSize = controller.getFontSizeSpinner().getValue();
-                if (userFontSize != null) {
-                    textShape.setFontSize(userFontSize);
-                    // Debug: Stampa la dimensione del font impostata
-                    System.out.println("[MouseClickedHandler] Dimensione font impostata in TextShape: " + userFontSize);
-                }
+            if (controller.getFontSizeSpinner() != null) { // Se lo spinner per la dimensione del font è stato inizializzato
+                int fontSize = controller.getFontSizeSpinner().getValue();
+                textShape.setFontSize(fontSize);
+                // Debug: Stampa la dimensione del font impostata
+                System.out.println("[MouseClickedHandler] Dimensione font impostata in TextShape: " + fontSize);
             }
+
+            // Le dimensioni del rettangolo attorno al testo vengono calcolate in base al testo inserito
+            Point2D naturalSize = textShape.getNaturalTextBlockDimensions(Double.MAX_VALUE);
+            textShape.setWidth(naturalSize.getX());
+            textShape.setHeight(naturalSize.getY());
         }
 
         AbstractShape styledShape = applyDecorations(newShape);
