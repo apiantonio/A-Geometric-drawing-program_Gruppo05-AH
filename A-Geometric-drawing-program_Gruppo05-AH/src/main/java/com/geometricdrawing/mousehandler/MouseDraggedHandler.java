@@ -285,38 +285,38 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             tentativeH = clampedTentativeH;
 
             // Aggiustamenti per TextShape (mantenuti simili, ma valutare se dx/dy_local_origin sono corretti)
-            if (baseShapeToAnalyze instanceof TextShape textShape) {
-                Point2D naturalTextDims = textShape.getNaturalTextBlockDimensions(tentativeW);
-                double minTextW = naturalTextDims.getX();
-                double minTextH = naturalTextDims.getY();
-
-                double textWidthCorrection = 0; // Quanto la larghezza DEVE aumentare per il testo
-                if (tentativeW < minTextW) {
-                    textWidthCorrection = minTextW - tentativeW;
-                    tentativeW = minTextW;
-                }
-                double textHeightCorrection = 0; // Quanto l'altezza DEVE aumentare per il testo
-                if (tentativeH < minTextH) {
-                    textHeightCorrection = minTextH - tentativeH;
-                    tentativeH = minTextH;
-                }
-
-                // Se la dimensione è aumentata a causa del testo, l'origine deve compensare per mantenere l'ancoraggio
-                if (dx_local_origin != 0.0 && textWidthCorrection > 0) {
-                    // Se l'origine X si sposta e W aumenta, X deve "arretrare" (diminuire se si spostava a dx, aumentare se a sx)
-                    // Questo dipende da quale handle ha causato lo spostamento di dx_local_origin
-                    if ((iScaleX == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER)) ||
-                            (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER)) ) {
-                        dx_local_origin -= textWidthCorrection; // Sposta a sx se prima si spostava a dx
-                    }
-                }
-                if (dy_local_origin != 0.0 && textHeightCorrection > 0) {
-                    if ((iScaleY == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER)) ||
-                            (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER)) ) {
-                        dy_local_origin -= textHeightCorrection;
-                    }
-                }
-            }
+//            if (baseShapeToAnalyze instanceof TextShape textShape) {
+//                Point2D naturalTextDims = textShape.getNaturalTextBlockDimensions(tentativeW);
+//                double minTextW = naturalTextDims.getX();
+//                double minTextH = naturalTextDims.getY();
+//
+//                double textWidthCorrection = 0; // Quanto la larghezza DEVE aumentare per il testo
+//                if (tentativeW < minTextW) {
+//                    textWidthCorrection = minTextW - tentativeW;
+//                    tentativeW = minTextW;
+//                }
+//                double textHeightCorrection = 0; // Quanto l'altezza DEVE aumentare per il testo
+//                if (tentativeH < minTextH) {
+//                    textHeightCorrection = minTextH - tentativeH;
+//                    tentativeH = minTextH;
+//                }
+//
+//                // Se la dimensione è aumentata a causa del testo, l'origine deve compensare per mantenere l'ancoraggio
+//                if (dx_local_origin != 0.0 && textWidthCorrection > 0) {
+//                    // Se l'origine X si sposta e W aumenta, X deve "arretrare" (diminuire se si spostava a dx, aumentare se a sx)
+//                    // Questo dipende da quale handle ha causato lo spostamento di dx_local_origin
+//                    if ((iScaleX == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER)) ||
+//                            (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER)) ) {
+//                        dx_local_origin -= textWidthCorrection; // Sposta a sx se prima si spostava a dx
+//                    }
+//                }
+//                if (dy_local_origin != 0.0 && textHeightCorrection > 0) {
+//                    if ((iScaleY == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER)) ||
+//                            (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER)) ) {
+//                        dy_local_origin -= textHeightCorrection;
+//                    }
+//                }
+//            }
 
             finalW = tentativeW;
             finalH = tentativeH;
