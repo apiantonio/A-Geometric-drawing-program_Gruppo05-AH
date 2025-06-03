@@ -5,6 +5,7 @@ import com.geometricdrawing.controller.HandleType;
 import com.geometricdrawing.controller.ZoomHandler;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
+import com.geometricdrawing.model.TextShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
@@ -82,7 +83,6 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
 
         ZoomHandler zoomHandler = controller.getZoomHandler();
         Point2D currentScreenMousePos = new Point2D(event.getX(), event.getY());
-        Point2D startScreenMousePos = controller.getResizeStartMousePos_screen();
 
         double iX = controller.getInitialShapeX_world_resize();
         double iY = controller.getInitialShapeY_world_resize();
@@ -92,25 +92,25 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         int iScaleX = controller.getInitialShapeScaleX_resize();
         int iScaleY = controller.getInitialShapeScaleY_resize();
 
-        Point2D startMouseWorld = zoomHandler.screenToWorld(startScreenMousePos.getX(), startScreenMousePos.getY());
+        Point2D startMouseWorld = zoomHandler.screenToWorld(controller.getResizeStartMousePos_screen().getX(), controller.getResizeStartMousePos_screen().getY());
         Point2D currentMouseWorld = zoomHandler.screenToWorld(currentScreenMousePos.getX(), currentScreenMousePos.getY());
 
         Point2D initialMouseLocal = shapeToUpdate.inverseTransformPoint(startMouseWorld.getX(), startMouseWorld.getY());
         Point2D currentMouseLocal = shapeToUpdate.inverseTransformPoint(currentMouseWorld.getX(), currentMouseWorld.getY());
 
-        // Delta del mouse nello spazio locale originale (non specchiato, non ruotato) della forma
         double localMouseDeltaX = currentMouseLocal.getX() - initialMouseLocal.getX();
         double localMouseDeltaY = currentMouseLocal.getY() - initialMouseLocal.getY();
 
-        double finalX = iX;
-        double finalY = iY;
-        double finalW = iW;
-        double finalH = iH;
+        double finalX_calculated;
+        double finalY_calculated;
+        double finalW_calculated;
+        double finalH_calculated;
 
-        final double MIN_SIZE = 1.0;
+        final double MIN_SIZE = 5.0;
         final double MAX_DIMENSION_ALLOWED = 1000.0;
 
         if (baseShapeToAnalyze instanceof Line) {
+            // Logic for Line shapes (preserved from your original implementation)
             final double MAX_LINE_LENGTH_ALLOWED = 1000.0;
             Point2D initialStartPoint_world = new Point2D(iX, iY);
             Point2D initialEndPoint_world = new Point2D(iX + iW, iY + iH);
@@ -122,196 +122,275 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             } else {
                 lineUnitVecX = Math.cos(Math.toRadians(iAngle));
                 lineUnitVecY = Math.sin(Math.toRadians(iAngle));
-                if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6)
-                    lineUnitVecX = 1.0;
+                if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6) lineUnitVecX = 1.0;
             }
-
-            // serve per capire quanto stiamo trascinando lungo la linea
             double dragMagnitudeAlongLineAxis = localMouseDeltaX * lineUnitVecX + localMouseDeltaY * lineUnitVecY;
-
-            HandleType effectiveHandle = handleType;
-            // se la linea è stata specchiata orizzontalmente, devi invertire gli handle da applicare
-            if (iScaleX == -1) {
-                if (handleType == HandleType.LINE_START) effectiveHandle = HandleType.LINE_END;
-                else if (handleType == HandleType.LINE_END) effectiveHandle = HandleType.LINE_START;
-            }
-
-            if (effectiveHandle == HandleType.LINE_START) {
-                // Mantiene fisso il punto finale e muove solo il punto iniziale
-                double newLength = initialLength - dragMagnitudeAlongLineAxis;
-
-                // Applica i limiti di dimensione
-                newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
-
-                // Calcola le nuove coordinate del punto iniziale
-                finalX = initialEndPoint_world.getX() - newLength * lineUnitVecX;
-                finalY = initialEndPoint_world.getY() - newLength * lineUnitVecY;
-                finalW = initialEndPoint_world.getX() - finalX;
-                finalH = initialEndPoint_world.getY() - finalY;
-
-            } else if (effectiveHandle == HandleType.LINE_END) {
-                // Mantiene fisso il punto iniziale e muove solo il punto finale
-                double newLength = initialLength + dragMagnitudeAlongLineAxis;
-
-                // Applica i limiti di dimensione
-                newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
-
-                // Il punto iniziale rimane fisso
-                finalX = initialStartPoint_world.getX();
-                finalY = initialStartPoint_world.getY();
-                finalW = newLength * lineUnitVecX;
-                finalH = newLength * lineUnitVecY;
+            double deltaLength = dragMagnitudeAlongLineAxis;
+            double tempFinalX = iX, tempFinalY = iY, tempFinalW = iW, tempFinalH = iH;
+            if (handleType == HandleType.LINE_START) {
+                tempFinalX = initialEndPoint_world.getX() - (iW - deltaLength * lineUnitVecX);
+                tempFinalY = initialEndPoint_world.getY() - (iH - deltaLength * lineUnitVecY);
+                tempFinalW = initialEndPoint_world.getX() - tempFinalX;
+                tempFinalH = initialEndPoint_world.getY() - tempFinalY;
+                double currentActualLength = Math.sqrt(tempFinalW * tempFinalW + tempFinalH * tempFinalH);
+                if (currentActualLength < MIN_SIZE) {
+                    if (currentActualLength > 1e-6) {
+                        double ratio = MIN_SIZE / currentActualLength;
+                        tempFinalW *= ratio;
+                        tempFinalH *= ratio;
+                    } else {
+                        tempFinalW = MIN_SIZE * lineUnitVecX;
+                        tempFinalH = MIN_SIZE * lineUnitVecY;
+                    }
+                    tempFinalX = initialEndPoint_world.getX() - tempFinalW;
+                    tempFinalY = initialEndPoint_world.getY() - tempFinalH;
+                }
+                if (currentActualLength > MAX_LINE_LENGTH_ALLOWED) {
+                    double ratio = MAX_LINE_LENGTH_ALLOWED / currentActualLength;
+                    tempFinalW *= ratio;
+                    tempFinalH *= ratio;
+                    tempFinalX = initialEndPoint_world.getX() - tempFinalW;
+                    tempFinalY = initialEndPoint_world.getY() - tempFinalH;
+                }
+            } else if (handleType == HandleType.LINE_END) {
+                tempFinalX = iX;
+                tempFinalY = iY;
+                tempFinalW = iW + deltaLength * lineUnitVecX;
+                tempFinalH = iH + deltaLength * lineUnitVecY;
+                double currentActualLength = Math.sqrt(tempFinalW * tempFinalW + tempFinalH * tempFinalH);
+                if (currentActualLength < MIN_SIZE) {
+                    if (currentActualLength > 1e-6) {
+                        double ratio = MIN_SIZE / currentActualLength;
+                        tempFinalW *= ratio;
+                        tempFinalH *= ratio;
+                    } else {
+                        tempFinalW = MIN_SIZE * lineUnitVecX;
+                        tempFinalH = MIN_SIZE * lineUnitVecY;
+                    }
+                }
+                if (currentActualLength > MAX_LINE_LENGTH_ALLOWED) {
+                    double ratio = MAX_LINE_LENGTH_ALLOWED / currentActualLength;
+                    tempFinalW *= ratio;
+                    tempFinalH *= ratio;
+                }
             } else {
                 return;
             }
-        } else {
-            // Per tutte le altre forme
-            // Delta effettivi "visivi" del mouse lungo gli assi della forma
-            // Se iScaleX = -1, un localMouseDeltaX positivo (movimento a destra nello spazio originale)
-            // diventa un effDeltaX negativo (movimento a sinistra nello spazio visivo).
+            finalX_calculated = tempFinalX;
+            finalY_calculated = tempFinalY;
+            finalW_calculated = tempFinalW;
+            finalH_calculated = tempFinalH;
+
+        } else if (baseShapeToAnalyze instanceof TextShape) {
+            // --- BEGINNING OF ORIGINAL LOGIC FOR TextShape (MODIFIED TO ALLOW COMPRESSION) ---
+            double effDeltaX = localMouseDeltaX * iScaleX; //
+            double effDeltaY = localMouseDeltaY * iScaleY; //
+
+            double tentativeW = iW;
+            double tentativeH = iH;
+            double tentative_dx_local_origin = 0.0; //
+            double tentative_dy_local_origin = 0.0; //
+
+            switch (handleType) { //
+                case TOP_LEFT:
+                    tentativeW = iW - effDeltaX;
+                    tentativeH = iH - effDeltaY;
+                    tentative_dx_local_origin = effDeltaX;
+                    tentative_dy_local_origin = effDeltaY;
+                    break;
+                case TOP_RIGHT:
+                    tentativeW = iW + effDeltaX;
+                    tentativeH = iH - effDeltaY;
+                    tentative_dx_local_origin = 0;
+                    tentative_dy_local_origin = effDeltaY;
+                    break;
+                case BOTTOM_LEFT:
+                    tentativeW = iW - effDeltaX;
+                    tentativeH = iH + effDeltaY;
+                    tentative_dx_local_origin = effDeltaX;
+                    tentative_dy_local_origin = 0;
+                    break;
+                case BOTTOM_RIGHT:
+                    tentativeW = iW + effDeltaX;
+                    tentativeH = iH + effDeltaY;
+                    tentative_dx_local_origin = 0;
+                    tentative_dy_local_origin = 0;
+                    break;
+                case TOP_CENTER:
+                    tentativeW = iW;
+                    tentativeH = iH - effDeltaY;
+                    tentative_dx_local_origin = 0;
+                    tentative_dy_local_origin = effDeltaY;
+                    break;
+                case BOTTOM_CENTER:
+                    tentativeW = iW;
+                    tentativeH = iH + effDeltaY;
+                    tentative_dx_local_origin = 0;
+                    tentative_dy_local_origin = 0;
+                    break;
+                case LEFT_CENTER:
+                    tentativeW = iW - effDeltaX;
+                    tentativeH = iH;
+                    tentative_dx_local_origin = effDeltaX;
+                    tentative_dy_local_origin = 0;
+                    break;
+                case RIGHT_CENTER:
+                    tentativeW = iW + effDeltaX;
+                    tentativeH = iH;
+                    tentative_dx_local_origin = 0;
+                    tentative_dy_local_origin = 0;
+                    break;
+                default:
+                    return;
+            }
+
+            double clampedTentativeW = Math.max(MIN_SIZE, Math.min(tentativeW, MAX_DIMENSION_ALLOWED)); //
+            double clampedTentativeH = Math.max(MIN_SIZE, Math.min(tentativeH, MAX_DIMENSION_ALLOWED)); //
+
+            double dx_adjustment_from_clamping = 0; //
+            if (tentativeW > clampedTentativeW) {
+                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER ||
+                        (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER))) { //
+                    dx_adjustment_from_clamping = (tentativeW - clampedTentativeW); //
+                }
+            } else if (tentativeW < clampedTentativeW) {
+                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER ||
+                        (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER))) { //
+                    dx_adjustment_from_clamping = -(clampedTentativeW - tentativeW); //
+                }
+            }
+
+            double dy_adjustment_from_clamping = 0; //
+            if (tentativeH > clampedTentativeH) {
+                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER ||
+                        (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER))) { //
+                    dy_adjustment_from_clamping = (tentativeH - clampedTentativeH); //
+                }
+            } else if (tentativeH < clampedTentativeH) {
+                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER ||
+                        (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER))) { //
+                    dy_adjustment_from_clamping = -(clampedTentativeH - tentativeH); //
+                }
+            }
+
+            double dx_local_origin = tentative_dx_local_origin + dx_adjustment_from_clamping; //
+            double dy_local_origin = tentative_dy_local_origin + dy_adjustment_from_clamping; //
+
+            // Dimensions are now clamped, but not yet forced by text natural size
+            finalW_calculated = clampedTentativeW;
+            finalH_calculated = clampedTentativeH;
+
+            TextShape textShape = (TextShape) baseShapeToAnalyze;
+            Point2D naturalTextDims = textShape.getNaturalTextBlockDimensions(finalW_calculated); //
+            double minTextW = naturalTextDims.getX();
+            double minTextH = naturalTextDims.getY();
+
+            double textWidthCorrection = 0;
+            if (finalW_calculated < minTextW) {
+                textWidthCorrection = minTextW - finalW_calculated;
+                // NON forzare finalW_calculated = minTextW; se si vuole permettere compressione
+            }
+            double textHeightCorrection = 0;
+            if (finalH_calculated < minTextH) {
+                textHeightCorrection = minTextH - finalH_calculated;
+                // NON forzare finalH_calculated = minTextH; se si vuole permettere compressione
+            }
+
+            // Gli aggiustamenti a dx_local_origin e dy_local_origin basati su textWidthCorrection
+            // e textHeightCorrection vengono mantenuti come nella logica originale.
+            // Questi aggiustamenti ora rifletteranno la compressione o l'espansione
+            // rispetto alle dimensioni naturali del testo.
+            if (textWidthCorrection != 0) { // Modificato per != 0 dato che ora può essere < 0 se si espande oltre il nativo dopo compressione
+                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER ||
+                        (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER))) { //
+                    dx_local_origin -= textWidthCorrection; //
+                }
+            }
+            if (textHeightCorrection != 0) { // Modificato per != 0
+                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER ||
+                        (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER))) { //
+                    dy_local_origin -= textHeightCorrection; //
+                }
+            }
+
+            double angleRad = Math.toRadians(iAngle); //
+            double cosA = Math.cos(angleRad); //
+            double sinA = Math.sin(angleRad); //
+
+            double world_offsetX_shift = (dx_local_origin * cosA - dy_local_origin * sinA); //
+            double world_offsetY_shift = (dx_local_origin * sinA + dy_local_origin * cosA); //
+
+            finalX_calculated = iX + world_offsetX_shift; //
+            finalY_calculated = iY + world_offsetY_shift; //
+            // --- END OF ORIGINAL LOGIC FOR TextShape (MODIFIED) ---
+
+        } else { // For other non-Line, non-Text shapes (Rectangles, Ellipses, Polygons)
+            // --- Use the latest revised logic (center-based anchoring with mirroring fix) ---
             double effDeltaX = localMouseDeltaX * iScaleX;
             double effDeltaY = localMouseDeltaY * iScaleY;
 
-            double dW = 0; // Variazione della larghezza
-            double dH = 0; // Variazione dell'altezza
-            double dx_local_origin = 0.0; // Spostamento dell'origine X matematica
-            double dy_local_origin = 0.0; // Spostamento dell'origine Y matematica
+            double tentativeW = iW;
+            double tentativeH = iH;
 
-            // Calcola le variazioni appena definite per mantenere l'ancoraggio del lato opposto
             switch (handleType) {
-                case TOP_LEFT: // Trascina handle visivo Alto-Sinistra, ancora handle visivo Basso-Destra
-                    dW = -effDeltaX; // Se trascino visivamente a destra (effDeltaX>0), la larghezza diminuisce
-                    dH = -effDeltaY; // Se trascino visivamente in basso (effDeltaY>0), l'altezza diminuisce
-                    // Spostamento dell'origine matematica (x,y) per ancorare il BR visivo:
-                    // Se non specchiato (iScaleX=1), il BR visivo è il BR matematico (x+W, y+H).
-                    //   Per ancorare x+W, x deve spostarsi di -dW. Ma dW è -effDeltaX, quindi x si sposta di effDeltaX.
-                    // Se specchiato (iScaleX=-1), il BR visivo è il BL matematico (x, y+H).
-                    //   Per ancorare x, x non si sposta. dx_local_origin = 0.
-                    dx_local_origin = (iScaleX == 1) ? effDeltaX : 0;
-                    dy_local_origin = (iScaleY == 1) ? effDeltaY : 0;
-                    break;
-                case TOP_RIGHT: // Trascina handle visivo Alto-Destra, ancora handle visivo Basso-Sinistra
-                    dW = effDeltaX;  // Se trascino visivamente a destra (effDeltaX>0), la larghezza aumenta
-                    dH = -effDeltaY;
-                    // Spostamento dell'origine matematica (x,y) per ancorare il BL visivo:
-                    // Se non specchiato (iScaleX=1), il BL visivo è il BL matematico (x, y+H). x non si sposta.
-                    // Se specchiato (iScaleX=-1), il BL visivo è il BR matematico (x+W, y+H). x si sposta di -dW.
-                    dx_local_origin = (iScaleX == 1) ? 0 : -dW;
-                    dy_local_origin = (iScaleY == 1) ? effDeltaY : 0;
-                    break;
-                case BOTTOM_LEFT: // Trascina handle visivo Basso-Sinistra, ancora handle visivo Alto-Destra
-                    dW = -effDeltaX;
-                    dH = effDeltaY; // Se trascino visivamente in basso (effDeltaY>0), l'altezza aumenta
-                    dx_local_origin = (iScaleX == 1) ? effDeltaX : 0;
-                    // Spostamento dell'origine matematica (x,y) per ancorare il TR visivo:
-                    // Se non specchiato (iScaleY=1), il TR visivo è il TR matematico (x+W, y). y non si sposta.
-                    // Se specchiato (iScaleY=-1), il TR visivo è il BR matematico (x+W, y+H). y si sposta di -dH.
-                    dy_local_origin = (iScaleY == 1) ? 0 : -dH;
-                    break;
-                case BOTTOM_RIGHT: // Trascina handle visivo Basso-Destra, ancora handle visivo Alto-Sinistra
-                    dW = effDeltaX;
-                    dH = effDeltaY;
-                    dx_local_origin = (iScaleX == 1) ? 0 : -dW;
-                    dy_local_origin = (iScaleY == 1) ? 0 : -dH;
-                    break;
-                case TOP_CENTER: // Trascina handle visivo Alto-Centro, ancora bordo visivo Basso
-                    dW = 0; // La larghezza non cambia
-                    dH = -effDeltaY;
-                    dx_local_origin = 0; // L'origine X non si sposta
-                    dy_local_origin = (iScaleY == 1) ? effDeltaY : 0;
-                    break;
-                case BOTTOM_CENTER: // Trascina handle visivo Basso-Centro, ancora bordo visivo Alto
-                    dW = 0;
-                    dH = effDeltaY;
-                    dx_local_origin = 0;
-                    dy_local_origin = (iScaleY == 1) ? 0 : -dH;
-                    break;
-                case LEFT_CENTER: // Trascina handle visivo Sinistra-Centro, ancora bordo visivo Destro
-                    dW = -effDeltaX;
-                    dH = 0; // L'altezza non cambia
-                    dx_local_origin = (iScaleX == 1) ? effDeltaX : 0;
-                    dy_local_origin = 0; // L'origine Y non si sposta
-                    break;
-                case RIGHT_CENTER: // Trascina handle visivo Destra-Centro, ancora bordo visivo Sinistro
-                    dW = effDeltaX;
-                    dH = 0;
-                    dx_local_origin = (iScaleX == 1) ? 0 : -dW;
-                    dy_local_origin = 0;
-                    break;
+                case TOP_LEFT:      tentativeW = iW - effDeltaX; tentativeH = iH - effDeltaY; break;
+                case TOP_RIGHT:     tentativeW = iW + effDeltaX; tentativeH = iH - effDeltaY; break;
+                case BOTTOM_LEFT:   tentativeW = iW - effDeltaX; tentativeH = iH + effDeltaY; break;
+                case BOTTOM_RIGHT:  tentativeW = iW + effDeltaX; tentativeH = iH + effDeltaY; break;
+                case TOP_CENTER:    tentativeW = iW; tentativeH = iH - effDeltaY; break;
+                case BOTTOM_CENTER: tentativeW = iW; tentativeH = iH + effDeltaY; break;
+                case LEFT_CENTER:   tentativeW = iW - effDeltaX; tentativeH = iH; break;
+                case RIGHT_CENTER:  tentativeW = iW + effDeltaX; tentativeH = iH; break;
                 default: return;
             }
 
-            double tentativeW = iW + dW;
-            double tentativeH = iH + dH;
+            finalW_calculated = Math.max(MIN_SIZE, Math.min(tentativeW, MAX_DIMENSION_ALLOWED));
+            finalH_calculated = Math.max(MIN_SIZE, Math.min(tentativeH, MAX_DIMENSION_ALLOWED));
 
-            // Clamping delle dimensioni
-            double clampedTentativeW = Math.max(MIN_SIZE, Math.min(tentativeW, MAX_DIMENSION_ALLOWED));
-            double clampedTentativeH = Math.max(MIN_SIZE, Math.min(tentativeH, MAX_DIMENSION_ALLOWED));
+            double dw = finalW_calculated - iW;
+            double dh = finalH_calculated - iH;
 
-            // Aggiustamento dell'origine per compensare il clamping, se necessario, per mantenere l'ancoraggio.
-            // widthAdjustment > 0 significa che la larghezza calcolata (tentativeW) è stata ridotta a clampedTentativeW.
-            double widthAdjustment = tentativeW - clampedTentativeW;
-            double heightAdjustment = tentativeH - clampedTentativeH;
+            double base_dv_center_x_local = 0;
+            double base_dv_center_y_local = 0;
 
-
-            if (dx_local_origin != 0.0) { // Si applica solo se l'origine X era la parte mobile per l'ancoraggio della larghezza
-                if (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER) {
-                    // Per questi handle, dx_local_origin è calcolato per spostare il lato sinistro matematico
-                    // Se dW era negativo (es. -effDeltaX per TOP_LEFT), dx_local_origin = effDeltaX (o 0)
-                    // Se la larghezza (tentativeW) viene ridotta dal clamp (widthAdjustment > 0),
-                    // significa che -effDeltaX (il contributo alla larghezza) era troppo grande.
-                    // dx_local_origin deve "recuperare" questo adjustment.
-                    if ((iScaleX == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER)) ||
-                            (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER)) ) {
-                        // Questi sono i casi in cui l'origine X matematica si sposta perché si trascina un handle sinistro visivo
-                        dx_local_origin += widthAdjustment;
-                    }
-                } else if (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER) {
-                    // Per questi handle, l'origine X matematica si sposta se specchiato (dx_local_origin = -dW)
-                    // per ancorare il lato destro matematico.
-                    if (iScaleX == -1) { // Solo se l'origine X si stava spostando a causa del mirroring e ancoraggio
-                        dx_local_origin += widthAdjustment; // Se W è ridotta, -dW diventa meno negativo (si sposta a dx)
-                    }
-                }
+            switch (handleType) {
+                case TOP_LEFT:      base_dv_center_x_local = -dw / 2.0; base_dv_center_y_local = -dh / 2.0; break;
+                case TOP_RIGHT:     base_dv_center_x_local =  dw / 2.0; base_dv_center_y_local = -dh / 2.0; break;
+                case BOTTOM_LEFT:   base_dv_center_x_local = -dw / 2.0; base_dv_center_y_local =  dh / 2.0; break;
+                case BOTTOM_RIGHT:  base_dv_center_x_local =  dw / 2.0; base_dv_center_y_local =  dh / 2.0; break;
+                case TOP_CENTER:    base_dv_center_x_local =  0;        base_dv_center_y_local = -dh / 2.0; break;
+                case BOTTOM_CENTER: base_dv_center_x_local =  0;        base_dv_center_y_local =  dh / 2.0; break;
+                case LEFT_CENTER:   base_dv_center_x_local = -dw / 2.0; base_dv_center_y_local =  0;        break;
+                case RIGHT_CENTER:  base_dv_center_x_local =  dw / 2.0; base_dv_center_y_local =  0;        break;
             }
 
-            if (dy_local_origin != 0.0) { // Logica simile per l'altezza
-                if ((iScaleY == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER)) ||
-                        (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER)) ) {
-                    dy_local_origin += heightAdjustment;
-                } else if (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER) {
-                    if (iScaleY == -1) {
-                        dy_local_origin += heightAdjustment;
-                    }
-                }
-            }
+            double dv_center_x_local = base_dv_center_x_local * iScaleX;
+            double dv_center_y_local = base_dv_center_y_local * iScaleY;
 
-            tentativeW = clampedTentativeW;
-            tentativeH = clampedTentativeH;
-
-            finalW = tentativeW;
-            finalH = tentativeH;
-
-            // Trasforma gli spostamenti locali dell'origine (dx_local_origin, dy_local_origin) in coordinate del mondo
             double angleRad = Math.toRadians(iAngle);
             double cosA = Math.cos(angleRad);
             double sinA = Math.sin(angleRad);
 
-            // dx_local_origin e dy_local_origin sono già nello spazio locale corretto (non specchiato ma orientato per il mirror)
-            // quindi li ruotiamo semplicemente per ottenere lo shift nel mondo.
-            double world_offsetX_shift = (dx_local_origin * cosA - dy_local_origin * sinA);
-            double world_offsetY_shift = (dx_local_origin * sinA + dy_local_origin * cosA);
+            double delta_world_center_x = dv_center_x_local * cosA - dv_center_y_local * sinA;
+            double delta_world_center_y = dv_center_x_local * sinA + dv_center_y_local * cosA;
 
-            finalX = iX + world_offsetX_shift;
-            finalY = iY + world_offsetY_shift;
+            double initial_world_center_x = iX + iW / 2.0;
+            double initial_world_center_y = iY + iH / 2.0;
+
+            double final_world_center_x = initial_world_center_x + delta_world_center_x;
+            double final_world_center_y = initial_world_center_y + delta_world_center_y;
+
+            finalX_calculated = final_world_center_x - finalW_calculated / 2.0;
+            finalY_calculated = final_world_center_y - finalH_calculated / 2.0;
         }
 
-        controller.getModel().moveShapeTo(shapeToUpdate, finalX, finalY);
-        controller.getModel().setShapeWidth(shapeToUpdate, finalW);
-        controller.getModel().setShapeHeight(shapeToUpdate, finalH);
+        controller.getModel().moveShapeTo(shapeToUpdate, finalX_calculated, finalY_calculated);
+        controller.getModel().setShapeWidth(shapeToUpdate, finalW_calculated);
+        controller.getModel().setShapeHeight(shapeToUpdate, finalH_calculated);
 
         controller.updateSpinners(shapeToUpdate);
     }
+
 
     @Override
     protected void postProcess(MouseEvent event) {
