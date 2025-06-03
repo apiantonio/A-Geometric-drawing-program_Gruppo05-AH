@@ -132,11 +132,11 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             if (effectiveHandle == HandleType.LINE_START) {
                 // Manteniamo fisso il punto finale (estremo destro in coordinate locali)
                 anchorPointX = initialLength / 2.0; // Punto finale in coordinate locali
-                newLength = initialLength - dragMagnitudeAlongLineAxis * iScaleX;
+                newLength = initialLength - dragMagnitudeAlongLineAxis;
             } else if (effectiveHandle == HandleType.LINE_END) {
                 // Manteniamo fisso il punto iniziale (estremo sinistro in coordinate locali)
                 anchorPointX = -initialLength / 2.0; // Punto iniziale in coordinate locali
-                newLength = initialLength + dragMagnitudeAlongLineAxis * iScaleX;
+                newLength = initialLength + dragMagnitudeAlongLineAxis;
             } else {
                 return;
             }
