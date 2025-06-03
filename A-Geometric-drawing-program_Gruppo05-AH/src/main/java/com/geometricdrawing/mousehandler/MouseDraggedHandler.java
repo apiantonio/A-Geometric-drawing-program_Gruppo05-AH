@@ -5,7 +5,6 @@ import com.geometricdrawing.controller.HandleType;
 import com.geometricdrawing.controller.ZoomHandler;
 import com.geometricdrawing.model.AbstractShape;
 import com.geometricdrawing.model.Line;
-import com.geometricdrawing.model.TextShape;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
@@ -126,10 +125,18 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                 if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6)
                     lineUnitVecX = 1.0;
             }
+
             // serve per capire quanto stiamo trascinando lungo la linea
             double dragMagnitudeAlongLineAxis = localMouseDeltaX * lineUnitVecX + localMouseDeltaY * lineUnitVecY;
 
-            if (handleType == HandleType.LINE_START) {
+            HandleType effectiveHandle = handleType;
+            // se la linea è stata specchiata orizzontalmente, devi invertire gli handle da applicare
+            if (iScaleX == -1) {
+                if (handleType == HandleType.LINE_START) effectiveHandle = HandleType.LINE_END;
+                else if (handleType == HandleType.LINE_END) effectiveHandle = HandleType.LINE_START;
+            }
+
+            if (effectiveHandle == HandleType.LINE_START) {
                 // Mantiene fisso il punto finale e muove solo il punto iniziale
                 double newLength = initialLength - dragMagnitudeAlongLineAxis;
 
@@ -142,7 +149,7 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                 finalW = initialEndPoint_world.getX() - finalX;
                 finalH = initialEndPoint_world.getY() - finalY;
 
-            } else if (handleType == HandleType.LINE_END) {
+            } else if (effectiveHandle == HandleType.LINE_END) {
                 // Mantiene fisso il punto iniziale e muove solo il punto finale
                 double newLength = initialLength + dragMagnitudeAlongLineAxis;
 
@@ -157,22 +164,20 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             } else {
                 return;
             }
-        } else { // Forme non-Linea
+        } else {
+            // Per tutte le altre forme
             // Delta effettivi "visivi" del mouse lungo gli assi della forma
             // Se iScaleX = -1, un localMouseDeltaX positivo (movimento a destra nello spazio originale)
             // diventa un effDeltaX negativo (movimento a sinistra nello spazio visivo).
             double effDeltaX = localMouseDeltaX * iScaleX;
             double effDeltaY = localMouseDeltaY * iScaleY;
 
-            double dW = 0; // Variazione della larghezza matematica
-            double dH = 0; // Variazione dell'altezza matematica
+            double dW = 0; // Variazione della larghezza
+            double dH = 0; // Variazione dell'altezza
             double dx_local_origin = 0.0; // Spostamento dell'origine X matematica
             double dy_local_origin = 0.0; // Spostamento dell'origine Y matematica
 
-
-            // Calcola dW, dH (cambiamenti nelle dimensioni matematiche)
-            // e dx_local_origin, dy_local_origin (spostamenti dell'origine matematica x,y)
-            // per mantenere ancorato il lato/angolo VISIVAMENTE opposto.
+            // Calcola le variazioni appena definite per mantenere l'ancoraggio del lato opposto
             switch (handleType) {
                 case TOP_LEFT: // Trascina handle visivo Alto-Sinistra, ancora handle visivo Basso-Destra
                     dW = -effDeltaX; // Se trascino visivamente a destra (effDeltaX>0), la larghezza diminuisce
@@ -283,40 +288,6 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
 
             tentativeW = clampedTentativeW;
             tentativeH = clampedTentativeH;
-
-            // Aggiustamenti per TextShape (mantenuti simili, ma valutare se dx/dy_local_origin sono corretti)
-//            if (baseShapeToAnalyze instanceof TextShape textShape) {
-//                Point2D naturalTextDims = textShape.getNaturalTextBlockDimensions(tentativeW);
-//                double minTextW = naturalTextDims.getX();
-//                double minTextH = naturalTextDims.getY();
-//
-//                double textWidthCorrection = 0; // Quanto la larghezza DEVE aumentare per il testo
-//                if (tentativeW < minTextW) {
-//                    textWidthCorrection = minTextW - tentativeW;
-//                    tentativeW = minTextW;
-//                }
-//                double textHeightCorrection = 0; // Quanto l'altezza DEVE aumentare per il testo
-//                if (tentativeH < minTextH) {
-//                    textHeightCorrection = minTextH - tentativeH;
-//                    tentativeH = minTextH;
-//                }
-//
-//                // Se la dimensione è aumentata a causa del testo, l'origine deve compensare per mantenere l'ancoraggio
-//                if (dx_local_origin != 0.0 && textWidthCorrection > 0) {
-//                    // Se l'origine X si sposta e W aumenta, X deve "arretrare" (diminuire se si spostava a dx, aumentare se a sx)
-//                    // Questo dipende da quale handle ha causato lo spostamento di dx_local_origin
-//                    if ((iScaleX == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.LEFT_CENTER)) ||
-//                            (iScaleX == -1 && (handleType == HandleType.TOP_RIGHT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.RIGHT_CENTER)) ) {
-//                        dx_local_origin -= textWidthCorrection; // Sposta a sx se prima si spostava a dx
-//                    }
-//                }
-//                if (dy_local_origin != 0.0 && textHeightCorrection > 0) {
-//                    if ((iScaleY == 1 && (handleType == HandleType.TOP_LEFT || handleType == HandleType.TOP_RIGHT || handleType == HandleType.TOP_CENTER)) ||
-//                            (iScaleY == -1 && (handleType == HandleType.BOTTOM_LEFT || handleType == HandleType.BOTTOM_RIGHT || handleType == HandleType.BOTTOM_CENTER)) ) {
-//                        dy_local_origin -= textHeightCorrection;
-//                    }
-//                }
-//            }
 
             finalW = tentativeW;
             finalH = tentativeH;
