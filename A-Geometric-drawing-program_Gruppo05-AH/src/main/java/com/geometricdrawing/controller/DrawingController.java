@@ -413,7 +413,7 @@ public class DrawingController {
     @FXML
     private void handleMirrorHorizontalShape(ActionEvent event) {
         if (currentShape != null) {
-            Command mscmd = new MirrorShapeCommand(model, currentShape, true);
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, true);
             commandManager.executeCommand(mscmd);
             updateSpinners(currentShape);
             redrawCanvas();
@@ -423,7 +423,7 @@ public class DrawingController {
     @FXML
     private void handleMirrorVerticalShape(ActionEvent event) {
         if (currentShape != null) {
-            Command mscmd = new MirrorShapeCommand(model, currentShape, false);
+            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, false);
             commandManager.executeCommand(mscmd);
             updateSpinners(currentShape);
             redrawCanvas();

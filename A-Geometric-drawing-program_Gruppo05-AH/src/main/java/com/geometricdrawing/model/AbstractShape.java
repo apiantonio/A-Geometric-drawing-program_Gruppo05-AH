@@ -156,7 +156,7 @@ public abstract class AbstractShape implements Serializable{
     public void setScaleY(int scaleY) {
         // Se scaleY è negativo, inverte la direzione della figura sull'asse Y
         if (scaleY < 0 != this.scaleY < 0) { // Se cambia segno
-            this.rotationAngle = normalizeAngle(180 - this.rotationAngle);
+            this.rotationAngle = normalizeAngle(-this.rotationAngle); // Ruota di 180 gradi
         }
         this.scaleY = scaleY;
     }

@@ -119,12 +119,17 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             double dragMagnitudeAlongLineAxis = localMouseDeltaX;
 
             HandleType effectiveHandle = handleType;
-            // Se la linea è specchiata orizzontalmente, invertiamo gli handle
-            if (iScaleX == -1) {
-                if (handleType == HandleType.LINE_START) effectiveHandle = HandleType.LINE_END;
-                else if (handleType == HandleType.LINE_END) effectiveHandle = HandleType.LINE_START;
-            }
+            // Gestiamo sia il capovolgimento orizzontale che verticale
+            // Il capovolgimento verticale di una linea comporta anche un'inversione degli handle
+            boolean shouldInvertHandles = (iScaleX == -1) || (iScaleY == -1);
 
+            if (shouldInvertHandles) {
+                if (handleType == HandleType.LINE_START) {
+                    effectiveHandle = HandleType.LINE_END;
+                } else if (handleType == HandleType.LINE_END) {
+                    effectiveHandle = HandleType.LINE_START;
+                }
+            }
             // Calcolo della nuova lunghezza mantenendo fisso l'estremo opposto
             double newLength;
             double anchorPointX; // Posizione X locale del punto fisso
@@ -174,7 +179,7 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             finalX = newCenterX - finalW / 2.0;
             finalY = newCenterY;
 
-        }else {
+        } else {
             // Per le altre forme, calcoliamo la nuova larghezza e altezza
             double effDeltaX = localMouseDeltaX * iScaleX;
             double effDeltaY = localMouseDeltaY * iScaleY;
