@@ -191,11 +191,13 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                 } else if (targetLength > 0) {
 
                     double dirX = worldDeltaXUnrotated, dirY = worldDeltaYUnrotated;
-                    double dragLen = Math.sqrt(dirX*dirX + dirY*dirY);
+                    double dragLen = Math.sqrt(dirX * dirX + dirY * dirY);
                     if (dragLen > 1e-6) {
-                        dirX /= dragLen; dirY /= dragLen;
+                        dirX /= dragLen;
+                        dirY /= dragLen;
                     } else { // Fallback alla direzione unitaria originale o default
-                        dirX = lineUnitVecX; dirY = lineUnitVecY;
+                        dirX = lineUnitVecX;
+                        dirY = lineUnitVecY;
                     }
                     tempFinalW = dirX * targetLength;
                     tempFinalH = dirY * targetLength;
@@ -207,7 +209,10 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                     tempFinalY = initialEndPoint_world.getY() - tempFinalH;
                 }
             }
-            finalX = tempFinalX; finalY = tempFinalY; finalW = tempFinalW; finalH = tempFinalH;
+            finalX = tempFinalX;
+            finalY = tempFinalY;
+            finalW = tempFinalW;
+            finalH = tempFinalH;
 
         } else { // Gestione per forme non-Linea
             double tentativeW = iW;
@@ -259,14 +264,19 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
                 boolean affectsHeight = false;
 
                 switch (handleType) {
-                    case TOP_LEFT: case TOP_RIGHT: case BOTTOM_LEFT: case BOTTOM_RIGHT:
+                    case TOP_LEFT:
+                    case TOP_RIGHT:
+                    case BOTTOM_LEFT:
+                    case BOTTOM_RIGHT:
                         affectsWidth = true;
                         affectsHeight = true;
                         break;
-                    case LEFT_CENTER: case RIGHT_CENTER:
+                    case LEFT_CENTER:
+                    case RIGHT_CENTER:
                         affectsWidth = true;
                         break;
-                    case TOP_CENTER: case BOTTOM_CENTER:
+                    case TOP_CENTER:
+                    case BOTTOM_CENTER:
                         affectsHeight = true;
                         break;
                 }
@@ -298,58 +308,81 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
             // Calcola lo spostamento dell'origine (dx_origin_local, dy_origin_local)
             // Questo spostamento è relativo al sistema di coordinate locale della forma
             // ed è necessario perché se si ridimensiona da sinistra o dall'alto, l'origine si sposta.
-            double dx_origin_local = 0.0;
-            double dy_origin_local = 0.0;
+            double actual_center_shift_lx_mirrored = 0;
+            double actual_center_shift_ly_mirrored = 0;
 
+// Variazione effettiva delle dimensioni (già limitate da MIN_SIZE e TextShape)
+            double delta_eff_w = finalW - iW;
+            double delta_eff_h = finalH - iH;
             switch (handleType) {
                 case TOP_LEFT:
-                    dx_origin_local = iW - finalW;
-                    dy_origin_local = iH - finalH;
+                    actual_center_shift_lx_mirrored = -(delta_eff_w * iScaleX / 2.0);
+                    actual_center_shift_ly_mirrored = -(delta_eff_h * iScaleY / 2.0);
                     break;
                 case TOP_RIGHT:
-                    dy_origin_local = iH - finalH;
+                    actual_center_shift_lx_mirrored = +(delta_eff_w * iScaleX / 2.0);
+                    actual_center_shift_ly_mirrored = -(delta_eff_h * iScaleY / 2.0);
                     break;
                 case BOTTOM_LEFT:
-                    dx_origin_local = iW - finalW;
+                    actual_center_shift_lx_mirrored = -(delta_eff_w * iScaleX / 2.0);
+                    actual_center_shift_ly_mirrored = +(delta_eff_h * iScaleY / 2.0);
                     break;
                 case BOTTOM_RIGHT:
-                    // Nessuno spostamento dell'origine
+                    actual_center_shift_lx_mirrored = +(delta_eff_w * iScaleX / 2.0);
+                    actual_center_shift_ly_mirrored = +(delta_eff_h * iScaleY / 2.0);
                     break;
                 case TOP_CENTER:
-                    dy_origin_local = iH - finalH;
+                    actual_center_shift_lx_mirrored = 0; // Il centro X non si sposta per mantenere i lati verticali
+                    actual_center_shift_ly_mirrored = -(delta_eff_h * iScaleY / 2.0);
                     break;
                 case BOTTOM_CENTER:
-                    // Nessuno spostamento dell'origine
+                    actual_center_shift_lx_mirrored = 0; // Il centro X non si sposta
+                    actual_center_shift_ly_mirrored = +(delta_eff_h * iScaleY / 2.0);
                     break;
                 case LEFT_CENTER:
-                    dx_origin_local = iW - finalW;
+                    actual_center_shift_lx_mirrored = -(delta_eff_w * iScaleX / 2.0);
+                    actual_center_shift_ly_mirrored = 0; // Il centro Y non si sposta per mantenere i lati orizzontali
                     break;
                 case RIGHT_CENTER:
-                    // Nessuno spostamento dell'origine
+                    actual_center_shift_lx_mirrored = +(delta_eff_w * iScaleX / 2.0);
+                    actual_center_shift_ly_mirrored = 0; // Il centro Y non si sposta
                     break;
-                default:
-                    System.err.println("Tipo di maniglia di ridimensionamento non gestito: " + handleType);
-                    return;
             }
 
-            // Trasforma lo spostamento dell'origine locale in coordinate del mondo
-            double angleRad_for_transform = Math.toRadians(iAngle);
+// Spostamento del centro nel mondo, dovuto al ridimensionamento.
+            double effectiveAngleForTransform = iAngle;
+            if (iScaleX * iScaleY < 0) { // If one axis is flipped (but not both)
+                effectiveAngleForTransform = -iAngle;
+            }
+            double angleRad_for_transform = Math.toRadians(effectiveAngleForTransform);
             double cosA_for_transform = Math.cos(angleRad_for_transform);
             double sinA_for_transform = Math.sin(angleRad_for_transform);
 
-            double world_offsetX = (dx_origin_local * iScaleX * cosA_for_transform - dy_origin_local * iScaleY * sinA_for_transform);
-            double world_offsetY = (dx_origin_local * iScaleX * sinA_for_transform + dy_origin_local * iScaleY * cosA_for_transform);
+// Ruotiamo lo spostamento del centro (che è già compensato per il mirroring iScaleX/Y)
+// per portarlo nel sistema di coordinate del mondo.
+            double delta_centerX_world = actual_center_shift_lx_mirrored * cosA_for_transform - actual_center_shift_ly_mirrored * sinA_for_transform;
+            double delta_centerY_world = actual_center_shift_lx_mirrored * sinA_for_transform + actual_center_shift_ly_mirrored * cosA_for_transform;
 
-            finalX = iX + world_offsetX;
-            finalY = iY + world_offsetY;
+// Centro iniziale del BB (mondo):
+            double initialCenterX_w = iX + iW / 2.0;
+            double initialCenterY_w = iY + iH / 2.0;
+
+// Nuovo centro del BB nel mondo
+            double new_centerX_world = initialCenterX_w + delta_centerX_world;
+            double new_centerY_world = initialCenterY_w + delta_centerY_world;
+
+// Nuova origine (x,y) del BB non ruotato
+            finalX = new_centerX_world - finalW / 2.0;
+            finalY = new_centerY_world - finalH / 2.0;
+
+// Applica posizione e dimensioni finali
+            shapeToUpdate.setX(finalX);
+            shapeToUpdate.setY(finalY);
+            shapeToUpdate.setWidth(finalW);
+            shapeToUpdate.setHeight(finalH);
+
+            controller.updateSpinners(shapeToUpdate);
         }
-
-        // Non usiamo controller.getCommandManager().executeCommand() qui perché deve essere un semplice feedback visivo, il command viene richiamato in mouseReleasedHandler
-        controller.getModel().moveShapeTo(shapeToUpdate, finalX, finalY);
-        controller.getModel().setShapeWidth(shapeToUpdate, finalW);
-        controller.getModel().setShapeHeight(shapeToUpdate, finalH);
-
-        controller.updateSpinners(shapeToUpdate);
     }
 
     @Override
