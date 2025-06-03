@@ -108,50 +108,55 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
         double finalW = iW;
         double finalH = iH;
 
-        final double MIN_SIZE = 5.0;
+        final double MIN_SIZE = 1.0;
         final double MAX_DIMENSION_ALLOWED = 1000.0;
 
         if (baseShapeToAnalyze instanceof Line) {
-            // Logica per le linee (mantenuta invariata, si presume corretta per il problema specifico)
             final double MAX_LINE_LENGTH_ALLOWED = 1000.0;
             Point2D initialStartPoint_world = new Point2D(iX, iY);
             Point2D initialEndPoint_world = new Point2D(iX + iW, iY + iH);
             double lineUnitVecX = 0, lineUnitVecY = 0;
             double initialLength = Math.sqrt(iW * iW + iH * iH);
             if (initialLength > 1e-6) {
-                lineUnitVecX = iW / initialLength; lineUnitVecY = iH / initialLength;
+                lineUnitVecX = iW / initialLength;
+                lineUnitVecY = iH / initialLength;
             } else {
-                lineUnitVecX = Math.cos(Math.toRadians(iAngle)); lineUnitVecY = Math.sin(Math.toRadians(iAngle));
-                if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6) lineUnitVecX = 1.0;
+                lineUnitVecX = Math.cos(Math.toRadians(iAngle));
+                lineUnitVecY = Math.sin(Math.toRadians(iAngle));
+                if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6)
+                    lineUnitVecX = 1.0;
             }
+            // serve per capire quanto stiamo trascinando lungo la linea
             double dragMagnitudeAlongLineAxis = localMouseDeltaX * lineUnitVecX + localMouseDeltaY * lineUnitVecY;
-            double deltaLength = dragMagnitudeAlongLineAxis;
-            double tempFinalX = iX, tempFinalY = iY, tempFinalW = iW, tempFinalH = iH;
+
             if (handleType == HandleType.LINE_START) {
-                tempFinalX = initialEndPoint_world.getX() - (iW - deltaLength * lineUnitVecX);
-                tempFinalY = initialEndPoint_world.getY() - (iH - deltaLength * lineUnitVecY);
-                tempFinalW = initialEndPoint_world.getX() - tempFinalX; tempFinalH = initialEndPoint_world.getY() - tempFinalY;
-                double currentActualLength = Math.sqrt(tempFinalW * tempFinalW + tempFinalH * tempFinalH);
-                if (currentActualLength < MIN_SIZE) {
-                    double ratio = MIN_SIZE / currentActualLength; tempFinalW *= ratio; tempFinalH *= ratio;
-                    tempFinalX = initialEndPoint_world.getX() - tempFinalW; tempFinalY = initialEndPoint_world.getY() - tempFinalH;
-                }
-                if (currentActualLength > MAX_LINE_LENGTH_ALLOWED) {
-                    double ratio = MAX_LINE_LENGTH_ALLOWED / currentActualLength; tempFinalW *= ratio; tempFinalH *= ratio;
-                    tempFinalX = initialEndPoint_world.getX() - tempFinalW; tempFinalY = initialEndPoint_world.getY() - tempFinalH;
-                }
+                // Mantiene fisso il punto finale e muove solo il punto iniziale
+                double newLength = initialLength - dragMagnitudeAlongLineAxis;
+
+                // Applica i limiti di dimensione
+                newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
+
+                // Calcola le nuove coordinate del punto iniziale
+                finalX = initialEndPoint_world.getX() - newLength * lineUnitVecX;
+                finalY = initialEndPoint_world.getY() - newLength * lineUnitVecY;
+                finalW = initialEndPoint_world.getX() - finalX;
+                finalH = initialEndPoint_world.getY() - finalY;
+
             } else if (handleType == HandleType.LINE_END) {
-                tempFinalX = iX; tempFinalY = iY;
-                tempFinalW = iW + deltaLength * lineUnitVecX; tempFinalH = iH + deltaLength * lineUnitVecY;
-                double currentActualLength = Math.sqrt(tempFinalW * tempFinalW + tempFinalH * tempFinalH);
-                if (currentActualLength < MIN_SIZE) {
-                    double ratio = MIN_SIZE / currentActualLength; tempFinalW *= ratio; tempFinalH *= ratio;
-                }
-                if (currentActualLength > MAX_LINE_LENGTH_ALLOWED) {
-                    double ratio = MAX_LINE_LENGTH_ALLOWED / currentActualLength; tempFinalW *= ratio; tempFinalH *= ratio;
-                }
-            } else { return; }
-            finalX = tempFinalX; finalY = tempFinalY; finalW = tempFinalW; finalH = tempFinalH;
+                // Mantiene fisso il punto iniziale e muove solo il punto finale
+                double newLength = initialLength + dragMagnitudeAlongLineAxis;
+
+                // Applica i limiti di dimensione
+                newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
+
+                // Il punto iniziale rimane fisso
+                finalX = initialStartPoint_world.getX();
+                finalY = initialStartPoint_world.getY();
+                finalW = newLength * lineUnitVecX;
+                finalH = newLength * lineUnitVecY;
+            } else {
+                return;
+            }
         } else { // Forme non-Linea
             // Delta effettivi "visivi" del mouse lungo gli assi della forma
             // Se iScaleX = -1, un localMouseDeltaX positivo (movimento a destra nello spazio originale)
