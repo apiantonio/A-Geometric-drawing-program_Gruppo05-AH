@@ -110,57 +110,72 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
 
         if (baseShapeToAnalyze instanceof Line) {
             final double MAX_LINE_LENGTH_ALLOWED = 1000.0;
-            Point2D initialStartPoint_world = new Point2D(iX, iY);
-            Point2D initialEndPoint_world = new Point2D(iX + iW, iY + iH);
-            double lineUnitVecX = 0, lineUnitVecY = 0;
+
+            // Per le linee, lavoriamo sempre con la rappresentazione canonica (width = lunghezza, height = 0)
+            // e usiamo il centro della linea come punto di ancoraggio
             double initialLength = Math.sqrt(iW * iW + iH * iH);
-            if (initialLength > 1e-6) {
-                lineUnitVecX = iW / initialLength;
-                lineUnitVecY = iH / initialLength;
-            } else {
-                lineUnitVecX = Math.cos(Math.toRadians(iAngle));
-                lineUnitVecY = Math.sin(Math.toRadians(iAngle));
-                if (Math.sqrt(lineUnitVecX * lineUnitVecX + lineUnitVecY * lineUnitVecY) < 1e-6) lineUnitVecX = 1.0;
-            }
-            // serve per capire quanto stiamo trascinando lungo la linea
-            double dragMagnitudeAlongLineAxis = localMouseDeltaX * lineUnitVecX + localMouseDeltaY * lineUnitVecY;
+
+            // Il delta lungo l'asse principale della linea (asse X locale)
+            double dragMagnitudeAlongLineAxis = localMouseDeltaX;
 
             HandleType effectiveHandle = handleType;
-            // se la linea è stata specchiata orizzontalmente, devi invertire gli handle da applicare
+            // Se la linea è specchiata orizzontalmente, invertiamo gli handle
             if (iScaleX == -1) {
                 if (handleType == HandleType.LINE_START) effectiveHandle = HandleType.LINE_END;
                 else if (handleType == HandleType.LINE_END) effectiveHandle = HandleType.LINE_START;
             }
+
+            // Calcolo della nuova lunghezza mantenendo fisso l'estremo opposto
+            double newLength;
+            double anchorPointX; // Posizione X locale del punto fisso
+
             if (effectiveHandle == HandleType.LINE_START) {
-                // Mantiene fisso il punto finale e muove solo il punto iniziale
-                double newLength = initialLength - dragMagnitudeAlongLineAxis;
-
-                // Applica i limiti di dimensione
-                newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
-
-                // Calcola le nuove coordinate del punto iniziale
-                finalX = initialEndPoint_world.getX() - newLength * lineUnitVecX;
-                finalY = initialEndPoint_world.getY() - newLength * lineUnitVecY;
-                finalW = initialEndPoint_world.getX() - finalX;
-                finalH = initialEndPoint_world.getY() - finalY;
-
+                // Manteniamo fisso il punto finale (estremo destro in coordinate locali)
+                anchorPointX = initialLength / 2.0; // Punto finale in coordinate locali
+                newLength = initialLength - dragMagnitudeAlongLineAxis * iScaleX;
             } else if (effectiveHandle == HandleType.LINE_END) {
-                // Mantiene fisso il punto iniziale e muove solo il punto finale
-                double newLength = initialLength + dragMagnitudeAlongLineAxis;
-
-                // Applica i limiti di dimensione
-                newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
-
-                // Il punto iniziale rimane fisso
-                finalX = initialStartPoint_world.getX();
-                finalY = initialStartPoint_world.getY();
-                finalW = newLength * lineUnitVecX;
-                finalH = newLength * lineUnitVecY;
+                // Manteniamo fisso il punto iniziale (estremo sinistro in coordinate locali)
+                anchorPointX = -initialLength / 2.0; // Punto iniziale in coordinate locali
+                newLength = initialLength + dragMagnitudeAlongLineAxis * iScaleX;
             } else {
                 return;
             }
-        } else { // For other non-Line, non-Text shapes (Rectangles, Ellipses, Polygons)
-            // --- Use the latest revised logic (center-based anchoring with mirroring fix) ---
+
+            // Clamp della lunghezza
+            newLength = Math.max(MIN_SIZE, Math.min(newLength, MAX_LINE_LENGTH_ALLOWED));
+
+            // Calcolo del nuovo centro basato sul punto fisso
+            double initialCenterX = iX + iW / 2.0;
+            double initialCenterY = iY + iH / 2.0;
+
+            // Il nuovo centro è a metà strada tra il punto fisso e il nuovo estremo opposto
+            double newCenterXLocal = anchorPointX - newLength / 2.0;
+            if (effectiveHandle == HandleType.LINE_END) {
+                newCenterXLocal = anchorPointX + newLength / 2.0;
+            }
+
+            // Differenza del centro in coordinate locali rispetto al centro iniziale
+            double centerShiftXLocal = newCenterXLocal; // Il centro iniziale è sempre a (0,0) in coordinate locali
+
+            // Trasformiamo lo spostamento del centro dalle coordinate locali a quelle mondo
+            double angleRad = Math.toRadians(iAngle);
+            double cosA = Math.cos(angleRad);
+            double sinA = Math.sin(angleRad);
+
+            double centerShiftWorldX = centerShiftXLocal * cosA;
+            double centerShiftWorldY = centerShiftXLocal * sinA;
+
+            double newCenterX = initialCenterX + centerShiftWorldX;
+            double newCenterY = initialCenterY + centerShiftWorldY;
+
+            // Per le linee, manteniamo sempre width = lunghezza e height = 0
+            finalW = newLength;
+            finalH = 0;
+            finalX = newCenterX - finalW / 2.0;
+            finalY = newCenterY;
+
+        }else {
+            // Per le altre forme, calcoliamo la nuova larghezza e altezza
             double effDeltaX = localMouseDeltaX * iScaleX;
             double effDeltaY = localMouseDeltaY * iScaleY;
 
