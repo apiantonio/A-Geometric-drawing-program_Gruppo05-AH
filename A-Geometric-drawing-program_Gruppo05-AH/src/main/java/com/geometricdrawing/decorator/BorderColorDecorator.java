@@ -27,12 +27,11 @@ public class BorderColorDecorator extends ShapeDecorator {
             this.blue = this.borderColor.getBlue();
             this.alpha = this.borderColor.getOpacity();
         } else {
-            // Gestisci il caso di un colore nullo, se applicabile
-            this.red = 0; // Esempio: nero
+            // Gestione del caso di un colore nullo, se applicabile
+            this.red = 0;
             this.green = 0;
             this.blue = 0;
-            this.alpha = 1; // Esempio: opaco (il bordo di solito è visibile)
-            // o potresti volerlo trasparente se borderColor è null
+            this.alpha = 1;
         }
     }
 
@@ -64,10 +63,9 @@ public class BorderColorDecorator extends ShapeDecorator {
     @Serial
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        // Ricostruisci il colore transient
+        // Ricostruisce il colore transient tenendo conto del fatto di un possibile colore nullo
         if (red == 0 && green == 0 && blue == 0 && alpha == 0 && this.borderColor == null) {
-            // Logica di default per colore nullo, se necessario
-            this.borderColor = Color.BLACK; // Esempio di default, o Color.TRANSPARENT
+            this.borderColor = Color.BLACK;
         } else {
             this.borderColor = new Color(red, green, blue, alpha);
         }

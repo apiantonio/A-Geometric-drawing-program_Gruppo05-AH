@@ -28,12 +28,11 @@ public class FillColorDecorator extends ShapeDecorator {
             this.blue = this.fillColor.getBlue();
             this.alpha = this.fillColor.getOpacity();
         } else {
-            // Gestisci il caso di un colore nullo, se applicabile (es. nero trasparente o default)
-            // Ad esempio, potresti voler impostare un colore di default o trasparente
-            this.red = 0; // Esempio: nero
+            // Gestione del caso in cui il colore sia nullo
+            this.red = 0;
             this.green = 0;
             this.blue = 0;
-            this.alpha = 0; // Esempio: completamente trasparente
+            this.alpha = 0;
         }
     }
 
@@ -65,13 +64,9 @@ public class FillColorDecorator extends ShapeDecorator {
     @Serial
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject(); // Deserializza red, green, blue, alpha
-        // Ricostruisci il colore transient, gestendo il caso in cui i valori RGBA potrebbero
-        // rappresentare un colore nullo se così è stato deciso in setFillColorAndUpdateRGBA
+        // Ricostruisce il colore transient tenendo conto del fatto di un possibile colore nullo
         if (red == 0 && green == 0 && blue == 0 && alpha == 0 && this.fillColor == null) {
-            // Potrebbe essere un colore nullo intenzionale o un default.
-            // Se hai una logica di default specifica per il colore nullo, applicala qui.
-            // Per ora, se fillColor era null e RGBA sono 0, lo lasciamo null o lo impostiamo a trasparente.
-            this.fillColor = new Color(0,0,0,0); // o null, a seconda della tua logica di default
+            this.fillColor = new Color(0,0,0,0); // Colore di default
         } else {
             this.fillColor = new Color(red, green, blue, alpha);
         }
