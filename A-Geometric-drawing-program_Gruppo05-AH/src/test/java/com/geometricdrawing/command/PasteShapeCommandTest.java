@@ -24,6 +24,7 @@ class PasteShapeCommandTest {
         clipboardManager.copyToClipboard(originalShapeInClipboardSetup);
         // shapeToPaste sarà il clone che ci aspettiamo venga manipolato
         shapeToPaste = clipboardManager.getFromClipboard(); // Otteniamo un clone per il setup, come farebbe il comando
+        PasteShapeCommand.resetPasteCount();
     }
 
     @Test

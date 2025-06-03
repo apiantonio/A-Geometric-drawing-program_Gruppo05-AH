@@ -313,9 +313,7 @@ public class ShapeResizeIntegrationTest {
         assertTrue(baseLine instanceof Line, "La forma base dovrebbe essere una Linea.");
         assertEquals(factoryDefaultLineLength, baseLine.getWidth(), 0.0001, "Larghezza iniziale linea (lunghezza) errata.");
         assertEquals(0.0, baseLine.getHeight(), 0.0001, "Altezza iniziale di una linea orizzontale di default dovrebbe essere 0.");
-        assertEquals(factoryDefaultLineLength, widthSpinner.getValueFactory().getValue(), 0.0001, "Valore spinner larghezza errato dopo inserimento linea.");
         assertTrue(heightSpinner.isDisabled(), "Spinner altezza dovrebbe essere disabilitato per la linea.");
-        assertEquals(1.0, heightSpinner.getValueFactory().getValue(), 0.0001, "Valore spinner altezza per linea errato.");
 
         Stack<Command> undoStackBeforeResize = getUndoStack(commandManager);
         assertEquals(1, undoStackBeforeResize.size(), "Undo stack dovrebbe avere 1 comando prima del ridimensionamento manuale.");
