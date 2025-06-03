@@ -240,7 +240,7 @@ public class MouseDraggedHandler extends AbstractMouseHandler {
 
         controller.updateSpinners(shapeToUpdate);
     }
-
+    //
 
     @Override
     protected void postProcess(MouseEvent event) {
