@@ -138,9 +138,17 @@ public class DrawingModel {
      */
     public void rotateShape(AbstractShape shape, double deltaAngle) {
         if (shape != null) {
+            double scaleX = shape.getScaleX();
+            double scaleY = shape.getScaleY();
+
+            // Se c'è specchiatura orizzontale o verticale (per questo la XOR) la rotazione è nel senso opposto
+            if (scaleX < 0 ^ scaleY < 0) {
+                deltaAngle = -deltaAngle;
+            }
             shape.rotateBy(deltaAngle);
         }
     }
+
 
     public void mirrorShape(AbstractShape shape, boolean horizontal) {
         if (shape != null) {
