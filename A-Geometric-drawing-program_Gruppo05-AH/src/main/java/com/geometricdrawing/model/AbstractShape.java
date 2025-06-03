@@ -143,11 +143,23 @@ public abstract class AbstractShape implements Serializable{
 
     public int getScaleX() { return scaleX; }
 
-    public void setScaleX(int scaleX) { this.scaleX = scaleX; }
+    public void setScaleX(int scaleX) {
+        // Se scaleX è negativo, inverte la direzione della figura sull'asse X
+        if (scaleX < 0 != this.scaleX < 0) { // Se cambia segno
+            this.rotationAngle = normalizeAngle(-this.rotationAngle);
+        }
+        this.scaleX = scaleX;
+    }
 
     public int getScaleY() { return scaleY;}
 
-    public void setScaleY(int scaleY) { this.scaleY = scaleY; }
+    public void setScaleY(int scaleY) {
+        // Se scaleY è negativo, inverte la direzione della figura sull'asse Y
+        if (scaleY < 0 != this.scaleY < 0) { // Se cambia segno
+            this.rotationAngle = normalizeAngle(180 - this.rotationAngle);
+        }
+        this.scaleY = scaleY;
+    }
 
     // sposta la figura a una nuova posizione (newX, newY)
     public void moveTo(double newX, double newY) {
@@ -203,16 +215,24 @@ public abstract class AbstractShape implements Serializable{
     }
 
     public void rotateBy(double deltaAngle) {
-        this.rotationAngle += deltaAngle;
+        // Calcola il nuovo angolo dopo aver corretto deltaAngle
+        double newAngle = this.rotationAngle + deltaAngle;
+        newAngle = normalizeAngle(newAngle);
 
-        // I passaggi di seguito vengono utilizzati per effettuare una normalizzazione dell'angolo
-        while (this.rotationAngle > 360) {
-            this.rotationAngle -= 360;
-        }
-        while (this.rotationAngle < -360) {
-            this.rotationAngle += 360;
-        }
+        this.rotationAngle = newAngle;
     }
+
+    private double normalizeAngle(double angle) {
+        // Normalizza l'angolo tra -180 e 180 gradi
+        while (angle > 180) {
+            angle -= 360;
+        }
+        while (angle < -180) {
+            angle += 360;
+        }
+        return angle;
+    }
+
 
     //Utilizzato per copiare la figura nella clipboard
     public AbstractShape deepClone() {

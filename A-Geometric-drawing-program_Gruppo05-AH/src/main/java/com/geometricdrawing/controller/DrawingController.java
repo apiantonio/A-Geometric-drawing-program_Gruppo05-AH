@@ -287,7 +287,7 @@ public class DrawingController {
         }
 
         if(rotationSpinner != null) {
-            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-Double.MAX_VALUE, Double.MAX_VALUE, 0, 1);
+            SpinnerValueFactory<Double> rotationValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(-180, +180, 0, 1);
             rotationSpinner.setValueFactory(rotationValueFactory); //
             rotationSpinner.setEditable(true); //
             rotationSpinner.valueProperty().addListener((obs, oldValue, newValue) -> { //
@@ -404,7 +404,7 @@ public class DrawingController {
     @FXML
     public void handleRotation(double deltaAngle) {
         if (currentShape != null && rotationSpinner.getValue() != null) {
-            RotateShapeCommand cmd = new RotateShapeCommand(model, currentShape, -deltaAngle);
+            RotateShapeCommand cmd = new RotateShapeCommand(model, currentShape, deltaAngle);
             commandManager.executeCommand(cmd);
             redrawCanvas();
         }
@@ -413,8 +413,9 @@ public class DrawingController {
     @FXML
     private void handleMirrorHorizontalShape(ActionEvent event) {
         if (currentShape != null) {
-            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, true);
+            Command mscmd = new MirrorShapeCommand(model, currentShape, true);
             commandManager.executeCommand(mscmd);
+            updateSpinners(currentShape);
             redrawCanvas();
         }
     }
@@ -422,8 +423,9 @@ public class DrawingController {
     @FXML
     private void handleMirrorVerticalShape(ActionEvent event) {
         if (currentShape != null) {
-            MirrorShapeCommand mscmd = new MirrorShapeCommand(model, currentShape, false);
+            Command mscmd = new MirrorShapeCommand(model, currentShape, false);
             commandManager.executeCommand(mscmd);
+            updateSpinners(currentShape);
             redrawCanvas();
         }
     }
@@ -1214,7 +1216,8 @@ public class DrawingController {
 
                 isUpdatedRotateSpinner = true; // Questa flag esiste già per la rotazione ed è corretta
                 double angle = shape.getRotationAngle();
-                rotationSpinner.getValueFactory().setValue(angle == 0 ? 0 : -angle);
+                System.out.println("DEBUG: Angolo di rotazione della figura: " + angle);
+                rotationSpinner.getValueFactory().setValue(angle);
                 isUpdatedRotateSpinner = false;
 
                 if (baseShape instanceof Line) {
