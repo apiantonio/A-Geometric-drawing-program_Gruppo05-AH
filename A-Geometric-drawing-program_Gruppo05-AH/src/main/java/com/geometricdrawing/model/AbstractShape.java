@@ -80,7 +80,7 @@ public abstract class AbstractShape implements Serializable{
      * Le coordinate del punto (x, y) sono considerate rispetto al centro della figura,
      * @return un Point2D che rappresenta le coordinate del punto trasformato rispetto al centro della figura originale
      */
-    protected Point2D inverseTransformPoint(double x, double y) {
+    public Point2D inverseTransformPoint(double x, double y) {
         double centerX = this.x + this.width / 2;
         double centerY = this.y + this.height / 2;
 
@@ -88,28 +88,20 @@ public abstract class AbstractShape implements Serializable{
         double localX = x - centerX;
         double localY = y - centerY;
 
-        // Applica la rotazione inversa, ma tenendo conto del mirroring
-        // Se c'è mirroring su X ma non su Y, o viceversa (non entrambi),
-        // la rotazione va in direzione opposta
-        double effectiveAngle = rotationAngle;
-        if ((scaleX < 0 && scaleY > 0) || (scaleX > 0 && scaleY < 0)) {
-            effectiveAngle = -effectiveAngle;
-        }
+        double unscaledX = localX / scaleX;
+        double unscaledY = localY / scaleY;
 
-        double angleRad = Math.toRadians(-effectiveAngle);
+        // Then apply inverse rotation
+        double angleRad = Math.toRadians(-rotationAngle);
         double cos = Math.cos(angleRad);
         double sin = Math.sin(angleRad);
 
-        double unrotatedX = localX * cos - localY * sin;
-        double unrotatedY = localX * sin + localY * cos;
+        double unrotatedX = unscaledX * cos - unscaledY * sin;
+        double unrotatedY = unscaledX * sin + unscaledY * cos;
 
-        // Applica il mirroring inverso
-        double unscaledX = unrotatedX / scaleX;
-        double unscaledY = unrotatedY / scaleY;
-
-        // Il punto risultante è in coordinate locali rispetto al centro della figura originale (non trasformata)
-        return new Point2D(unscaledX, unscaledY);
+        return new Point2D(unrotatedX, unrotatedY);
     }
+
 
     /**
      * Verifica se un punto si trova all'interno dei bounds della figura considerando la soglia
